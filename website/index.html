@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BrailleBridge — A Low-Cost Bilingual Braille Writing &amp; Classroom Examination System</title>
+  <meta name="description" content="BrailleBridge is a low-cost, bilingual digital Braille writing system that lets blind and visually impaired students write independently — and lets teachers read every answer instantly." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%230F111A'/%3E%3Ccircle cx='8.5' cy='8' r='2.4' fill='%23C49A4A'/%3E%3Ccircle cx='15.5' cy='8' r='2.4' fill='%23C49A4A'/%3E%3Ccircle cx='8.5' cy='16' r='2.4' fill='%23C49A4A'/%3E%3Ccircle cx='15.5' cy='16' r='2.4' fill='%23C49A4A'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=Noto+Serif+Bengali:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ================= NAV ================= -->
+  <header class="site-nav" id="siteNav">
+    <nav class="nav-inner" aria-label="Primary">
+      <a class="brand" href="#hero" aria-label="BrailleBridge home">
+        <span class="brand-mark" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i>
+        </span>
+        <span class="brand-word">Braille<em>Bridge</em></span>
+      </a>
+
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#problem">Problem</a></li>
+        <li><a href="#solution">Solution</a></li>
+        <li><a href="#innovation">Innovation</a></li>
+        <li><a href="#demo">Demo</a></li>
+        <li><a href="#dictionaries">Braille</a></li>
+        <li><a href="#software">Software</a></li>
+        <li><a href="#cost">Cost</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <a class="btn btn-primary btn-sm" href="https://braille.mintlify.site" target="_blank" rel="noopener">
+          Read further docs
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <button class="nav-burger" id="navBurger" aria-label="Open menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+
+    <!-- ================= HERO ================= -->
+    <section class="hero" id="hero">
+      <div class="hero-grain" aria-hidden="true"></div>
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow reveal" data-delay="1">Science &amp; Technology Innovation Competition</p>
+          <h1 class="hero-title reveal" data-delay="1">
+            Every student writes.<br />
+            <em>Every teacher reads.</em>
+          </h1>
+          <p class="hero-lede reveal" data-delay="2">
+            <strong>BrailleBridge</strong> is a low-cost, bilingual Braille writing system that lets
+            blind and visually impaired students compose answers independently — on braille chords —
+            while teachers see ordinary digital text appear instantly, in real&nbsp;time.
+          </p>
+          <div class="hero-cta reveal" data-delay="2">
+            <a class="btn btn-primary" href="#demo">
+              Try the live demo
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+            <a class="btn btn-ghost" href="#problem">Explore the system</a>
+          </div>
+
+          <dl class="hero-stats reveal" id="heroStats" data-delay="3">
+            <div class="stat">
+              <dt><span class="num" data-count="15" data-prefix="&lt;$">0</span><span class="suffix">/device</span></dt>
+              <dd>Total hardware cost</dd>
+            </div>
+            <div class="stat">
+              <dt><span class="num" data-count="2">0</span></dt>
+              <dd>Languages — English &amp; Bangla</dd>
+            </div>
+            <div class="stat">
+              <dt><span class="num" data-count="180">0</span><span class="suffix">ms</span></dt>
+              <dd>Chord detection window</dd>
+            </div>
+            <div class="stat">
+              <dt><span class="num" data-count="6">0</span></dt>
+              <dd>Braille dots, one device</dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- Device illustration -->
+        <div class="hero-visual reveal" aria-hidden="true" data-delay="2">
+          <div class="device">
+            <div class="device-glow"></div>
+            <div class="device-top">
+              <div class="device-leds">
+                <span class="led led-red" title="English"></span>
+                <span class="led led-green" title="Bangla"></span>
+              </div>
+              <div class="device-chip">ESP32&nbsp;·&nbsp;Bluetooth HID</div>
+            </div>
+            <div class="device-cell">
+              <button class="hero-dot" data-d="0" tabindex="-1"><span>1</span></button>
+              <button class="hero-dot" data-d="3" tabindex="-1"><span>4</span></button>
+              <button class="hero-dot" data-d="1" tabindex="-1"><span>2</span></button>
+              <button class="hero-dot" data-d="4" tabindex="-1"><span>5</span></button>
+              <button class="hero-dot" data-d="2" tabindex="-1"><span>3</span></button>
+              <button class="hero-dot" data-d="5" tabindex="-1"><span>6</span></button>
+            </div>
+            <div class="device-keys">
+              <span class="key">SPACE</span>
+              <span class="key key-gold">SHIFT</span>
+            </div>
+            <div class="device-footer">
+              <span class="badge">EN</span>
+              <span class="dots" id="heroDots"></span>
+              <span class="output" id="heroOutput">a</span>
+            </div>
+          </div>
+          <div class="device-captions" aria-hidden="true">
+            <span class="device-caption"><i class="cap-dot"></i>Two outputs &middot; one chord</span>
+            <span class="device-caption"><i class="cap-dot"></i>~$12 bill of materials</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-scroll" aria-hidden="true">
+        <span>Scroll</span>
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+      </div>
+    </section>
+
+    <!-- ================= MISSION QUOTE (curved marquee) ================= -->
+    <div class="quote-band">
+      <div class="curved-loop" id="curvedLoop">
+        <svg class="curved-loop-svg" viewBox="0 0 1440 200" aria-hidden="true">
+          <defs>
+            <path id="curvePath" d="M-100,100 Q720,240 1540,100" fill="none" stroke="transparent" />
+            <linearGradient id="curveGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#C49A4A" stop-opacity="0.45" />
+              <stop offset="22%" stop-color="#F3EFE4" />
+              <stop offset="50%" stop-color="#E9CB8B" />
+              <stop offset="78%" stop-color="#F3EFE4" />
+              <stop offset="100%" stop-color="#C49A4A" stop-opacity="0.45" />
+            </linearGradient>
+          </defs>
+          <text class="curved-text curved-measure" id="curveMeasure" visibility="hidden" opacity="0" pointer-events="none" aria-hidden="true"></text>
+          <text class="curved-text" fill="url(#curveGrad)">
+            <textPath id="curveTextPath" href="#curvePath" startOffset="-300px"></textPath>
+          </text>
+        </svg>
+        <p class="sr-only">
+          BrailleBridge does not replace Braille. It protects Braille as the student&rsquo;s
+          natural writing method — while removing the barrier between braille input and
+          teacher-readable output.
+        </p>
+      </div>
+    </div>
+
+    <!-- ================= THE PROBLEM ================= -->
+    <section class="section" id="problem">
+      <div class="container">
+        <div class="section-head reveal">
+          <p class="eyebrow">01 — The Problem</p>
+          <h2 class="section-title">Silent answers are <em>still</em> answers</h2>
+          <p class="section-lede">
+            For many blind students, writing during class means dictating every word to a sighted
+            writer — sacrificing privacy, independence, speed, and accuracy.
+          </p>
+        </div>
+
+        <div class="card-grid">
+          <article class="card reveal">
+            <span class="card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3v10M5.6 8.5A7 7 0 0 0 19 8.5M8 21h8"/></svg>
+            </span>
+            <h3>Loss of privacy</h3>
+            <p>Answers must be spoken aloud for a writer to record — nothing stays private.</p>
+          </article>
+          <article class="card reveal">
+            <span class="card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3a4 4 0 0 0-4 4v5a4 4 0 0 0 8 0V7a4 4 0 0 0-4-4ZM5 11v1a7 7 0 0 0 14 0v-1M12 19v2"/></svg>
+            </span>
+            <h3>Loss of independence</h3>
+            <p>Someone else controls the final written record — and how it is interpreted.</p>
+          </article>
+          <article class="card reveal">
+            <span class="card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 12h16M14 4l6 8-6 8M10 4l-6 8 6 8"/></svg>
+            </span>
+            <h3>Reduced speed control</h3>
+            <p>The student waits, repeats, and slows to the writer&rsquo;s pace — not their own.</p>
+          </article>
+          <article class="card reveal">
+            <span class="card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3M12 5a7 7 0 1 0 0 14 7 7 0 0 0 0-14Z"/></svg>
+            </span>
+            <h3>Transcription errors</h3>
+            <p>Technical terms, names, and Bangla phonetics are easily misheard or misspelled.</p>
+          </article>
+          <article class="card reveal">
+            <span class="card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M2 12h4l3-7 4 14 3-7h6"/></svg>
+            </span>
+            <h3>Teacher accessibility gap</h3>
+            <p>Embossed braille is unreadable to most sighted teachers — so work goes unchecked.</p>
+          </article>
+          <article class="card reveal">
+            <span class="card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M4.5 4.5l15 15M19.5 4.5l-15 15"/></svg>
+            </span>
+            <h3>Financial barriers</h3>
+            <p>Mechanical braillers cost hundreds to thousands of dollars and are hard to repair locally.</p>
+          </article>
+        </div>
+
+        <div class="flow-row reveal">
+          <div class="flow-node">
+            <span class="flow-kicker">The old way</span>
+            <p class="flow-text">Student dictates &rarr; writer types &rarr; meaning is lost</p>
+          </div>
+          <svg class="flow-arrow" viewBox="0 0 40 24" aria-hidden="true"><path d="M4 12h30M28 6l6 6-6 6"/></svg>
+          <div class="flow-node flow-node-accent">
+            <span class="flow-kicker">With BrailleBridge</span>
+            <p class="flow-text">Student writes braille chords &rarr; digital text appears for the teacher</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= THE SOLUTION ================= -->
+    <section class="section section-alt" id="solution">
+      <div class="container">
+        <div class="section-head reveal">
+          <p class="eyebrow">02 — The Solution</p>
+          <h2 class="section-title">One chord. <em>Two outputs.</em></h2>
+          <p class="section-lede">
+            A six-dot braille keyboard, an ESP32 translator, and a web-based teacher console — a
+            complete, affordable classroom system.
+          </p>
+        </div>
+
+        <div class="arch reveal" aria-label="System architecture">
+          <div class="arch-stage">
+            <div class="arch-node arch-student">
+              <span class="arch-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c.6-3.4 2.8-5 5.5-5s4.9 1.6 5.5 5M15 4.5a3.2 3.2 0 1 1 0 6.4M17.5 15c2 .7 3 2.3 3.4 4.6"/></svg>
+              </span>
+              <h3>Blind student</h3>
+              <p>Presses familiar braille chords on tactile mechanical keys</p>
+              <span class="arch-tag">6 dots + Space + Shift</span>
+            </div>
+            <svg class="arch-line" viewBox="0 0 90 24" aria-hidden="true"><path d="M4 12h80M80 6l6 6-6 6"/></svg>
+            <div class="arch-node arch-esp">
+              <span class="arch-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 13.5h10"/></svg>
+              </span>
+              <h3>ESP32 translator</h3>
+              <p>Reads the chord within 180&nbsp;ms, encodes a 6-bit value, looks up the dictionary</p>
+              <span class="arch-tag">English · Bangla · Shift</span>
+            </div>
+          </div>
+
+          <div class="arch-split">
+            <div class="arch-branch">
+              <span class="branch-label">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm10 0a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg>
+                Bluetooth HID
+              </span>
+              <div class="arch-node arch-out">
+                <h3>Student&rsquo;s own device</h3>
+                <p>Works with any phone, tablet, or PC — no proprietary receiver needed.</p>
+              </div>
+            </div>
+            <div class="arch-branch">
+              <span class="branch-label">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7Z"/><path d="M8 12h8"/></svg>
+                USB Serial · 115200
+              </span>
+              <div class="arch-node arch-out">
+                <h3>Teacher software</h3>
+                <p>Readable digital output in real time — monitor, review, save, and assess.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="how-list reveal">
+          <div class="how-item">
+            <span class="how-num">1</span>
+            <p><strong>Press.</strong> The student presses a braille chord on the six-dot keyboard.</p>
+          </div>
+          <div class="how-item">
+            <span class="how-num">2</span>
+            <p><strong>Translate.</strong> The ESP32 collects keys within 180&nbsp;ms, encodes the chord as a 6-bit value, and looks it up in the active dictionary.</p>
+          </div>
+          <div class="how-item">
+            <span class="how-num">3</span>
+            <p><strong>Send.</strong> The character is transmitted over Bluetooth (student device) and USB Serial (teacher software) simultaneously.</p>
+          </div>
+          <div class="how-item">
+            <span class="how-num">4</span>
+            <p><strong>Read.</strong> The teacher software displays, timestamps, saves, and organises every answer.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= INNOVATION ================= -->
+    <section class="section" id="innovation">
+      <div class="container">
+        <div class="section-head reveal">
+          <p class="eyebrow">03 — Innovation &amp; Novelty</p>
+          <h2 class="section-title">The first <em>combination</em> of its kind</h2>
+          <p class="section-lede">
+            BrailleBridge fuses a physical braille keyboard, bilingual translation, Bluetooth output,
+            and web-based teacher software — within a single affordable system. No existing product
+            delivers this combination.
+          </p>
+        </div>
+
+        <div class="feature-list reveal">
+          <div class="feature">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M8 4v16M4 8h16"/></svg>
+            </span>
+            <h4>Six-dot tactile input</h4>
+            <p>Physical Outemu switches with true mechanical feel — braille as it was meant to be written.</p>
+          </div>
+          <div class="feature">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+            </span>
+            <h4>English &amp; Bangla, same keys</h4>
+            <p>One hardware device, two dictionaries — with Shift-based modifiers for vowel signs, numbers, punctuation, and math.</p>
+          </div>
+          <div class="feature">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </span>
+            <h4>Bluetooth HID keyboard</h4>
+            <p>Pairs with any modern device — no proprietary software or receiver required.</p>
+          </div>
+          <div class="feature">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M5 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7Z"/><path d="M8 12h8"/></svg>
+            </span>
+            <h4>USB serial to teacher software</h4>
+            <p>Feeds a professional HTML/CSS/JS console via the Web Serial API — no installs.</p>
+          </div>
+          <div class="feature">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3l2.5 5.5L20 9l-4.5 4 1.2 6L12 16.5 7.3 19l1.2-6L4 9l5.5-.5L12 3Z"/></svg>
+            </span>
+            <h3 class="feature-title">ESP32 architecture</h3>
+            <p>~$5 microcontroller, ~$0.38 switches, and a custom 3D-printed enclosure.</p>
+          </div>
+          <div class="feature">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>
+            </span>
+            <h4>Designed for classrooms</h4>
+            <p>Built for exams and tests: silent input, real-time monitoring, timestamped records.</p>
+          </div>
+        </div>
+
+        <div class="table-wrap reveal">
+          <table class="tbl">
+            <caption>Comparison with existing solutions</caption>
+            <thead>
+              <tr>
+                <th scope="col">Solution</th>
+                <th scope="col">Strength</th>
+                <th scope="col">Limitation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Human writer</td><td>No equipment needed</td><td>Privacy loss, errors</td></tr>
+              <tr><td>Slate &amp; stylus</td><td>Affordable, tactile</td><td>Slow; teacher cannot read</td></tr>
+              <tr><td>Perkins Brailler</td><td>Familiar method</td><td>Expensive, heavy, embossed only</td></tr>
+              <tr><td>Voice typing</td><td>Fast in quiet</td><td>Fails in noisy classrooms</td></tr>
+              <tr><td>Commercial digital</td><td>Advanced accessibility</td><td>Very expensive, hard to repair</td></tr>
+              <tr><td>Ordinary keyboard</td><td>Cheap, ubiquitous</td><td>No six-dot chording</td></tr>
+              <tr class="tbl-highlight"><td><strong>BrailleBridge</strong></td><td><strong>Bilingual + teacher software</strong></td><td><em>Prototype stage</em></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SPECS + HARDWARE ================= -->
+    <section class="section section-alt" id="hardware">
+      <div class="container">
+        <div class="section-head reveal">
+          <p class="eyebrow">04 — Specifications &amp; Hardware</p>
+          <h2 class="section-title">Built from parts you can <em>replace</em></h2>
+          <p class="section-lede">
+            Every component is standard, affordable, and locally replaceable — from the ESP32 to the
+            mechanical switches to the 3D-printed enclosure.
+          </p>
+        </div>
+
+        <div class="spec-grid">
+          <div class="table-wrap reveal">
+            <table class="tbl">
+              <caption>Specifications at a glance</caption>
+              <tbody>
+                <tr><th scope="row">Microcontroller</th><td>ESP32 Dev Module</td></tr>
+                <tr><th scope="row">Braille keys</th><td>6 × Outemu Red mechanical switches</td></tr>
+                <tr><th scope="row">Additional keys</th><td>Space, Shift</td></tr>
+                <tr><th scope="row">Chording window</th><td>180 ms</td></tr>
+                <tr><th scope="row">Output channels</th><td>Bluetooth HID + USB Serial</td></tr>
+                <tr><th scope="row">Languages</th><td>English, Bangla (Bharati Braille)</td></tr>
+                <tr><th scope="row">Shift functions</th><td>Caps, numbers, punctuation, math</td></tr>
+                <tr><th scope="row">LED indicators</th><td>Red (English) · Green (Bangla)</td></tr>
+                <tr><th scope="row">Enclosure</th><td>Fusion 360 CAD, FDM 3D-printed</td></tr>
+                <tr><th scope="row">Teacher software</th><td>HTML / CSS / JS (Web Serial API)</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-wrap reveal">
+            <table class="tbl">
+              <caption>GPIO mapping</caption>
+              <thead>
+                <tr><th scope="col">Function</th><th scope="col">GPIO</th><th scope="col">Notes</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Dot 1</td><td class="mono">14</td><td>Top-left</td></tr>
+                <tr><td>Dot 2</td><td class="mono">12</td><td>Middle-left</td></tr>
+                <tr><td>Dot 3</td><td class="mono">13</td><td>Bottom-left</td></tr>
+                <tr><td>Dot 4</td><td class="mono">27</td><td>Top-right</td></tr>
+                <tr><td>Dot 5</td><td class="mono">26</td><td>Middle-right</td></tr>
+                <tr><td>Dot 6</td><td class="mono">25</td><td>Bottom-right</td></tr>
+                <tr><td>Space</td><td class="mono">33</td><td>Dedicated space key</td></tr>
+                <tr><td>Shift</td><td class="mono">32</td><td>Modifier</td></tr>
+                <tr class="tbl-highlight"><td>Red LED</td><td class="mono">18</td><td>English indicator</td></tr>
+                <tr class="tbl-highlight"><td>Green LED</td><td class="mono">19</td><td>Bangla indicator</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="led-note reveal">
+          <div class="led-sample" aria-hidden="true">
+            <span class="led led-red"></span><span class="led led-dim"></span>
+          </div>
+          <p><strong>LED language cues:</strong> Red ON / Green OFF = English · Green ON / Red OFF = Bangla · Both ON for 100&nbsp;ms = valid character.</p>
+          <div class="led-sample" aria-hidden="true">
+            <span class="led led-green"></span><span class="led led-dim"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= FIRMWARE ================= -->
+    <section class="section" id="firmware">
+      <div class="container">
+        <div class="section-head reveal">
+          <p class="eyebrow">05 — Firmware Architecture</p>
+          <h2 class="section-title">Chord → character, <em>reliably</em></h2>
+          <p class="section-lede">
+            Written in C++ on the Arduino framework, the firmware turns six mechanical keys into a
+            compact 6-bit value — then looks it up in a structured dictionary.
+          </p>
+        </div>
+
+        <div class="firmware-grid">
+          <div class="code-card reveal">
+            <div class="code-head">
+              <span class="code-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="code-name">chord-read.ino</span>
+              <span class="code-lang">C++</span>
+            </div>
+            <pre><code><span class="c-kw">uint8_t</span> readChord() {
+  <span class="c-kw">uint8_t</span> chord = <span class="c-num">0</span>;
+  <span class="c-kw">if</span> (digitalRead(PIN_DOT1) == LOW) chord |= (<span class="c-num">1</span> &lt;&lt; <span class="c-num">0</span>);
+  <span class="c-kw">if</span> (digitalRead(PIN_DOT2) == LOW) chord |= (<span class="c-num">1</span> &lt;&lt; <span class="c-num">1</span>);
+  <span class="c-kw">if</span> (digitalRead(PIN_DOT3) == LOW) chord |= (<span class="c-num">1</span> &lt;&lt; <span class="c-num">2</span>);
+  <span class="c-kw">if</span> (digitalRead(PIN_DOT4) == LOW) chord |= (<span class="c-num">1</span> &lt;&lt; <span class="c-num">3</span>);
+  <span class="c-kw">if</span> (digitalRead(PIN_DOT5) == LOW) chord |= (<span class="c-num">1</span> &lt;&lt; <span class="c-num">4</span>);
+  <span class="c-kw">if</span> (digitalRead(PIN_DOT6) == LOW) chord |= (<span class="c-num">1</span> &lt;&lt; <span class="c-num">5</span>);
+  <span class="c-kw">return</span> chord;
+}</code></pre>
+          </div>
+
+          <div class="firmware-copy reveal">
+            <div class="firmware-point">
+              <span class="fw-num">1</span>
+              <div>
+                <h4>Bitmask encoding</h4>
+                <p>Each dot owns one bit in an 8-bit integer. A chord becomes a single 6-bit value — compact, constant-time comparison.</p>
+              </div>
+            </div>
+            <div class="firmware-point">
+              <span class="fw-num">2</span>
+              <div>
+                <h4>180 ms chording window</h4>
+                <p>Fingers rarely land together. The firmware ORs every key pressed within 180&nbsp;ms into one chord — so one intent is never read as many.</p>
+              </div>
+            </div>
+            <div class="firmware-point">
+              <span class="fw-num">3</span>
+              <div>
+                <h4>Dictionary-driven</h4>
+                <p>Translations live in a <code class="mono">BrailleEntry</code> array. Adding a language? Append entries — no control-flow changes.</p>
+              </div>
+            </div>
+            <div class="firmware-point">
+              <span class="fw-num">4</span>
+              <div>
+                <h4>Software-defined language</h4>
+                <p>Hold dots 4+5+6 for 500&nbsp;ms to toggle English ↔ Bangla. No hardware switch — just a boolean.</p>
+              </div>
+            </div>
+            <div class="firmware-point">
+              <span class="fw-num">5</span>
+              <div>
+                <h4>Modifier architecture</h4>
+                <p>Shift expands the range — uppercase, Bangla vowel signs, numbers 1–0, punctuation, and math symbols — without adding keys.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pipeline reveal" aria-label="Translation pipeline">
+          <span class="pipe">Chord pressed</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M14 6l6 6-6 6"/></svg>
+          <span class="pipe">GPIO read</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M14 6l6 6-6 6"/></svg>
+          <span class="pipe">180 ms window</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M14 6l6 6-6 6"/></svg>
+          <span class="pipe">6-bit mask</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M14 6l6 6-6 6"/></svg>
+          <span class="pipe pipe-gold">Dictionary lookup</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M14 6l6 6-6 6"/></svg>
+          <span class="pipe">Output character</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= INTERACTIVE DEMO ================= -->
+    <section class="section section-demo" id="demo">
+      <div class="container">
+        <div class="section-head reveal">
+          <p class="eyebrow">06 — Try It Yourself</p>
+          <h2 class="section-title">Compose a chord <em>right here</em></h2>
+          <p class="section-lede">
+            Click the six dots like the physical keys, then read the translation. This is the exact
+            chord-to-character pipeline running in your browser.
+          </p>
+        </div>
+
+        <div class="demo-shell reveal">
+          <div class="demo-cell-panel">
+            <div class="demo-cell" id="demoCell" role="group" aria-label="Braille cell, click dots to compose a chord">
+              <button class="demo-dot" data-d="0" aria-pressed="false" aria-label="Dot 1"><span>1</span></button>
+              <button class="demo-dot" data-d="3" aria-pressed="false" aria-label="Dot 4"><span>4</span></button>
+              <button class="demo-dot" data-d="1" aria-pressed="false" aria-label="Dot 2"><span>2</span></button>
+              <button class="demo-dot" data-d="4" aria-pressed="false" aria-label="Dot 5"><span>5</span></button>
+              <button class="demo-dot" data-d="2" aria-pressed="false" aria-label="Dot 3"><span>3</span></button>
+              <button class="demo-dot" data-d="5" aria-pressed="false" aria-label="Dot 6"><span>6</span></button>
+            </div>
+
+            <div class="demo-controls">
+              <div class="toggle-group" role="group" aria-label="Language">
+                <button class="toggle-btn active" id="langEn" aria-pressed="true">English</button>
+                <button class="toggle-btn" id="langBn" aria-pressed="false">বাংলা</button>
+              </div>
+              <button class="toggle-btn toggle-shift" id="shiftToggle" aria-pressed="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v14M6 9l6 6 6-6"/></svg>
+                Shift
+              </button>
+              <button class="toggle-btn toggle-space" id="spaceBtn" title="Space">Space</button>
+              <button class="toggle-btn toggle-clear" id="clearBtn" title="Clear output">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M9 6V4h6v2M6 6l1 14h10l1-14"/></svg>
+                Clear
+              </button>
+            </div>
+
+            <div class="demo-leds" aria-hidden="true">
+              <span class="led led-red" id="ledEn"></span>
+              <span class="led led-green" id="ledBn"></span>
+            </div>
+          </div>
+
+          <div class="demo-readout">
+            <div class="readout-char" id="readoutChar" aria-live="polite">
+              <span class="readout-big" id="readoutGlyph">⠀</span>
+            </div>
+            <div class="readout-meta" aria-live="polite">
+              <div class="meta-row">
+                <span class="meta-label">Translation</span>
+                <span class="meta-value" id="readoutTrans">—</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Chord value</span>
+                <span class="meta-value mono" id="readoutChord">0b000000</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Active dots</span>
+                <span class="meta-value" id="readoutDots">None</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Mode</span>
+                <span class="meta-value" id="readoutMode">English</span>
+              </div>
+            </div>
+            <div class="readout-stream" id="readoutStream" aria-live="polite">
+              <span class="stream-placeholder">Output appears here…</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-hint reveal">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v14M6 9l6 6 6-6"/></svg>
+          <p><strong>Pro tip:</strong> toggle <strong>Shift</strong> and press dot 1 (A) to type the digit <strong>1</strong> — Shift + A–J gives 1–0. In বাংলা mode, Shift turns vowels into vowel signs (কার) — just like the real firmware.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= DICTIONARIES ================= -->
+    <section class="section section-alt" id="dictionaries">
+      <div class="container">
+        <div class="section-head reveal">
+          <p class="eyebrow">07 — The Dictionaries</p>
+          <h2 class="section-title">English, Bangla — <em>same six dots</em></h2>
+          <p class="section-lede">
+            Because Bharati Braille maps cells to <em>sounds</em>, most Bangla chords coincide with
+            their English counterparts. Only the active dictionary changes.
+          </p>
+        </div>
+
+        <div class="dict-tabs reveal" role="tablist" aria-label="Dictionary tables">
+          <button class="dict-tab active" id="tabEn" role="tab" aria-selected="true" aria-controls="panelEn">English A–Z</button>
+          <button class="dict-tab" id="tabBn" role="tab" aria-selected="false" aria-controls="panelBn">Bangla (Bharati)</button>
+          <button class="dict-tab" id="tabSym" role="tab" aria-selected="false" aria-controls="panelSym">Numbers &amp; Symbols</button>
+        </div>
+
+        <!-- English tables -->
+        <div class="dict-panel" id="panelEn" role="tabpanel" aria-labelledby="tabEn">
+          <div class="spec-grid">
+            <div class="table-wrap reveal">
+              <table class="tbl">
+                <caption>First decade · A–J</caption>
+                <thead><tr><th>Letter</th><th>Chord</th><th>Dots</th></tr></thead>
+                <tbody>
+                  <tr><td>A</td><td class="mono">0b000001</td><td>1</td></tr>
+                  <tr><td>B</td><td class="mono">0b000011</td><td>1,2</td></tr>
+                  <tr><td>C</td><td class="mono">0b001001</td><td>1,4</td></tr>
+                  <tr><td>D</td><td class="mono">0b011001</td><td>1,4,5</td></tr>
+                  <tr><td>E</td><td class="mono">0b010001</td><td>1,5</td></tr>
+                  <tr><td>F</td><td class="mono">0b001011</td><td>1,2,4</td></tr>
+                  <tr><td>G</td><td class="mono">0b011011</td><td>1,2,4,5</td></tr>
+                  <tr><td>H</td><td class="mono">0b010011</td><td>1,2,5</td></tr>
+                  <tr><td>I</td><td class="mono">0b001010</td><td>2,4</td></tr>
+                  <tr><td>J</td><td class="mono">0b011010</td><td>2,4,5</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-wrap reveal">
+              <table class="tbl">
+                <caption>Second decade · K–T (first + dot 3)</caption>
+                <thead><tr><th>Letter</th><th>Chord</th><th>Dots</th></tr></thead>
+                <tbody>
+                  <tr><td>K</td><td class="mono">0b000101</td><td>1,3</td></tr>
+                  <tr><td>L</td><td class="mono">0b000111</td><td>1,2,3</td></tr>
+                  <tr><td>M</td><td class="mono">0b001101</td><td>1,3,4</td></tr>
+                  <tr><td>N</td><td class="mono">0b011101</td><td>1,3,4,5</td></tr>
+                  <tr><td>O</td><td class="mono">0b010101</td><td>1,3,5</td></tr>
+                  <tr><td>P</td><td class="mono">0b001111</td><td>1,2,3,4</td></tr>
+                  <tr><td>Q</td><td class="mono">0b011111</td><td>1–5</td></tr>
+                  <tr><td>R</td><td class="mono">0b010111</td><td>1,2,3,5</td></tr>
+                  <tr><td>S</td><td class="mono">0b001110</td><td>2,3,4</td></tr>
+                  <tr><td>T</td><td class="mono">0b011110</td><td>2,3,4,5</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-wrap reveal">
+              <table class="tbl">
+                <caption>Third decade · U–Z (first + dots 3 &amp; 6)</caption>
+                <thead><tr><th>Letter</th><th>Chord</th><th>Dots</th></tr></thead>
+                <tbody>
+                  <tr><td>U</td><td class="mono">0b100101</td><td>1,3,6</td></tr>
+                  <tr><td>V</td><td class="mono">0b100111</td><td>1,2,3,6</td></tr>
+                  <tr class="tbl-highlight"><td>W</td><td class="mono">0b111010</td><td>2,4,5,6 · exception</td></tr>
+                  <tr><td>X</td><td class="mono">0b101101</td><td>1,3,4,6</td></tr>
+                  <tr><td>Y</td><td class="mono">0b111101</td><td>1,3,4,5,6</td></tr>
+                  <tr><td>Z</td><td class="mono">0b101001</td><td>1,3,5,6</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bangla tables -->
+        <div class="dict-panel" id="panelBn" role="tabpanel" aria-labelledby="tabBn" hidden>
+          <div class="spec-grid">
+            <div class="table-wrap reveal">
+              <table class="tbl bn-tbl">
+                <caption>Vowels · স্বরবর্ণ</caption>
+                <thead><tr><th>Vowel</th><th>English</th><th>Dots</th><th>Binary</th></tr></thead>
+                <tbody>
+                  <tr><td class="bn">অ</td><td>O</td><td>1</td><td class="mono">0b000001</td></tr>
+                  <tr><td class="bn">আ</td><td>—</td><td>3,4,5</td><td class="mono">0b011100</td></tr>
+                  <tr><td class="bn">ই</td><td>I</td><td>2,4</td><td class="mono">0b001010</td></tr>
+                  <tr><td class="bn">ঈ</td><td>—</td><td>3,5</td><td class="mono">0b010100</td></tr>
+                  <tr><td class="bn">উ</td><td>U</td><td>1,3,6</td><td class="mono">0b100101</td></tr>
+                  <tr><td class="bn">ঊ</td><td>—</td><td>1,2,5,6</td><td class="mono">0b110011</td></tr>
+                  <tr><td class="bn">এ</td><td>E</td><td>1,5</td><td class="mono">0b010001</td></tr>
+                  <tr><td class="bn">ঐ</td><td>—</td><td>3,4</td><td class="mono">0b001100</td></tr>
+                  <tr><td class="bn">ও</td><td>O</td><td>1,3,5</td><td class="mono">0b010101</td></tr>
+                  <tr><td class="bn">ঔ</td><td>—</td><td>2,4,6</td><td class="mono">0b101010</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="table-wrap reveal">
+              <table class="tbl bn-tbl">
+                <caption>ক-বর্গ · Velar</caption>
+                <thead><tr><th>Letter</th><th>Dots</th><th>Binary</th></tr></thead>
+                <tbody>
+                  <tr><td class="bn">ক</td><td>1,3</td><td class="mono">0b000101</td></tr>
+                  <tr><td class="bn">খ</td><td>4,6</td><td class="mono">0b101000</td></tr>
+                  <tr><td class="bn">গ</td><td>1,2,4,5</td><td class="mono">0b011011</td></tr>
+                  <tr><td class="bn">ঘ</td><td>1,2,6</td><td class="mono">0b100011</td></tr>
+                  <tr><td class="bn">ঙ</td><td>3,4,6</td><td class="mono">0b101100</td></tr>
+                </tbody>
+              </table>
+              <table class="tbl bn-tbl">
+                <caption>চ-বর্গ · Palatal</caption>
+                <thead><tr><th>Letter</th><th>Dots</th><th>Binary</th></tr></thead>
+                <tbody>
+                  <tr><td class="bn">চ</td><td>1,4</td><td class="mono">0b001001</td></tr>
+                  <tr><td class="bn">ছ</td><td>1,6</td><td class="mono">0b100001</td></tr>
+                  <tr><td class="bn">জ</td><td>2,4,5</td><td class="mono">0b011010</td></tr>
+                  <tr><td class="bn">ঝ</td><td>3,5,6</td><td class="mono">0b110100</td></tr>
+                  <tr><td class="bn">ঞ</td><td>2,5</td><td class="mono">0b010010</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="table-wrap reveal">
+              <table class="tbl bn-tbl">
+                <caption>ট-বর্গ · Retroflex</caption>
+                <thead><tr><th>Letter</th><th>Dots</th><th>Binary</th></tr></thead>
+                <tbody>
+                  <tr><td class="bn">ট</td><td>2,3,4,5,6</td><td class="mono">0b111110</td></tr>
+                  <tr><td class="bn">ঠ</td><td>2,4,5,6</td><td class="mono">0b110110</td></tr>
+                  <tr><td class="bn">ড</td><td>1,2,4,6</td><td class="mono">0b101011</td></tr>
+                  <tr><td class="bn">ঢ</td><td>All 6</td><td class="mono">0b111111</td></tr>
+                  <tr><td class="bn">ণ</td><td>3,4,5,6</td><td class="mono">0b111100</td></tr>
+                </tbody>
+              </table>
+              <table class="tbl bn-tbl">
+                <caption>ত-বর্গ · Dental</caption>
+                <thead><tr><th>Letter</th><th>Dots</th><th>Binary</th></tr></thead>
+                <tbody>
+                  <tr><td class="bn">ত</td><td>2,3,4,5</td><td class="mono">0b011110</td></tr>
+                  <tr><td class="bn">থ</td><td>1,4,5,6</td><td class="mono">0b111001</td></tr>
+                  <tr><td class="bn">দ</td><td>1,4,5</td><td class="mono">0b011001</td></tr>
+                  <tr><td class="bn">ধ</td><td>2,3,4,6</td><td class="mono">0b101110</td></tr>
+                  <tr><td class="bn">ন</td><td>1,3,4,5</td><td class="mono">0b011101</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="table-wrap reveal">
+              <table class="tbl bn-tbl">
+                <caption>প-বর্গ · Labial</caption>
+                <thead><tr><th>Letter</th><th>Dots</th><th>Binary</th></tr></thead>
+                <tbody>
+                  <tr><td class="bn">প</td><td>1,2,3,4</td><td class="mono">0b001111</td></tr>
+                  <tr><td class="bn">ফ</td><td>2,3,5</td><td class="mono">0b010110</td></tr>
+                  <tr><td class="bn">ব</td><td>1,2</td><td class="mono">0b000011</td></tr>
+                  <tr><td class="bn">ভ</td><td>4,5</td><td class="mono">0b011000</td></tr>
+                  <tr><td class="bn">ম</td><td>1,3,4</td><td class="mono">0b001101</td></tr>
+                </tbody>
+              </table>
+              <table class="tbl bn-tbl">
+                <caption>Semi-vowels &amp; others</caption>
+                <thead><tr><th>Letter</th><th>Dots</th><th>Binary</th></tr></thead>
+                <tbody>
+                  <tr><td class="bn">য</td><td>1,3,4,5,6</td><td class="mono">0b111101</td></tr>
+                  <tr><td class="bn">র</td><td>1,2,3,5</td><td class="mono">0b010111</td></tr>
+                  <tr><td class="bn">ল</td><td>1,2,3</td><td class="mono">0b000111</td></tr>
+                  <tr><td class="bn">শ</td><td>1,4,6</td><td class="mono">0b101001</td></tr>
+                  <tr><td class="bn">ষ</td><td>1,2,3,4,6</td><td class="mono">0b101111</td></tr>
+                  <tr><td class="bn">স</td><td>2,3,4</td><td class="mono">0b001110</td></tr>
+                  <tr><td class="bn">হ</td><td>1,2,5</td><td class="mono">0b010011</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="table-wrap reveal">
+              <table class="tbl bn-tbl">
+                <caption>Special marks</caption>
+                <thead><tr><th>Mark</th><th>Name</th><th>Dots</th><th>Binary</th></tr></thead>
+                <tbody>
+                  <tr><td class="bn">্</td><td>Halant (virama)</td><td>4</td><td class="mono">0b001000</td></tr>
+                  <tr><td class="bn">ং</td><td>Anusvara</td><td>5,6</td><td class="mono">0b110000</td></tr>
+                  <tr><td class="bn">ঃ</td><td>Visarga</td><td>6</td><td class="mono">0b100000</td></tr>
+                  <tr><td class="bn">ঁ</td><td>Candrabindu</td><td>5</td><td class="mono">0b010000</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Numbers & symbols -->
+        <div class="dict-panel" id="panelSym" role="tabpanel" aria-labelledby="tabSym" hidden>
+          <div class="spec-grid">
+            <div class="table-wrap reveal">
+              <table class="tbl">
+                <caption>Numbers · Shift + A–J</caption>
+                <thead><tr><th>Shift +</th><th>Number</th><th>Dots</th></tr></thead>
+                <tbody>
+                  <tr><td>A</td><td>1</td><td>1</td></tr>
+                  <tr><td>B</td><td>2</td><td>1,2</td></tr>
+                  <tr><td>C</td><td>3</td><td>1,4</td></tr>
+                  <tr><td>D</td><td>4</td><td>1,4,5</td></tr>
+                  <tr><td>E</td><td>5</td><td>1,5</td></tr>
+                  <tr><td>F</td><td>6</td><td>1,2,4</td></tr>
+                  <tr><td>G</td><td>7</td><td>1,2,4,5</td></tr>
+                  <tr><td>H</td><td>8</td><td>1,2,5</td></tr>
+                  <tr><td>I</td><td>9</td><td>2,4</td></tr>
+                  <tr><td>J</td><td>0</td><td>2,4,5</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-wrap reveal">
+              <table class="tbl">
+                <caption>Punctuation · Shift + chord</caption>
+                <thead><tr><th>Symbol</th><th>Dots</th></tr></thead>
+                <tbody>
+                  <tr><td>,</td><td>2</td></tr>
+                  <tr><td>;</td><td>2,3</td></tr>
+                  <tr><td>:</td><td>2,5</td></tr>
+                  <tr><td>.</td><td>2,5,6</td></tr>
+                  <tr><td>?</td><td>2,3,6</td></tr>
+                  <tr><td>!</td><td>2,3,5</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-wrap reveal">
+              <table class="tbl">
+                <caption>Mathematics · Shift + chord</caption>
+                <thead><tr><th>Symbol</th><th>Dots</th></tr></thead>
+                <tbody>
+                  <tr><td>+</td><td>2,3,5</td></tr>
+                  <tr><td>−</td><td>3,6</td></tr>
+                  <tr><td>×</td><td>2,3,6</td></tr>
+                  <tr><td>÷</td><td>3,4</td></tr>
+                  <tr><td>=</td><td>2,3,5,6</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TEACHER SOFTWARE ================= -->
+    <section class="section" id="software">
+      <div class="container">
+        <div class="section-head reveal">
+          <p class="eyebrow">08 — Teacher Software</p>
+          <h2 class="section-title">A console any teacher can <em>read</em></h2>
+          <p class="section-lede">
+            Built with HTML, CSS, and JavaScript using the Web Serial API. No Python, no Qt, no
+            database — just a browser. Runs in Chrome and Edge.
+          </p>
+        </div>
+
+        <div class="software-grid">
+          <ul class="software-list reveal">
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              Multi-student roster with COM ports &amp; baud rates
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              Live serial reading — a dedicated reader loop per student
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              Automatic language detection from <code class="mono">LANG:en</code> / <code class="mono">LANG:bn</code>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              Real-time serif display with auto-scroll &amp; blinking cursor
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              Chord visualization — 6 mini-dots animate per input
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              Exam mode: every student side-by-side on one screen
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              Timestamped export — <code class="mono">[HH:MM:SS]</code> per character
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              Light/dark theme, persistent roster via localStorage
+            </li>
+          </ul>
+
+          <div class="console-card reveal">
+            <div class="console-head">
+              <span class="console-title">Teacher Console — live</span>
+              <span class="console-dot" aria-hidden="true"></span>
+            </div>
+            <div class="console-body">
+              <div class="console-rows">
+                <div class="console-row">
+                  <span class="console-avatar" style="--av:#1E40AF">SA</span>
+                  <div class="console-info">
+                    <strong>Sarah Ahmed</strong>
+                    <span class="console-meta">USB · 115200 · EN</span>
+                  </div>
+                  <span class="console-text" aria-hidden="true">The mitochondria is the powerhouse of the cell.</span>
+                </div>
+                <div class="console-row">
+                  <span class="console-avatar" style="--av:#0E7490">RK</span>
+                  <div class="console-info">
+                    <strong>Rahim Karim</strong>
+                    <span class="console-meta">Bluetooth · BN</span>
+                  </div>
+                  <span class="console-text console-bn" lang="bn" aria-hidden="true">আমার সোনার বাংলা, আমি তোমায় ভালোবাসি।</span>
+                </div>
+                <div class="console-row">
+                  <span class="console-avatar" style="--av:#A16207">MI</span>
+                  <div class="console-info">
+                    <strong>Maya Islam</strong>
+                    <span class="console-meta">USB · 115200 · EN</span>
+                  </div>
+                  <span class="console-text" aria-hidden="true">x² + y² = r² · 180 ms per chord ✓</span>
+                </div>
+              </div>
+            </div>
+            <div class="console-foot">
+              <span><i class="pulse-dot" aria-hidden="true"></i> 3 students connected</span>
+              <a class="btn btn-primary btn-sm" href="https://braille.mintlify.site" target="_blank" rel="noopener">
+                Read further docs
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-card reveal">
+          <div class="code-head">
+            <span class="code-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="code-name">serial-connect.js</span>
+            <span class="code-lang">JavaScript</span>
+          </div>
+          <pre><code><span class="c-kw">async function</span> connectStudentSerial(student) {
+  <span class="c-kw">const</span> port = <span class="c-kw">await</span> navigator.serial.requestPort();
+  <span class="c-kw">await</span> port.open({ baudRate: student.baud });
+  student.serialPort = port; student.connected = <span class="c-bool">true</span>;
+
+  <span class="c-kw">const</span> decoder = <span class="c-kw">new</span> TextDecoderStream();
+  port.readable.pipeTo(decoder.writable);
+  <span class="c-kw">const</span> reader = decoder.readable.getReader();
+
+  <span class="c-kw">async function</span> readLoop() {
+    <span class="c-kw">while</span> (student.readLoopActive) {
+      <span class="c-kw">const</span> { value, done } = <span class="c-kw">await</span> reader.read();
+      <span class="c-kw">if</span> (done) <span class="c-kw">break</span>;
+      <span class="c-kw">for</span> (<span class="c-kw">const</span> ch of value) handleStudentChar(student, ch);
+    }
+  }
+  readLoop();
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ENGINEERING INNOVATIONS ================= -->
+    <section class="section section-alt" id="engineering">
+      <div class="container">
+        <div class="section-head reveal">
+          <p class="eyebrow">09 — Engineering Innovations</p>
+          <h2 class="section-title">Small details, <em>big difference</em></h2>
+        </div>
+
+        <div class="eng-grid">
+          <div class="eng-card reveal"><span class="eng-num">01</span><h4>Chord buffering</h4><p>A 180 ms window absorbs fingers landing milliseconds apart.</p></div>
+          <div class="eng-card reveal"><span class="eng-num">02</span><h4>Bitmask encoding</h4><p>Six keys collapse into one 6-bit integer — compact, constant-time comparison.</p></div>
+          <div class="eng-card reveal"><span class="eng-num">03</span><h4>Dictionary-driven translation</h4><p>A new language is just new array entries — no control-flow changes.</p></div>
+          <div class="eng-card reveal"><span class="eng-num">04</span><h4>Dual communication</h4><p>Bluetooth for the student, USB Serial for the teacher — simultaneous and independent.</p></div>
+          <div class="eng-card reveal"><span class="eng-num">05</span><h4>Software-defined language</h4><p>A boolean variable switches English and Bangla — no hardware switch.</p></div>
+          <div class="eng-card reveal"><span class="eng-num">06</span><h4>Modifier architecture</h4><p>Shift expands caps, numbers, and symbols without adding physical keys.</p></div>
+          <div class="eng-card reveal"><span class="eng-num">07</span><h4>Modular construction</h4><p>Switches, ESP32, enclosure, and software repair or upgrade independently.</p></div>
+          <div class="eng-card reveal"><span class="eng-num">08</span><h4>Web-based teacher software</h4><p>Nothing to install — it runs in the browser and updates on refresh.</p></div>
+          <div class="eng-card reveal"><span class="eng-num">09</span><h4>Failsafe refresh</h4><p>A 500 ms interval rebuilds every feed from stored data — no character is ever lost.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= COST ================= -->
+    <section class="section" id="cost">
+      <div class="container">
+        <div class="section-head reveal">
+          <p class="eyebrow">10 — Affordability</p>
+          <h2 class="section-title">Under <em>$15</em>, fully built</h2>
+          <p class="section-lede">
+            A fraction of mechanical braillers or commercial digital systems — with every component
+            replaceable for a few dollars.
+          </p>
+        </div>
+
+        <div class="cost-grid">
+          <div class="table-wrap reveal">
+            <table class="tbl">
+              <caption>Bill of materials · per device</caption>
+              <thead><tr><th>Component</th><th>Qty</th><th>Cost (USD)</th></tr></thead>
+              <tbody>
+                <tr><td>ESP32 Dev Module</td><td>1</td><td>$5.00</td></tr>
+                <tr><td>Outemu Red switch</td><td>8</td><td>$3.00</td></tr>
+                <tr><td>Keycaps (3D-printed)</td><td>8</td><td>$1.00</td></tr>
+                <tr><td>LED (3mm) + resistor</td><td>2+2</td><td>$0.30</td></tr>
+                <tr><td>Perfboard</td><td>1</td><td>$0.80</td></tr>
+                <tr><td>PLA filament (enclosure)</td><td>30 g</td><td>$1.20</td></tr>
+                <tr><td>M3 screws, wire, solder</td><td>—</td><td>$0.70</td></tr>
+                <tr class="tbl-highlight"><td><strong>Total</strong></td><td></td><td><strong>~$12.00</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="cost-callout reveal">
+            <div class="cost-big"><span class="num" data-count="15" data-prefix="&lt;$">0</span></div>
+            <p class="cost-caption">a complete device, including tools &amp; overhead</p>
+            <div class="cost-compare">
+              <div class="compare-row"><span>Perkins Brailler</span><strong>$600 – $1,000+</strong></div>
+              <div class="compare-row"><span>Commercial digital</span><strong>$1,000 – $5,000+</strong></div>
+              <div class="compare-row compare-row-ours"><span>BrailleBridge</span><strong>&lt;$15</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CONCLUSION ================= -->
+    <section class="section section-conclusion" id="conclusion">
+      <div class="container">
+        <div class="conclusion-inner reveal">
+          <p class="eyebrow eyebrow-light">11 — Conclusion</p>
+          <h2 class="conclusion-title">
+            When a blind student writes her own exam answer — without a writer, without speaking
+            aloud, and without the teacher needing braille — <em>the project has succeeded.</em>
+          </h2>
+          <p class="conclusion-lede">
+            BrailleBridge bridges four gaps: between tactile writing and readable text, between
+            English and Bangla, between independent composition and teacher assessment, and between
+            the high cost of assistive technology and limited school budgets.
+          </p>
+          <a class="btn btn-light" href="#demo">
+            Write your first chord
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <a class="brand" href="#hero" aria-label="BrailleBridge home">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          <span class="brand-word">Braille<em>Bridge</em></span>
+        </a>
+        <p>
+          A Low-Cost Bilingual Braille Writing and Classroom Examination System.
+          A project submitted for the Science &amp; Technology Innovation Competition.
+        </p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Explore</h4>
+        <ul>
+          <li><a href="#problem">The Problem</a></li>
+          <li><a href="#solution">The Solution</a></li>
+          <li><a href="#innovation">Innovation</a></li>
+          <li><a href="#demo">Live Demo</a></li>
+          <li><a href="#cost">Affordability</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Author</h4>
+        <ul>
+          <li><strong>Samin Yeasar</strong></li>
+          <li><a href="mailto:samin@mentormind.bd">samin@mentormind.bd</a></li>
+          <li><a href="https://github.com/Solez-ai" rel="noopener">github.com/Solez-ai</a></li>
+          <li><a href="https://solez.html-5.me" rel="noopener">solez.html-5.me</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span id="year">2026</span> BrailleBridge · Samin Yeasar. All rights reserved.</p>
+      <p class="footer-braille" lang="bn" aria-hidden="true">⣿⣿ ⣿⣿ ⣿⣿ ⣿⣿</p>
+    </div>
+  </footer>
+
+  <!-- Custom braille-cell cursor (follows pointer; hidden on touch) -->
+  <div class="cursor" id="cursor" aria-hidden="true">
+    <i></i><i></i><i></i><i></i><i></i><i></i>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

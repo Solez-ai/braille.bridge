@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BrailleBridge — Educational Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Noto+Serif+Bengali:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- ============ HEADER ============ -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo-icon"><i class="fa-solid fa-braille"></i></div>
+      <h1>Braille<span>Bridge</span></h1>
+    </div>
+    <div class="header-controls">
+      <div class="mode-toggle">
+        <button class="mode-btn active" data-mode="student" id="modeStudent">
+          <i class="fa-solid fa-display"></i> Student
+        </button>
+        <button class="mode-btn" data-mode="teacher" id="modeTeacher">
+          <i class="fa-solid fa-chalkboard-user"></i> Teacher
+        </button>
+        <button class="mode-btn" data-mode="exam" id="modeExam">
+          <i class="fa-solid fa-graduation-cap"></i> Exam
+        </button>
+      </div>
+      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      <div class="status-group">
+        <span class="status-dot disconnected" id="statusDot"></span>
+        <span class="status-label" id="statusLabel">Disconnected</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       STUDENT VIEW
+       ============================================================ -->
+  <div class="view-student" id="viewStudent">
+    <div class="panel-left">
+      <div class="card">
+        <div class="card-title"><i class="fa-solid fa-plug"></i> Connection</div>
+        <div class="serial-controls">
+          <select class="baud-select" id="baudSelect">
+            <option value="9600">9600 baud</option>
+            <option value="115200" selected>115200 baud</option>
+            <option value="57600">57600 baud</option>
+            <option value="38400">38400 baud</option>
+          </select>
+          <button class="btn btn-connect" id="btnConnect">
+            <i class="fa-solid fa-bolt" id="btnIcon"></i>
+            <span id="btnText">Connect to COM6</span>
+          </button>
+          <div class="serial-info" id="serialInfo">
+            <i class="fa-solid fa-circle-info" style="opacity:0.5;margin-right:4px;"></i>
+            Waiting to connect&hellip;<br>
+            Select <span class="highlight">COM6</span> (ESP32 Dev Module)
+          </div>
+        </div>
+      </div>
+      <div class="card" style="flex:1;">
+        <div class="card-title"><i class="fa-regular fa-circle"></i> Braille Cell</div>
+        <div class="dots-grid">
+          <button class="dot-btn order-1" data-dot="0" id="dot1"><span class="dot-label">&#x2801;</span></button>
+          <button class="dot-btn order-4" data-dot="3" id="dot4"><span class="dot-label">&#x2808;</span></button>
+          <button class="dot-btn order-2" data-dot="1" id="dot2"><span class="dot-label">&#x2802;</span></button>
+          <button class="dot-btn order-5" data-dot="4" id="dot5"><span class="dot-label">&#x2810;</span></button>
+          <button class="dot-btn order-3" data-dot="2" id="dot3"><span class="dot-label">&#x2804;</span></button>
+          <button class="dot-btn order-6" data-dot="5" id="dot6"><span class="dot-label">&#x2820;</span></button>
+        </div>
+        <div class="chord-info" id="chordInfo">
+          <div class="chord-value"><i class="fa-regular fa-hand-pointer" style="margin-right:4px;"></i> Click dots to compose a chord</div>
+          <div class="chord-mapping" id="chordMapping"></div>
+        </div>
+        <div class="indicators">
+          <span class="indicator english" id="langIndicator"><i class="fa-solid fa-language"></i> English</span>
+          <span class="indicator shift-off" id="shiftIndicator"><i class="fa-solid fa-up-long"></i> Shift</span>
+        </div>
+      </div>
+    </div>
+    <div class="panel-right">
+      <div class="card display-card">
+        <div class="card-title"><i class="fa-solid fa-eye"></i> Live Output</div>
+        <div class="live-text" id="liveText">
+          <span class="placeholder"><i class="fa-solid fa-braille" style="margin-right:6px;"></i> Braille output will appear here</span>
+          <span class="cursor-blink"></span>
+        </div>
+        <div class="display-actions">
+          <button class="btn-clear" id="btnClear"><i class="fa-solid fa-xmark"></i> Clear</button>
+        </div>
+      </div>
+      <div class="card history-card">
+        <div class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Recent</div>
+        <div class="history-scroll" id="historyScroll">
+          <span data-placeholder style="color:var(--text-muted);font-size:12px;"><i class="fa-regular fa-rectangle-list" style="margin-right:4px;"></i> No characters yet</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       TEACHER VIEW
+       ============================================================ -->
+  <div class="view-teacher" id="viewTeacher">
+    <div class="panel-left">
+      <div class="card roster-card">
+        <div class="roster-header">
+          <div class="card-title" style="margin-bottom:0;"><i class="fa-solid fa-users"></i> Class Roster</div>
+          <button class="btn btn-icon btn-secondary" id="btnAddStudent" title="Add student">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+        <div class="add-student-form" id="addStudentForm">
+          <div class="form-row">
+            <label class="form-label" for="studentNameInput">Student Name</label>
+            <input class="form-input" id="studentNameInput" type="text" placeholder="e.g. Sarah Ahmed" maxlength="30">
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="studentConnInput">Connection Type</label>
+            <select class="form-select" id="studentConnInput">
+              <option value="usb">USB Serial</option>
+              <option value="bluetooth">Bluetooth</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-label" for="studentBaudInput">Baud Rate</label>
+            <select class="form-select" id="studentBaudInput">
+              <option value="9600">9600</option>
+              <option value="115200" selected>115200</option>
+              <option value="57600">57600</option>
+              <option value="38400">38400</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-add" id="btnConfirmAdd"><i class="fa-solid fa-check"></i> Add Student</button>
+            <button class="btn btn-cancel" id="btnCancelAdd"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+        <div class="roster-list" id="rosterList">
+          <div class="roster-empty" id="rosterEmpty">
+            <i class="fa-regular fa-user-plus"></i>
+            No students yet<br>
+            <span style="font-size:11px;opacity:0.6;">Click <strong>+</strong> to add a student</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel-right">
+      <div class="teacher-toolbar">
+        <div class="left">
+          <span class="stat" id="studentCount"><i class="fa-regular fa-user"></i> <strong>0</strong> students</span>
+          <span class="stat"><i class="fa-regular fa-keyboard"></i> <strong id="totalCharCount">0</strong> chars</span>
+        </div>
+        <div class="right">
+          <button class="btn-clear-all" id="btnExportAll" title="Export all logs">
+            <i class="fa-solid fa-file-export"></i> Export All
+          </button>
+          <button class="btn-clear-all" id="btnClearAllFeeds">
+            <i class="fa-solid fa-eraser"></i> Clear All
+          </button>
+        </div>
+      </div>
+      <div class="feed-grid" id="feedGrid">
+        <div class="feed-empty" id="feedEmpty">
+          <i class="fa-regular fa-chalkboard"></i>
+          <h3>Welcome to Teacher Mode</h3>
+          <p>Add students, then click <strong>Connect</strong> to link their ESP-32</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       EXAM VIEW
+       ============================================================ -->
+  <div class="view-exam" id="viewExam">
+    <div class="exam-toolbar">
+      <div class="exam-toolbar-left">
+        <span class="exam-title"><i class="fa-solid fa-graduation-cap" style="margin-right:6px;"></i> Exam Monitor</span>
+        <span class="exam-stat" id="examStudentCount"><i class="fa-regular fa-user"></i> <strong>0</strong></span>
+        <span class="exam-stat" id="examCharCount"><i class="fa-regular fa-keyboard"></i> <strong>0</strong></span>
+      </div>
+      <div class="exam-toolbar-right">          <button class="btn-clear-all" id="btnExamExport" title="Export all logs">
+          <i class="fa-solid fa-file-export"></i> Export
+        </button>
+      </div>
+    </div>
+    <div class="exam-grid" id="examGrid">
+      <div class="feed-empty" id="examEmpty">
+        <i class="fa-regular fa-chalkboard"></i>
+        <h3>No Students in Exam Mode</h3>
+        <p>Add students in <strong>Teacher</strong> mode first, then switch here</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================
+     PREVIEW MODAL (Readable Prose Log)
+     ============================================================ -->
+<div class="preview-modal-overlay" id="previewModal">
+  <div class="preview-modal-content">
+    <div class="preview-modal-header">
+      <div class="preview-modal-info">
+        <div class="preview-modal-icon"><i class="fa-solid fa-file-lines"></i></div>
+        <div class="preview-modal-title" id="previewModalTitle">Student Log</div>
+        <div class="preview-modal-sub" id="previewModalSub">Readable prose preview</div>
+      </div>
+      <div class="preview-modal-actions">
+        <button class="btn-clear-all" id="previewModalExport" title="Export as .txt" style="margin-right:4px;">
+          <i class="fa-solid fa-file-export"></i> Export
+        </button>
+        <button class="expand-modal-close" id="previewModalClose" title="Close (Esc)"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>
+    <div class="preview-modal-body" id="previewModalBody">
+      <div class="preview-empty">
+        <i class="fa-regular fa-keyboard" style="font-size:28px;opacity:0.3;display:block;margin-bottom:12px;"></i>
+        No characters yet
+      </div>
+    </div>
+    <div class="preview-modal-footer">
+      <span class="preview-info" id="previewModalInfo">0 characters</span>
+      <span class="preview-info">Formatted as readable prose — each line prefixed with the timestamp of the first character typed</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     EXPAND MODAL
+     ============================================================ -->
+<div class="expand-modal-overlay" id="expandModal">
+  <div class="expand-modal-content">
+    <div class="expand-modal-header">
+      <div class="expand-modal-info">
+        <div class="expand-modal-avatar" id="expandModalAvatar">SA</div>
+        <div class="expand-modal-name" id="expandModalName">Student Name</div>
+        <div class="expand-modal-sub" id="expandModalSub">USB | 115200 baud</div>
+      </div>
+      <div class="expand-modal-actions">
+        <div class="expand-modal-stat" id="expandModalCount"><i class="fa-regular fa-keyboard"></i> 0 chars</div>
+        <button class="expand-modal-close" id="expandModalPreviewBtn" title="Preview as prose" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:var(--bg-surface);border:1px solid rgba(255,255,255,0.06);border-radius:50%;color:var(--text-muted);font-size:14px;cursor:pointer;transition:var(--transition);"><i class="fa-solid fa-file-lines"></i></button>
+        <button class="expand-modal-close" id="expandModalClose" title="Close (Esc)"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>
+    <div class="expand-modal-body" id="expandModalBody">
+      <span class="placeholder"><i class="fa-regular fa-keyboard"></i> Waiting for input&hellip;</span>
+      <span class="cursor-blink"></span>
+    </div>
+    <button class="expand-modal-scroll-btn" id="expandScrollBtn" title="Scroll to bottom">
+      <i class="fa-solid fa-arrow-down"></i>
+    </button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
