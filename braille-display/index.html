@@ -32,6 +32,9 @@
           <i class="fa-solid fa-graduation-cap"></i> Exam
         </button>
       </div>
+      <span class="relay-chip" id="relayChip" style="display:none;" title="Running inside the BrailleBridge desktop app — serial ports are managed by the Python relay">
+        <i class="fa-solid fa-laptop-code"></i> Desktop
+      </span>
       <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">
         <i class="fa-solid fa-moon"></i>
       </button>
@@ -50,6 +53,10 @@
       <div class="card">
         <div class="card-title"><i class="fa-solid fa-plug"></i> Connection</div>
         <div class="serial-controls">
+          <div class="relay-port-row" id="relayPortRow" style="display:none;">
+            <span class="relay-port-label">Port</span>
+            <select class="baud-select" id="relayPortSelect" style="flex:1;"></select>
+          </div>
           <select class="baud-select" id="baudSelect">
             <option value="9600">9600 baud</option>
             <option value="115200" selected>115200 baud</option>
@@ -140,6 +147,10 @@
               <option value="38400">38400</option>
             </select>
           </div>
+          <div class="form-row" id="studentPortRow" style="display:none;">
+            <label class="form-label" for="studentPortInput">COM Port <span style="text-transform:none;font-weight:400;opacity:0.6;">(desktop relay)</span></label>
+            <select class="form-select" id="studentPortInput"></select>
+          </div>
           <div class="form-actions">
             <button class="btn btn-add" id="btnConfirmAdd"><i class="fa-solid fa-check"></i> Add Student</button>
             <button class="btn btn-cancel" id="btnCancelAdd"><i class="fa-solid fa-xmark"></i></button>
@@ -161,6 +172,9 @@
           <span class="stat"><i class="fa-regular fa-keyboard"></i> <strong id="totalCharCount">0</strong> chars</span>
         </div>
         <div class="right">
+          <button class="btn-clear-all" id="btnSaveLogs" title="Save all session logs to disk (desktop app)" style="display:none;">
+            <i class="fa-solid fa-floppy-disk"></i> Save Logs
+          </button>
           <button class="btn-clear-all" id="btnExportAll" title="Export all logs">
             <i class="fa-solid fa-file-export"></i> Export All
           </button>

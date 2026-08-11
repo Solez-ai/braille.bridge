@@ -233,6 +233,137 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* ============================================================
+   DESKTOP RELAY TRANSPORT (pywebview)
+   When running inside braille-desktop (Python + pywebview), the Python relay
+   owns the COM ports. The UI connects through window.pywebview.api and Python
+   pushes serial data in via the __relayOn* callbacks below. In a plain
+   browser, RELAY stays false and the original Web Serial path is used.
+   ============================================================ */
+let RELAY = false;
+let relayApi = null;
+let relayStudentPort = null;          // student-view port currently open via relay
+const relayFeeds = new Map();         // port -> feed (student view)
+const relayStudentFeeds = new Map();  // port -> feed (teacher-mode student)
+let relayAssignments = {};            // student name -> port (persisted by Python)
+let currentPorts = [];
+
+// Chunk -> line splitter that mirrors the original readLoop buffering:
+// complete newline-terminated lines go to onLine(), trailing partial chunks
+// are treated as immediate characters (firmware prints chars without \n).
+function makeSerialFeed(onLine, onChars) {
+  let buffer = '';
+  return function feed(chunk) {
+    buffer += chunk;
+    let nl = buffer.indexOf('\n');
+    while (nl >= 0) {
+      const line = buffer.slice(0, nl).trim();
+      buffer = buffer.slice(nl + 1);
+      if (line) onLine(line);
+      nl = buffer.indexOf('\n');
+    }
+    if (buffer.length > 0) { const rest = buffer; buffer = ''; onChars(rest); }
+  };
+}
+
+// --- Shared line handlers (used by BOTH the Web Serial and relay paths) ---
+function handleLineForStudentView(line) {
+  if (line.startsWith('SYSTEM:')) { if (line === 'SYSTEM:BKSP') handleBackspace(); return; }
+  if (line === 'LANG:en') { isBangla = false; updateIndicators(); return; }
+  if (line === 'LANG:bn') { isBangla = true; updateIndicators(); return; }
+  if (line === 'Invalid' || line === 'SHIFT') return;
+  handleCharsForStudentView(line);
+}
+function handleCharsForStudentView(chunk) {
+  for (const ch of chunk) if (ch !== '\r') handleIncomingChar(ch);
+}
+function handleLineForTeacherStudent(student, line) {
+  if (line.startsWith('SYSTEM:')) { if (line === 'SYSTEM:BKSP') handleStudentBackspace(student); return; }
+  if (line === 'Invalid' || line === 'SHIFT' || line.startsWith('LANG:')) return;
+  handleCharsForTeacherStudent(student, line);
+}
+function handleCharsForTeacherStudent(student, chunk) {
+  for (const ch of chunk) if (ch !== '\r') handleStudentChar(student, ch);
+}
+
+// --- Callbacks invoked by the Python relay (main.py) ---
+window.__relayOnData = (portName, chunk) => {
+  const sf = relayFeeds.get(portName);
+  if (sf) { sf(chunk); return; }
+  const tf = relayStudentFeeds.get(portName);
+  if (tf) tf(chunk);
+};
+
+window.__relayOnEvent = (portName, event) => {
+  if (portName === relayStudentPort) {
+    if (event === 'close') {
+      updateSerialUI(false);
+      serialInfo.innerHTML = '<i class="fa-solid fa-plug" style="margin-right:4px;"></i> Device disconnected — waiting for it to return&hellip;';
+    } else if (event === 'reconnect') {
+      updateSerialUI(true);
+      serialInfo.innerHTML = '<i class="fa-regular fa-circle-check text-green" style="margin-right:4px;"></i> Reconnected automatically by the relay.';
+    }
+  }
+  for (const s of students) {
+    if (s.portName && s.portName === portName) {
+      if (event === 'close' && s.connected) { s.connected = false; renderRoster(); renderFeedGrid(); }
+      if (event === 'reconnect' && !s.connected) { s.connected = true; renderRoster(); renderFeedGrid(); }
+    }
+  }
+};
+
+window.__relayOnPorts = (ports) => { currentPorts = ports || []; populatePortSelects(); };
+
+function populatePortSelects() {
+  const sel = document.getElementById('relayPortSelect');
+  const sel2 = document.getElementById('studentPortInput');
+  if (!sel || !sel2) return;
+  const keep1 = sel.value, keep2 = sel2.value;
+  sel.innerHTML = ''; sel2.innerHTML = '';
+  if (!currentPorts.length) {
+    const o = document.createElement('option'); o.value = ''; o.textContent = '(no ports detected)'; sel.appendChild(o);
+    const o2 = document.createElement('option'); o2.value = ''; o2.textContent = '(no ports detected)'; sel2.appendChild(o2);
+  } else {
+    for (const p of currentPorts) {
+      const o = document.createElement('option'); o.value = p.name; o.textContent = `${p.name} — ${p.description}`; sel.appendChild(o);
+      const o2 = document.createElement('option'); o2.value = p.name; o2.textContent = p.name; sel2.appendChild(o2);
+    }
+  }
+  if (keep1 && [...sel.options].some(o => o.value === keep1)) sel.value = keep1;
+  if (keep2 && [...sel2.options].some(o => o.value === keep2)) sel2.value = keep2;
+}
+
+let relayToastTimer = null;
+function showToast(msg) {
+  let t = document.getElementById('relayToast');
+  if (!t) { t = document.createElement('div'); t.id = 'relayToast'; t.className = 'relay-toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.classList.add('visible');
+  clearTimeout(relayToastTimer);
+  relayToastTimer = setTimeout(() => t.classList.remove('visible'), 3200);
+}
+
+function initRelayUI() {
+  document.getElementById('relayChip').style.display = 'inline-flex';
+  document.getElementById('relayPortRow').style.display = 'flex';
+  document.getElementById('studentPortRow').style.display = 'flex';
+  const saveBtn = document.getElementById('btnSaveLogs');
+  saveBtn.style.display = 'inline-flex';
+  saveBtn.onclick = async () => {
+    try { showToast(await relayApi.save_all_logs()); } catch (e) { showToast('Save failed: ' + e.message); }
+  };
+  relayApi.get_assignments().then(a => { relayAssignments = a || {}; });
+  relayApi.list_ports().then(ports => { currentPorts = ports || []; populatePortSelects(); });
+}
+
+window.addEventListener('pywebviewready', () => {
+  if (window.pywebview && window.pywebview.api) {
+    RELAY = true;
+    relayApi = window.pywebview.api;
+    initRelayUI();
+  }
+});
+
+/* ============================================================
    SERIAL (Student View)
    ============================================================ */
 let port = null, reader = null;
@@ -246,6 +377,7 @@ document.getElementById('btnClear').addEventListener('click', clearDisplay);
 btnConnect.addEventListener('click', async () => { if (port) { await disconnectSerial(); return; } await connectSerial(); });
 
 async function connectSerial() {
+  if (RELAY) return connectSerialRelay();
   try {
     serialInfo.innerHTML = '<i class="fa-solid fa-magnifying-glass" style="margin-right:4px;"></i> Select <span class="highlight">COM6</span> from the browser dialog&hellip;';
     port = await navigator.serial.requestPort();
@@ -267,7 +399,37 @@ async function connectSerial() {
   }
 }
 
+async function connectSerialRelay() {
+  const sel = document.getElementById('relayPortSelect');
+  const portName = sel ? sel.value : '';
+  if (!portName) {
+    serialInfo.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:var(--accent-red);margin-right:4px;"></i> No COM port selected. Pick one above, then connect.';
+    return;
+  }
+  const baudRate = parseInt(baudSelect.value);
+  serialInfo.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i> Opening <span class="highlight">${portName}</span> via desktop relay&hellip;`;
+  const ok = await relayApi.open_port(portName, baudRate);
+  if (!ok) {
+    serialInfo.innerHTML = getTroubleshootingHTML('The relay could not open ' + portName);
+    return;
+  }
+  relayStudentPort = portName;
+  relayFeeds.set(portName, makeSerialFeed(handleLineForStudentView, handleCharsForStudentView));
+  updateSerialUI(true);
+  serialInfo.innerHTML = `<i class="fa-regular fa-circle-check text-green" style="margin-right:4px;"></i> Connected to <span class="highlight">${portName}</span> (relay)<br>Baud: <span class="highlight">${baudRate}</span> | Reading live&hellip;`;
+}
+
 async function disconnectSerial() {
+  if (RELAY) {
+    if (relayStudentPort) {
+      await relayApi.close_port(relayStudentPort);
+      relayFeeds.delete(relayStudentPort);
+      relayStudentPort = null;
+    }
+    updateSerialUI(false);
+    serialInfo.innerHTML = '<i class="fa-solid fa-plug" style="margin-right:4px;"></i> Disconnected.';
+    return;
+  }
   if (reader) { await reader.cancel(); reader = null; }
   if (port) { try { await port.close(); } catch(e) {} port = null; }
   updateSerialUI(false);
@@ -292,25 +454,15 @@ function getTroubleshootingHTML(msg) {
 }
 
 async function readLoop() {
-  const decoder = new TextDecoder(); let buffer = '';
+  const decoder = new TextDecoder();
+  const feed = makeSerialFeed(handleLineForStudentView, handleCharsForStudentView);
   try {
     while (port && port.readable) {
       reader = port.readable.getReader();
       try {
         while (true) {
           const { value, done } = await reader.read(); if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          while (buffer.length > 0) {
-            const nl = buffer.indexOf('\n');
-            if (nl >= 0) {
-              const line = buffer.substring(0, nl).trim(); buffer = buffer.substring(nl + 1);
-              if (line.startsWith('SYSTEM:')) { if (line === 'SYSTEM:BKSP') { handleBackspace(); } continue; }
-              if (line === 'LANG:en') { isBangla = false; updateIndicators(); continue; }
-              if (line === 'LANG:bn') { isBangla = true; updateIndicators(); continue; }
-              if (line === 'Invalid' || line === 'SHIFT') continue;
-              for (const ch of line) if (ch !== '\r') handleIncomingChar(ch);
-            } else { for (const ch of buffer) if (ch !== '\r') handleIncomingChar(ch); buffer = ''; }
-          }
+          feed(decoder.decode(value, { stream: true }));
         }
       } finally { reader.releaseLock(); reader = null; }
     }
@@ -387,16 +539,18 @@ document.getElementById('btnConfirmAdd').addEventListener('click', () => {
   const name = document.getElementById('studentNameInput').value.trim();
   const connType = document.getElementById('studentConnInput').value;
   const baud = parseInt(document.getElementById('studentBaudInput').value);
+  const portName = RELAY ? document.getElementById('studentPortInput').value : '';
   if (!name) { document.getElementById('studentNameInput').focus(); document.getElementById('studentNameInput').style.borderColor = 'var(--accent-red)'; setTimeout(() => document.getElementById('studentNameInput').style.borderColor = '', 1500); return; }
-  addStudent(name, connType, baud);
+  addStudent(name, connType, baud, portName);
+  if (RELAY && portName) { relayAssignments[name] = portName; relayApi.set_assignment(name, portName); }
   document.getElementById('studentNameInput').value = '';
   document.getElementById('addStudentForm').classList.remove('visible');
 });
 document.getElementById('studentNameInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btnConfirmAdd').click(); });
 
-function addStudent(name, connType, baud) {
+function addStudent(name, connType, baud, portName) {
   const id = studentIdCounter++;
-  const student = { id, name, connType, baud, color: getColorForIndex(students.length), chars: [], connected: false, serialPort: null, serialReader: null, readLoopActive: false };
+  const student = { id, name, connType, baud, color: getColorForIndex(students.length), chars: [], connected: false, serialPort: null, serialReader: null, readLoopActive: false, portName: portName || null };
   students.push(student);
   renderRoster(); renderFeedGrid(); updateStudentStats();
 }
@@ -404,7 +558,7 @@ function addStudent(name, connType, baud) {
 function removeStudent(id) {
   if (expandStudentId === id) closeExpandView();
   const s = students.find(st => st.id === id);
-  if (s) { disconnectStudentSerial(s, true); totalCharsAllStudents -= s.chars.length; }
+  if (s) { disconnectStudentSerial(s, true); totalCharsAllStudents -= s.chars.length; if (RELAY && relayAssignments[s.name]) { delete relayAssignments[s.name]; relayApi.set_assignment(s.name, ''); } }
   students = students.filter(st => st.id !== id);
   renderRoster(); renderFeedGrid(); updateStudentStats();
 }
@@ -549,6 +703,7 @@ document.getElementById('btnExamExport').addEventListener('click', exportAllLogs
 
 /* -- Per-Student Serial Connection -- */
 async function connectStudentSerial(student) {
+  if (RELAY) return connectStudentSerialRelay(student);
   try {
     student.connected = false;
     renderRoster(); renderFeedGrid();
@@ -571,7 +726,39 @@ async function connectStudentSerial(student) {
   }
 }
 
+async function connectStudentSerialRelay(student) {
+  if (!student.portName) {
+    if (relayAssignments[student.name]) student.portName = relayAssignments[student.name];
+    else {
+      showToast(`Assign a COM port to "${student.name}" in the Add Student form first.`);
+      return;
+    }
+  }
+  const ok = await relayApi.open_port(student.portName, student.baud);
+  if (!ok) {
+    showToast(`The relay could not open ${student.portName}. Is it in use elsewhere?`);
+    renderRoster(); renderFeedGrid();
+    return;
+  }
+  student.connected = true;
+  relayStudentFeeds.set(student.portName, makeSerialFeed(
+    l => handleLineForTeacherStudent(student, l),
+    c => handleCharsForTeacherStudent(student, c)));
+  relayApi.set_assignment(student.name, student.portName);
+  relayAssignments[student.name] = student.portName;
+  renderRoster(); renderFeedGrid();
+}
+
 async function disconnectStudentSerial(student, quiet = false) {
+  if (RELAY) {
+    if (student.portName) {
+      await relayApi.close_port(student.portName);
+      relayStudentFeeds.delete(student.portName);
+    }
+    student.connected = false;
+    if (!quiet) { renderRoster(); renderFeedGrid(); }
+    return;
+  }
   student.readLoopActive = false;
   if (student.serialReader) { try { await student.serialReader.cancel(); } catch(e) {} student.serialReader = null; }
   if (student.serialPort) { try { await student.serialPort.close(); } catch(e) {} student.serialPort = null; }
@@ -580,7 +767,10 @@ async function disconnectStudentSerial(student, quiet = false) {
 }
 
 async function startStudentReadLoop(student) {
-  const decoder = new TextDecoder(); let buffer = '';
+  const decoder = new TextDecoder();
+  const feed = makeSerialFeed(
+    l => handleLineForTeacherStudent(student, l),
+    c => handleCharsForTeacherStudent(student, c));
 
   try {
     while (student.serialPort && student.serialPort.readable && student.readLoopActive) {
@@ -588,20 +778,7 @@ async function startStudentReadLoop(student) {
       try {
         while (true) {
           const { value, done } = await student.serialReader.read(); if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-
-          while (buffer.length > 0) {
-            const nl = buffer.indexOf('\n');
-            if (nl >= 0) {
-              const line = buffer.substring(0, nl).trim(); buffer = buffer.substring(nl + 1);
-              if (line.startsWith('SYSTEM:')) { if (line === 'SYSTEM:BKSP') { handleStudentBackspace(student); } continue; }
-              if (line === 'Invalid' || line === 'SHIFT' || line.startsWith('LANG:')) continue;
-              for (const ch of line) if (ch !== '\r') handleStudentChar(student, ch);
-            } else {
-              for (const ch of buffer) if (ch !== '\r') handleStudentChar(student, ch);
-              buffer = '';
-            }
-          }
+          feed(decoder.decode(value, { stream: true }));
         }
       } finally {
         if (student.serialReader) { student.serialReader.releaseLock(); student.serialReader = null; }
@@ -688,7 +865,7 @@ function renderRoster() {
         <div class="student-name">${s.name}</div>
         <div class="student-meta">
           <span class="conn-badge ${s.connType}"><i class="${connIcon}"></i> ${connLabel}</span>
-          ${s.baud} baud
+          ${s.baud} baud${s.portName ? ' · ' + s.portName : ''}
         </div>
       </div>
       <div class="student-status ${s.connected ? 'online' : 'offline'}"></div>
@@ -743,7 +920,7 @@ function renderFeedGrid() {
           <div class="feed-card-name">${s.name}</div>
           <div class="feed-card-sub">
             <span class="conn-badge ${s.connType}"><i class="${connIcon}"></i> ${connLabel}</span>
-            <span style="opacity:0.5;">${s.baud} baud</span>
+            <span style="opacity:0.5;">${s.baud} baud${s.portName ? ' · ' + s.portName : ''}</span>
             <span style="margin-left:auto;display:flex;align-items:center;gap:3px;">
               <i class="${statusIcon}" style="font-size:7px;color:${statusColor};"></i>
               ${statusText}
