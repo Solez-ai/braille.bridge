@@ -67,6 +67,9 @@
             <i class="fa-solid fa-bolt" id="btnIcon"></i>
             <span id="btnText">Connect to COM6</span>
           </button>
+          <button class="btn btn-send" id="btnSendToTeacher" style="display:none;" title="Mirror this device into the Teacher roster">
+            <i class="fa-solid fa-paper-plane"></i> Send to Teacher
+          </button>
           <div class="serial-info" id="serialInfo">
             <i class="fa-solid fa-circle-info" style="opacity:0.5;margin-right:4px;"></i>
             Waiting to connect&hellip;<br>
@@ -274,6 +277,51 @@
     <button class="expand-modal-scroll-btn" id="expandScrollBtn" title="Scroll to bottom">
       <i class="fa-solid fa-arrow-down"></i>
     </button>
+  </div>
+</div>
+
+<!-- ============================================================
+     SEND TO TEACHER MODAL (mirror student view into the roster)
+     ============================================================ -->
+<div class="expand-modal-overlay" id="sendModal">
+  <div class="expand-modal-content" style="max-width:460px;">
+    <div class="expand-modal-header">
+      <div class="expand-modal-info">
+        <div class="expand-modal-avatar" style="background:linear-gradient(135deg, var(--accent-teal), #2e8f83);"><i class="fa-solid fa-paper-plane" style="font-size:15px;color:var(--bg-dark);"></i></div>
+        <div>
+          <div class="expand-modal-name" style="font-size:16px;">Send to Teacher</div>
+          <div class="expand-modal-sub" id="sendModalSub">Mirror this device into the Teacher roster</div>
+        </div>
+      </div>
+      <button class="expand-modal-close" id="sendModalClose" title="Close (Esc)"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="send-form">
+      <div class="form-row">
+        <label class="form-label" for="sendNameInput">Student Name</label>
+        <input class="form-input" id="sendNameInput" type="text" placeholder="e.g. Sarah Ahmed" maxlength="30">
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="sendConnInput">Connection Type</label>
+        <select class="form-select" id="sendConnInput">
+          <option value="usb">USB Serial</option>
+          <option value="bluetooth">Bluetooth</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label" for="sendBaudInput">Baud Rate</label>
+        <select class="form-select" id="sendBaudInput">
+          <option value="9600">9600</option>
+          <option value="115200" selected>115200</option>
+          <option value="57600">57600</option>
+          <option value="38400">38400</option>
+        </select>
+      </div>
+      <p class="send-hint"><i class="fa-solid fa-circle-info" style="margin-right:4px;"></i> The teacher sees everything this student types live — no second connection needed.</p>
+    </div>
+    <div class="form-actions" style="padding:0 22px 22px;">
+      <button class="btn btn-add" id="sendConfirmBtn" style="flex:1;"><i class="fa-solid fa-paper-plane"></i> Send to Teacher</button>
+      <button class="btn btn-cancel" id="sendCancelBtn" title="Cancel"><i class="fa-solid fa-xmark"></i></button>
+    </div>
   </div>
 </div>
 

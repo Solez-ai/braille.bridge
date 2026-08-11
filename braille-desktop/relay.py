@@ -26,6 +26,13 @@ SCAN_INTERVAL = 2.0   # seconds between port re-scan / reconnect attempts
 READ_SIZE = 256
 CONTROL_PREFIXES = ('SYSTEM:', 'LANG:', 'Invalid', 'SHIFT')
 
+# ESP32 ROM boot preamble — printed to serial on every reset BEFORE the
+# firmware runs. These lines are not user text; drop them so they never
+# pollute the live output or the saved logs.
+BOOT_PREFIXES = ('ets ', 'rst:0x', 'boot:0x', 'configSPIWP', 'clk_drv:',
+                 'q_drv:', 'd_drv:', 'cs0_drv:', 'hd_drv:', 'wp_drv:',
+                 'mode:DIO', 'load:0x', 'entry 0x')
+
 
 class RelayManager:
     """Manages one serial connection per COM port, each with a reader thread."""
@@ -40,10 +47,58 @@ class RelayManager:
 
     # ------------------------------------------------------------ discovery
     def list_ports(self):
-        return [
-            {'name': p.device, 'description': p.description or ''}
-            for p in list_ports.comports()
-        ]
+        """Enumerate COM ports. On Windows, pyserial's setupapi/WMI enumeration
+        can transiently return empty even while the OS knows the port is there
+        (common with WCH CH9102/CH340 devices after connect/disconnect churn).
+        Retry once, then fall back to the SERIALCOMM registry so the UI never
+        falsely reports '(no ports detected)'."""
+        ports = self._comports_raw()
+        if not ports:
+            time.sleep(0.2)  # transient enumeration failures self-heal
+            ports = self._comports_raw()
+        if not ports:
+            registry_names = self._registry_ports()
+            if registry_names:
+                ports = [
+                    {'name': n, 'description': 'COM port (Windows registry)'}
+                    for n in registry_names
+                ]
+        return ports
+
+    @staticmethod
+    def _comports_raw():
+        try:
+            return [
+                {'name': p.device, 'description': p.description or ''}
+                for p in list_ports.comports()
+            ]
+        except Exception:
+            return []
+
+    @staticmethod
+    def _registry_ports():
+        """Windows fallback: read HKLM\\HARDWARE\\DEVICEMAP\\SERIALCOMM."""
+        if os.name != 'nt':
+            return []
+        try:
+            import winreg
+        except Exception:
+            return []
+        try:
+            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                                 r'HARDWARE\DEVICEMAP\SERIALCOMM')
+            names = []
+            i = 0
+            while True:
+                try:
+                    names.append(winreg.EnumValue(key, i)[1])
+                except OSError:
+                    break
+                i += 1
+            winreg.CloseKey(key)
+            return names
+        except Exception:
+            return []
 
     # ----------------------------------------------------------- lifecycle
     def open_port(self, port_name, baud=115200):
@@ -59,7 +114,7 @@ class RelayManager:
         conn = {
             'serial': ser, 'stop': threading.Event(), 'baud': int(baud),
             'chars': [], 'name': None, 'desired': True, 'thread': None,
-            'lock': threading.Lock(),
+            'lock': threading.Lock(), 'boot_suppress': False,
         }
         with self._lock:
             old = self._conns.get(port_name)
@@ -220,6 +275,11 @@ class RelayManager:
                 self._forward_line(port_name, conn, line)
             if buf:
                 rest, buf = buf, ''
+                # Drop partial boot text arriving without a trailing newline.
+                if rest.startswith('ets '):
+                    conn['boot_suppress'] = True
+                if conn['boot_suppress'] or rest.startswith(BOOT_PREFIXES):
+                    continue
                 self.emit('data', port_name, rest)
                 self._buffer_chars(conn, rest)
         try:
@@ -237,6 +297,19 @@ class RelayManager:
         stripped = line.strip()
         if not stripped:
             return
+        # ---- ESP32 boot preamble suppression ----
+        if stripped.startswith('ets '):
+            conn['boot_suppress'] = True
+            return
+        if conn['boot_suppress']:
+            # Firmware takes over after 'entry 0x' or its own SYSTEM: banner.
+            if stripped.startswith('entry 0x') or stripped.startswith('SYSTEM:'):
+                conn['boot_suppress'] = False
+            else:
+                return
+        if stripped.startswith(BOOT_PREFIXES):
+            return
+        # ---- normal forwarding ----
         if stripped.startswith(CONTROL_PREFIXES):
             self.emit('data', port_name, stripped + '\n')
             return
@@ -257,7 +330,9 @@ class RelayManager:
         last_ports = None
         while not self._monitor_stop.is_set():
             try:
-                ports = {p.device for p in list_ports.comports()}
+                # Use the same resilient enumeration as list_ports() so a
+                # transient pyserial failure can't falsely empty the list.
+                ports = {p['name'] for p in self.list_ports()}
                 if ports != last_ports:
                     last_ports = ports
                     self.emit('ports', None, self.list_ports())

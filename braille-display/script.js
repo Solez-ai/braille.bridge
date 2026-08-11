@@ -247,21 +247,56 @@ const relayStudentFeeds = new Map();  // port -> feed (teacher-mode student)
 let relayAssignments = {};            // student name -> port (persisted by Python)
 let currentPorts = [];
 
+// ESP32 ROM boot preamble — printed on serial every reset BEFORE the
+// firmware runs (e.g. 'ets Jul 29 2019 12:21:46', 'rst:0x1 ...', 'entry 0x...').
+// It is not user text; the filters below drop it so it never pollutes the
+// live output. Mirrors the suppression in braille-desktop/relay.py.
+const BOOT_PREFIXES = ['ets ', 'rst:0x', 'boot:0x', 'configSPIWP', 'clk_drv:',
+                       'q_drv:', 'd_drv:', 'cs0_drv:', 'hd_drv:', 'wp_drv:',
+                       'mode:DIO', 'load:0x', 'entry 0x'];
+
+function isBootLine(line) { return BOOT_PREFIXES.some(p => line.startsWith(p)); }
+
+// Stateful suppressor: once 'ets ' is seen (chip boot starts), everything is
+// dropped until 'entry 0x' or the firmware's own 'SYSTEM:' banner appears.
+function makeBootFilter() {
+  let suppress = false;
+  return {
+    dropLine(line) {
+      if (line.startsWith('ets ')) { suppress = true; return true; }
+      if (suppress) {
+        if (line.startsWith('entry 0x') || line.startsWith('SYSTEM:')) suppress = false;
+        else return true;
+      }
+      return isBootLine(line);
+    },
+    dropChunk(chunk) {
+      if (chunk.startsWith('ets ')) { suppress = true; return true; }
+      return suppress || isBootLine(chunk);
+    }
+  };
+}
+
 // Chunk -> line splitter that mirrors the original readLoop buffering:
 // complete newline-terminated lines go to onLine(), trailing partial chunks
 // are treated as immediate characters (firmware prints chars without \n).
 function makeSerialFeed(onLine, onChars) {
   let buffer = '';
+  const boot = makeBootFilter();
   return function feed(chunk) {
     buffer += chunk;
     let nl = buffer.indexOf('\n');
     while (nl >= 0) {
       const line = buffer.slice(0, nl).trim();
       buffer = buffer.slice(nl + 1);
-      if (line) onLine(line);
+      if (line && !boot.dropLine(line)) onLine(line);
       nl = buffer.indexOf('\n');
     }
-    if (buffer.length > 0) { const rest = buffer; buffer = ''; onChars(rest); }
+    if (buffer.length > 0) {
+      const rest = buffer;
+      buffer = '';
+      if (!boot.dropChunk(rest)) onChars(rest);
+    }
   };
 }
 
@@ -374,7 +409,9 @@ const serialInfo = document.getElementById('serialInfo');
 const baudSelect = document.getElementById('baudSelect');
 
 document.getElementById('btnClear').addEventListener('click', clearDisplay);
-btnConnect.addEventListener('click', async () => { if (port) { await disconnectSerial(); return; } await connectSerial(); });
+// In relay mode the Web Serial `port` stays null, so the toggle must also
+// check relayStudentPort — otherwise Disconnect silently re-opens instead.
+btnConnect.addEventListener('click', async () => { if (port || relayStudentPort) { await disconnectSerial(); return; } await connectSerial(); });
 
 async function connectSerial() {
   if (RELAY) return connectSerialRelay();
@@ -444,7 +481,79 @@ function updateSerialUI(connected) {
   statusDot.className = 'status-dot ' + (connected ? 'connected' : 'disconnected');
   statusLabel.textContent = connected ? 'Connected' : 'Disconnected';
   baudSelect.disabled = connected;
+  const sendBtn = document.getElementById('btnSendToTeacher');
+  if (sendBtn) sendBtn.style.display = connected ? 'flex' : 'none';
+  // Keep any mirrored teacher student in sync with the live connection state
+  if (connected) setMirrorOnline(); else setMirrorOffline();
 }
+
+/* ============================================================
+   SEND TO TEACHER (mirror the student-view connection into the
+   teacher roster — one connection, two views)
+   ============================================================ */
+let mirrorStudentId = null;
+
+function openSendModal() {
+  document.getElementById('sendBaudInput').value = baudSelect.value;
+  document.getElementById('sendNameInput').value = '';
+  document.getElementById('sendModal').classList.add('visible');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('sendNameInput').focus(), 50);
+}
+function closeSendModal() {
+  document.getElementById('sendModal').classList.remove('visible');
+  document.body.style.overflow = '';
+}
+
+function confirmSendToTeacher() {
+  const name = document.getElementById('sendNameInput').value.trim();
+  if (!name) {
+    const inp = document.getElementById('sendNameInput');
+    inp.focus(); inp.style.borderColor = 'var(--accent-red)';
+    setTimeout(() => inp.style.borderColor = '', 1500);
+    return;
+  }
+  if (mirrorStudentId !== null && students.find(s => s.id === mirrorStudentId)) {
+    showToast('This device is already mirrored to the teacher roster.');
+    closeSendModal();
+    return;
+  }
+  const connType = document.getElementById('sendConnInput').value;
+  const baud = parseInt(document.getElementById('sendBaudInput').value);
+  const student = addStudent(name, connType, baud, null, true);
+  student.connected = true;
+  mirrorStudentId = student.id;
+  renderRoster(); renderFeedGrid();
+  closeSendModal();
+  showToast(`"${name}" added to Teacher Mode — switch to the Teacher view to watch.`);
+  setMode('teacher');
+  const card = document.getElementById(`feed-${student.id}`);
+  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function setMirrorOnline() {
+  if (mirrorStudentId === null) return;
+  const ms = students.find(s => s.id === mirrorStudentId);
+  if (ms && !ms.connected) { ms.connected = true; renderRoster(); renderFeedGrid(); }
+}
+function setMirrorOffline() {
+  if (mirrorStudentId === null) return;
+  const ms = students.find(s => s.id === mirrorStudentId);
+  if (ms && ms.connected) { ms.connected = false; renderRoster(); renderFeedGrid(); }
+}
+
+document.getElementById('btnSendToTeacher').addEventListener('click', () => {
+  if (!isConnected) { showToast('Connect the device first, then send it to the teacher.'); return; }
+  openSendModal();
+});
+document.getElementById('sendConfirmBtn').addEventListener('click', confirmSendToTeacher);
+document.getElementById('sendCancelBtn').addEventListener('click', closeSendModal);
+document.getElementById('sendModalClose').addEventListener('click', closeSendModal);
+document.getElementById('sendModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeSendModal(); });
+document.getElementById('sendNameInput').addEventListener('keydown', e => { if (e.key === 'Enter') confirmSendToTeacher(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('sendModal').classList.contains('visible')) closeSendModal();
+});
 
 function getTroubleshootingHTML(msg) {
   if (msg.includes('open') || msg.includes('serial port')) {
@@ -474,6 +583,14 @@ function handleIncomingChar(ch) {
   if (/[\u0980-\u09FF]/.test(ch)) { if (!isBangla) { isBangla = true; updateIndicators(); } }
   else if (/[a-zA-Z]/.test(ch)) { if (isBangla) { isBangla = false; updateIndicators(); } }
   appendChar(ch); animateDotsForChar(ch);
+  // Mirror to the teacher roster while "Send to Teacher" is active. Wrapped so
+  // a rendering hiccup on one character can never cascade into the teacher UI.
+  if (mirrorStudentId !== null) {
+    try {
+      const ms = students.find(s => s.id === mirrorStudentId);
+      if (ms) handleStudentChar(ms, ch);
+    } catch (err) { console.error('Mirror char failed:', err); }
+  }
 }
 
 // Remove the last character from the student view's live display (triggered by SYSTEM:BKSP)
@@ -495,6 +612,11 @@ function handleBackspace() {
   if (liveText.children.length <= 1) {
     liveText.classList.remove('has-content');
     liveText.innerHTML = '<span class="placeholder"><i class="fa-solid fa-braille" style="margin-right:6px;"></i> Braille output will appear here</span><span class="cursor-blink"></span>';
+  }
+  // Keep the mirrored teacher student in sync with the correction
+  if (mirrorStudentId !== null) {
+    const ms = students.find(s => s.id === mirrorStudentId);
+    if (ms) handleStudentBackspace(ms);
   }
 }
 
@@ -548,15 +670,17 @@ document.getElementById('btnConfirmAdd').addEventListener('click', () => {
 });
 document.getElementById('studentNameInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btnConfirmAdd').click(); });
 
-function addStudent(name, connType, baud, portName) {
+function addStudent(name, connType, baud, portName, mirror) {
   const id = studentIdCounter++;
-  const student = { id, name, connType, baud, color: getColorForIndex(students.length), chars: [], connected: false, serialPort: null, serialReader: null, readLoopActive: false, portName: portName || null };
+  const student = { id, name, connType, baud, color: getColorForIndex(students.length), chars: [], connected: false, serialPort: null, serialReader: null, readLoopActive: false, portName: portName || null, mirror: !!mirror };
   students.push(student);
   renderRoster(); renderFeedGrid(); updateStudentStats();
+  return student;
 }
 
 function removeStudent(id) {
   if (expandStudentId === id) closeExpandView();
+  if (mirrorStudentId === id) mirrorStudentId = null;
   const s = students.find(st => st.id === id);
   if (s) { disconnectStudentSerial(s, true); totalCharsAllStudents -= s.chars.length; if (RELAY && relayAssignments[s.name]) { delete relayAssignments[s.name]; relayApi.set_assignment(s.name, ''); } }
   students = students.filter(st => st.id !== id);
@@ -871,20 +995,29 @@ function renderRoster() {
       <div class="student-status ${s.connected ? 'online' : 'offline'}"></div>
     `;
 
-    const connectBtn = document.createElement('button');
-    connectBtn.className = `btn btn-icon ${s.connected ? 'btn-danger' : 'btn-secondary'}`;
-    connectBtn.style.cssText = 'width:auto;padding:4px 10px;font-size:10px;gap:4px;';
-    connectBtn.innerHTML = s.connected
-      ? '<i class="fa-solid fa-plug" style="color:var(--accent-red);"></i>'
-      : '<i class="fa-solid fa-bolt"></i>';
-    connectBtn.title = s.connected ? 'Disconnect' : 'Connect serial port';
-    connectBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      if (s.connected) await disconnectStudentSerial(s);
-      else await connectStudentSerial(s);
-    });
-
-    item.appendChild(connectBtn);
+    if (s.mirror) {
+      // Mirrored students share the live student-view connection — they are
+      // not independently connectable, so show a badge instead of a button.
+      const badge = document.createElement('span');
+      badge.className = 'conn-badge mirror';
+      badge.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Mirrored';
+      badge.title = 'Mirrored from Student View — data comes from the live connection';
+      item.appendChild(badge);
+    } else {
+      const connectBtn = document.createElement('button');
+      connectBtn.className = `btn btn-icon ${s.connected ? 'btn-danger' : 'btn-secondary'}`;
+      connectBtn.style.cssText = 'width:auto;padding:4px 10px;font-size:10px;gap:4px;';
+      connectBtn.innerHTML = s.connected
+        ? '<i class="fa-solid fa-plug" style="color:var(--accent-red);"></i>'
+        : '<i class="fa-solid fa-bolt"></i>';
+      connectBtn.title = s.connected ? 'Disconnect' : 'Connect serial port';
+      connectBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (s.connected) await disconnectStudentSerial(s);
+        else await connectStudentSerial(s);
+      });
+      item.appendChild(connectBtn);
+    }
 
     item.addEventListener('click', () => {
       document.querySelectorAll('.student-item').forEach(el => el.classList.remove('active'));
@@ -920,6 +1053,7 @@ function renderFeedGrid() {
           <div class="feed-card-name">${s.name}</div>
           <div class="feed-card-sub">
             <span class="conn-badge ${s.connType}"><i class="${connIcon}"></i> ${connLabel}</span>
+            ${s.mirror ? '<span class="conn-badge mirror"><i class="fa-solid fa-paper-plane"></i> Mirrored</span>' : ''}
             <span style="opacity:0.5;">${s.baud} baud${s.portName ? ' · ' + s.portName : ''}</span>
             <span style="margin-left:auto;display:flex;align-items:center;gap:3px;">
               <i class="${statusIcon}" style="font-size:7px;color:${statusColor};"></i>

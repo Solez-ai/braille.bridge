@@ -322,7 +322,15 @@ void loop() {
 // SEND CHARACTER TO BLE & SERIAL
 // ==========================================
 void sendChar(const char* c) {
-  if (bleKeyboard.isConnected()) {
+  // BLE HID keycodes can only represent ASCII. Bangla (multi-byte UTF-8) has
+  // no keycode mapping, and pushing it through the BLE stack can wedge the
+  // ESP32 and cause a reboot. Only send ASCII to BLE; Bangla goes over USB
+  // serial only (to the teacher app), where it works.
+  bool isAscii = true;
+  for (const char* p = c; *p; p++) {
+    if ((unsigned char)*p >= 0x80) { isAscii = false; break; }
+  }
+  if (bleKeyboard.isConnected() && isAscii) {
     bleKeyboard.print(c);
   }
   Serial.print(c);

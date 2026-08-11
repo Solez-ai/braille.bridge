@@ -27,7 +27,10 @@
   --radius-lg: 20px;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-serif: 'Playfair Display', 'Noto Serif Bengali', Georgia, 'Times New Roman', serif;
-  --font-bangla: 'Noto Serif Bengali', 'Playfair Display', serif;
+  /* Bangla stack includes Windows system fonts (Nirmala UI/Vrinda ship with
+     Windows 10/11) so Bangla renders even when Google Fonts is unreachable
+     (e.g. the desktop app running offline). */
+  --font-bangla: 'Noto Serif Bengali', 'Nirmala UI', 'Vrinda', 'Bangla', 'Shonar Bangla', serif;
   --font-mono: 'Cascadia Code', 'JetBrains Mono', 'Courier New', monospace;
   --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -279,6 +282,17 @@ body {
 .relay-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 .light-mode .relay-toast { background: var(--bg-card); border-color: rgba(0, 0, 0, 0.12); }
 
+/* ---- Send to Teacher (mirror) ---- */
+.btn-send {
+  background: rgba(74, 200, 184, 0.12); color: var(--accent-teal);
+  border: 1px solid rgba(74, 200, 184, 0.22);
+  font-size: 12px; padding: 8px 14px;
+}
+.btn-send:hover { background: rgba(74, 200, 184, 0.2); color: var(--accent-teal); }
+.conn-badge.mirror { background: rgba(74, 200, 184, 0.12); color: var(--accent-teal); }
+.send-form { padding: 18px 22px 6px; display: flex; flex-direction: column; gap: 12px; }
+.send-hint { font-size: 11px; color: var(--text-muted); line-height: 1.6; padding: 8px 10px; background: var(--bg-surface); border-radius: var(--radius-sm); margin: 0; }
+
 /* ---- Layout ---- */
 .view-student { display: grid; grid-template-columns: 300px 1fr; gap: 18px; }
 .view-teacher { display: none; gap: 18px; }
@@ -398,7 +412,9 @@ body {
 .live-text .cursor-blink { display: inline-block; width: 2px; height: 1.05em; background: var(--gold); margin-left: 1px; animation: blink 0.8s step-end infinite; vertical-align: text-bottom; border-radius: 1px; }
 @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
 .live-char { animation: charEntry 0.2s ease-out; }
-@keyframes charEntry { 0% { opacity: 0; transform: translateY(5px); filter: blur(2px); } 60% { opacity: 1; transform: translateY(-1px); filter: blur(0); } 100% { opacity: 1; transform: translateY(0); filter: blur(0); } }
+/* No filter blur here: compositing blur over complex-script glyphs (Bangla)
+   can crash some WebView2/GPU stacks mid-animation. Fade + lift is enough. */
+@keyframes charEntry { 0% { opacity: 0; transform: translateY(5px); } 60% { opacity: 1; transform: translateY(-1px); } 100% { opacity: 1; transform: translateY(0); } }
 .display-actions { display: flex; gap: 8px; margin-top: 10px; }
 .btn-clear { padding: 5px 12px; background: transparent; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: var(--radius-sm); color: var(--text-muted); font-size: 11px; cursor: pointer; transition: var(--transition); font-family: var(--font-sans); display: flex; align-items: center; gap: 5px; }
 .btn-clear:hover { border-color: rgba(255, 255, 255, 0.12); color: var(--text-secondary); background: rgba(255,255,255,0.03); }
