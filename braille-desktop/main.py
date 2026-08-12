@@ -1,14 +1,3 @@
-"""BrailleBridge — Teacher Desktop (Python relay + embedded web UI).
-
-A pywebview window hosts the existing braille-display web app while a Python
-relay (relay.RelayManager) owns the ESP32 COM ports. The UI talks to Python
-through window.pywebview.api, and Python pushes serial data into the page via
-evaluate_js — no Web Serial exclusivity, no "port in use" errors, and multiple
-views can watch the same device at once.
-
-Run:  python main.py
-Setup: pip install -r requirements.txt
-"""
 import json
 import os
 
