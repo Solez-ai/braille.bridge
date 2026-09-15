@@ -458,3 +458,59 @@ body.bb-light .bb-translate-bar {
 }
 body.bb-light .bb-empty { color: var(--muted, #6b6c76); }
 body.bb-light .bb-empty h4 { color: var(--ink-soft, #45464e); }
+
+/* ---------- Language select (full Google Translate catalogue) ---------- */
+.bb-lang-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 7px 26px 7px 10px;
+  border-radius: 9px;
+  border: 1px solid rgba(196, 154, 74, 0.35);
+  background-color: var(--bg-surface, #242738);
+  color: var(--text-primary, #e8e6e0);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+  max-width: 190px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%23c49a4a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+}
+.bb-lang-select:hover,
+.bb-lang-select:focus {
+  border-color: var(--gold, #c49a4a);
+  box-shadow: 0 0 0 3px rgba(196, 154, 74, 0.15);
+}
+.bb-lang-select option {
+  background: #242738;
+  color: #e8e6e0;
+}
+.demo-translate-muted,
+.bb-translate-status .muted {
+  opacity: 0.65;
+  font-size: 0.92em;
+  font-style: italic;
+}
+
+body.bb-light .bb-lang-select {
+  background-color: var(--surface, #ffffff);
+  border-color: var(--line, #e7e2d8);
+  color: var(--ink, #17181c);
+}
+body.bb-light .bb-lang-select:hover,
+body.bb-light .bb-lang-select:focus {
+  border-color: var(--gold, #a16207);
+  box-shadow: 0 0 0 3px rgba(161, 98, 7, 0.12);
+}
+body.bb-light .bb-lang-select option {
+  background: #ffffff;
+  color: #17181c;
+}
+body.bb-light .bb-lang-select {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%23a16207' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+}

@@ -662,17 +662,26 @@ function bbGetLiveText() {
   return Array.from(spans).map(s => s.textContent).join('');
 }
 
+const translateLangSelect = document.getElementById('translateLang');
+if (translateLangSelect && window.BBTranslate) {
+  translateLangSelect.innerHTML = window.BBTranslate.optionsHTML('en');
+}
+
 btnTranslateLive.addEventListener('click', async () => {
   const text = bbGetLiveText().trim();
   if (!text) { translateStatus.textContent = 'Nothing to translate yet — type or receive some characters first.'; return; }
-  const target = window.BBTranslate && window.BBTranslate.hasBengali(text) ? 'en' : 'bn';
+  const target = translateLangSelect ? translateLangSelect.value : 'en';
+  const detected = window.BBTranslate ? window.BBTranslate.detectLanguage(text) : null;
   btnTranslateLive.disabled = true;
   translateStatus.innerHTML = '<span class="spinner-inline"></span> Translating with Google Translate…';
   const res = await window.BBTranslate.translate(text, target);
   btnTranslateLive.disabled = false;
   if (res.ok) {
-    translateStatus.innerHTML = `<strong>${res.text}</strong>`;
-    btnTranslateLive.textContent = target === 'en' ? '→ বাংলা' : '→ EN';
+    const from = res.detected
+      ? window.BBTranslate.name(res.detected)
+      : (detected ? window.BBTranslate.name(detected) : 'auto');
+    translateStatus.innerHTML = `<strong></strong> <span class="muted">(${from} → ${window.BBTranslate.name(target)})</span>`;
+    translateStatus.firstChild.textContent = res.text;
   } else {
     translateStatus.innerHTML = `<span class="err">${res.error}</span>`;
   }

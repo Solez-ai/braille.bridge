@@ -262,18 +262,27 @@ drop-shadow — replicate with two-layer shadow in Compose.
 
 Reference implementation: `braille-display/shared.js → BBTranslate`.
 
+- **FULL LANGUAGE CATALOGUE (updated rule):** every language Google Translate
+  supports (~128 codes) must be selectable — port the `LANGUAGES` table from
+  `braille-display/shared.js` verbatim into `Translate.kt` as
+  `data class BBLanguage(val code: String, val name: String, val cc: String)`.
+  The picker is a native dropdown (Material3 `ExposedDropdownMenuBox` or
+  `Spinner`) listing "flag + English name", defaulting to English (`en`).
 - Endpoint: `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=<target>&dt=t&q=<text>`
   (parse `data[0][i][0]` segments), fallback
-  `/language/translate/v2` v2 shape. **Cache** every (target,text) pair.
-- Direction auto-pick: text contains Bengali range `[\u0980-\u09FF]` → target
-  `en`, else target `bn`. This is the same rule in the teacher review screen
-  and the live translate bars.
+  `/language/translate/v2` v2 shape. **Cache** every (source,target,text) pair.
+- Source is ALWAYS `auto`; Google returns the detected code — display it:
+  `"(Bangla → French)"` style, via a `name(code)` lookup over the same table.
+  Local fallback (`detectLanguage()`): Bengali range `[\u0980-\u09FF]` →
+  display "Bangla" when Google's detection is unavailable.
 - **Live bar (student view):** appears under Live Output the moment the stream
-  has content (MutationObserver on web / snapshot flow on Android), button
-  "Translate" → shows result inline → button becomes `→ বাংলা / → EN` to
-  flip back.
-- **Review translate:** see §8.3 (translate the formatted document, EN⇄BN
-  toggle, original preserved).
+  has content (MutationObserver on web / snapshot flow on Android), language
+  dropdown + "Translate" button → shows result inline with the
+  `(detected → target)` caption. Choosing a new language and pressing
+  Translate again re-translates from the ORIGINAL text (keep the original
+  stream text separately from the displayed translation).
+- **Review translate:** see §8.3 (translate the formatted document into ANY
+  chosen catalogue language, original preserved, picker defaults to last use).
 - Android: `OkHttp` + `kotlinx.serialization`; do the request off-main;
   same cache in memory (and optionally DiskLru).
 
@@ -337,9 +346,10 @@ stays active)."*
 - Formatted document view rendered by the **auto-formatter** (§8.4):
   real title/heading/paragraph/list typography, gold rule under titles,
   per-block timestamps visible in Raw mode.
-- Toolbar: **Back · Translate → EN/বাংলা · Raw · Download .txt**
-  - Translate converts the whole document; toggling shows the last
-    translation; download exports whatever is currently shown.
+- Toolbar: **Back · Translate → <language picker> · Raw · Download .txt**
+  - Translate converts the whole document into the picked language (full
+    catalogue); toggling between original/translated preserves both;
+    download exports whatever is currently shown.
   - Raw = monospace timestamped lines.
 - Footer: title · char count · formatted block count.
 
@@ -388,6 +398,6 @@ stays active)."*
 - [ ] Boot garbage never appears (power-cycle the ESP32 mid-session)
 - [ ] Bangla split across BLE packets renders correctly
 - [ ] Export saved → appears in Exports → review shows title/headings/lists →
-      translate EN⇄BN → download matches on-screen text
+      translate to any catalogue language → download matches on-screen text
 - [ ] Account modal shows live stats; website shows `—` stats without roster
 - [ ] Theme toggle persists; both palettes render all new UI correctly

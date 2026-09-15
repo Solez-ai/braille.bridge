@@ -14,34 +14,227 @@
   'use strict';
 
   /* ============================================================
-     1. GOOGLE TRANSLATE BRIDGE
+     1. GOOGLE TRANSLATE BRIDGE - ALL LANGUAGES
      Uses the public translate_a/single endpoint (gtx client) with a
-     v2 fallback. Auto-detects source language — this is how Bangla
-     output gets converted to English (and anything else).
+     v2 fallback. Source language is auto-detected by the API (sl=auto)
+     and reported back so the UI can show "Bangla -> Spanish" etc.
+     The full Google Translate catalogue is supported: every language
+     Google Translate offers (~110+ codes).
      ============================================================ */
   const BBTranslate = {
     cache: new Map(),
+
+    // Full Google Translate catalogue: [code, English name, flag country code].
+    // Flag emoji are generated from the 2-letter country code at runtime.
+    // 'auto' first, then English + Bangla (primary audience), then the rest.
+    LANGUAGES: [
+      ['auto', 'Detect language', ''],
+      ['en', 'English', 'GB'],
+      ['bn', 'Bangla', 'BD'],
+      ['af', 'Afrikaans', 'ZA'],
+      ['sq', 'Albanian', 'AL'],
+      ['am', 'Amharic', 'ET'],
+      ['ar', 'Arabic', 'SA'],
+      ['hy', 'Armenian', 'AM'],
+      ['as', 'Assamese', 'IN'],
+      ['ay', 'Aymara', 'BO'],
+      ['az', 'Azerbaijani', 'AZ'],
+      ['bm', 'Bambara', 'ML'],
+      ['eu', 'Basque', 'ES'],
+      ['be', 'Belarusian', 'BY'],
+      ['bho', 'Bhojpuri', 'IN'],
+      ['bs', 'Bosnian', 'BA'],
+      ['bg', 'Bulgarian', 'BG'],
+      ['ca', 'Catalan', 'ES'],
+      ['ceb', 'Cebuano', 'PH'],
+      ['ny', 'Chichewa', 'MW'],
+      ['zh-CN', 'Chinese (Simplified)', 'CN'],
+      ['zh-TW', 'Chinese (Traditional)', 'TW'],
+      ['co', 'Corsican', 'FR'],
+      ['hr', 'Croatian', 'HR'],
+      ['cs', 'Czech', 'CZ'],
+      ['da', 'Danish', 'DK'],
+      ['dv', 'Dhivehi', 'MV'],
+      ['nl', 'Dutch', 'NL'],
+      ['eo', 'Esperanto', ''],
+      ['et', 'Estonian', 'EE'],
+      ['ee', 'Ewe', 'GH'],
+      ['fil', 'Filipino', 'PH'],
+      ['fi', 'Finnish', 'FI'],
+      ['fr', 'French', 'FR'],
+      ['fy', 'Frisian', 'NL'],
+      ['gl', 'Galician', 'ES'],
+      ['ka', 'Georgian', 'GE'],
+      ['de', 'German', 'DE'],
+      ['el', 'Greek', 'GR'],
+      ['gn', 'Guarani', 'PY'],
+      ['gu', 'Gujarati', 'IN'],
+      ['ht', 'Haitian Creole', 'HT'],
+      ['ha', 'Hausa', 'NG'],
+      ['haw', 'Hawaiian', ''],
+      ['iw', 'Hebrew', 'IL'],
+      ['hi', 'Hindi', 'IN'],
+      ['hmn', 'Hmong', ''],
+      ['hu', 'Hungarian', 'HU'],
+      ['is', 'Icelandic', 'IS'],
+      ['ig', 'Igbo', 'NG'],
+      ['id', 'Indonesian', 'ID'],
+      ['ga', 'Irish', 'IE'],
+      ['it', 'Italian', 'IT'],
+      ['ja', 'Japanese', 'JP'],
+      ['jv', 'Javanese', 'ID'],
+      ['kn', 'Kannada', 'IN'],
+      ['kk', 'Kazakh', 'KZ'],
+      ['km', 'Khmer', 'KH'],
+      ['rw', 'Kinyarwanda', 'RW'],
+      ['gom', 'Konkani', 'IN'],
+      ['ko', 'Korean', 'KR'],
+      ['krio', 'Krio', 'SL'],
+      ['ku', 'Kurdish (Kurmanji)', 'TR'],
+      ['ckb', 'Kurdish (Sorani)', 'IQ'],
+      ['ky', 'Kyrgyz', 'KG'],
+      ['lo', 'Lao', 'LA'],
+      ['la', 'Latin', ''],
+      ['lv', 'Latvian', 'LV'],
+      ['ln', 'Lingala', 'CD'],
+      ['lt', 'Lithuanian', 'LT'],
+      ['lg', 'Luganda', 'UG'],
+      ['lb', 'Luxembourgish', 'LU'],
+      ['mk', 'Macedonian', 'MK'],
+      ['mg', 'Malagasy', 'MG'],
+      ['ms', 'Malay', 'MY'],
+      ['ml', 'Malayalam', 'IN'],
+      ['mt', 'Maltese', 'MT'],
+      ['mi', 'Maori', 'NZ'],
+      ['mr', 'Marathi', 'IN'],
+      ['mn', 'Mongolian', 'MN'],
+      ['my', 'Myanmar (Burmese)', 'MM'],
+      ['ne', 'Nepali', 'NP'],
+      ['no', 'Norwegian', 'NO'],
+      ['or', 'Odia (Oriya)', 'IN'],
+      ['om', 'Oromo', 'ET'],
+      ['ps', 'Pashto', 'AF'],
+      ['fa', 'Persian', 'IR'],
+      ['pl', 'Polish', 'PL'],
+      ['pt', 'Portuguese', 'PT'],
+      ['pa', 'Punjabi', 'IN'],
+      ['ro', 'Romanian', 'RO'],
+      ['ru', 'Russian', 'RU'],
+      ['sm', 'Samoan', 'WS'],
+      ['sa', 'Sanskrit', 'IN'],
+      ['gd', 'Scots Gaelic', 'GB'],
+      ['nso', 'Sepedi', 'ZA'],
+      ['sr', 'Serbian', 'RS'],
+      ['st', 'Sesotho', 'ZA'],
+      ['sn', 'Shona', 'ZW'],
+      ['sd', 'Sindhi', 'PK'],
+      ['si', 'Sinhala', 'LK'],
+      ['sk', 'Slovak', 'SK'],
+      ['sl', 'Slovenian', 'SI'],
+      ['so', 'Somali', 'SO'],
+      ['es', 'Spanish', 'ES'],
+      ['su', 'Sundanese', 'ID'],
+      ['sw', 'Swahili', 'KE'],
+      ['sv', 'Swedish', 'SE'],
+      ['tg', 'Tajik', 'TJ'],
+      ['ta', 'Tamil', 'IN'],
+      ['tt', 'Tatar', 'RU'],
+      ['te', 'Telugu', 'IN'],
+      ['th', 'Thai', 'TH'],
+      ['ti', 'Tigrinya', 'ET'],
+      ['ts', 'Tsonga', 'ZA'],
+      ['tr', 'Turkish', 'TR'],
+      ['tk', 'Turkmen', 'TM'],
+      ['ak', 'Twi', 'GH'],
+      ['uk', 'Ukrainian', 'UA'],
+      ['ur', 'Urdu', 'PK'],
+      ['ug', 'Uyghur', 'CN'],
+      ['uz', 'Uzbek', 'UZ'],
+      ['vi', 'Vietnamese', 'VN'],
+      ['cy', 'Welsh', 'GB'],
+      ['xh', 'Xhosa', 'ZA'],
+      ['yi', 'Yiddish', ''],
+      ['yo', 'Yoruba', 'NG'],
+      ['zu', 'Zulu', 'ZA']
+    ],
+
+    // Regional-indicator flag emoji from a 2-letter country code
+    flag(cc) {
+      if (!cc || cc.length !== 2) return '\uD83C\uDF10'; // globe for world languages
+      const A = 0x1F1E6;
+      const up = cc.toUpperCase();
+      return String.fromCodePoint(A + up.charCodeAt(0) - 65, A + up.charCodeAt(1) - 65);
+    },
+
+    name(code) {
+      const l = this.LANGUAGES.find(x => x[0] === code);
+      return l ? l[1] : code;
+    },
+
+    label(code) {
+      const l = this.LANGUAGES.find(x => x[0] === code);
+      return l ? (l[2] ? this.flag(l[2]) + ' ' + l[1] : l[1]) : code;
+    },
+
+    // innerHTML for a <select> that picks a target language
+    optionsHTML(selected) {
+      return this.LANGUAGES.map(l =>
+        '<option value="' + l[0] + '"' + (l[0] === selected ? ' selected' : '') + '>' +
+        (l[2] ? this.flag(l[2]) + ' ' : '') + l[1] +
+        '</option>').join('');
+    },
 
     hasBengali(text) {
       return /[\u0980-\u09FF]/.test(text);
     },
 
-    async translate(text, target) {
+    // Best-effort local source-language guess (Google's own detection,
+    // returned as res.detected, always takes precedence when available).
+    detectLanguage(text) {
+      if (!text) return null;
+      if (this.hasBengali(text)) return 'bn';
+      if (/[\u0400-\u04FF]/.test(text)) return 'ru';
+      if (/[\u0600-\u06FF]/.test(text)) return 'ar';
+      if (/[\u4E00-\u9FFF]/.test(text)) return 'zh-CN';
+      if (/[\u3040-\u30FF]/.test(text)) return 'ja';
+      if (/[\uAC00-\uD7AF]/.test(text)) return 'ko';
+      if (/[\u0900-\u097F]/.test(text)) return 'hi';
+      if (/[\u0E00-\u0E7F]/.test(text)) return 'th';
+      if (/[\u0590-\u05FF]/.test(text)) return 'he';
+      if (/[\u0370-\u03FF]/.test(text)) return 'el';
+      return 'en';
+    },
+
+    // translate(text, target[, source]) -> { ok, text, detected } |
+    //                                        { ok: false, error }
+    // source 'auto' (default) lets Google detect; the detected code comes
+    // back in .detected so the UI can show "Bangla -> French".
+    // Results are cached per (source, target, text).
+    async translate(text, target, source) {
       const trimmed = (text || '').trim();
       if (!trimmed) return { ok: false, text: '', error: 'nothing to translate' };
-      const key = target + '::' + trimmed;
-      if (this.cache.has(key)) return { ok: true, text: this.cache.get(key) };
+      const src = source || 'auto';
+      const key = src + '>' + target + '::' + trimmed;
+      if (this.cache.has(key)) return this.cache.get(key);
 
-      // Primary: gtx single endpoint (no key needed, generous limits)
+      const done = (out, detected) => {
+        const r = { ok: true, text: out, detected: detected || null };
+        this.cache.set(key, r);
+        return r;
+      };
+
+      // Primary: gtx single endpoint (no key needed, generous limits).
+      // data[2] is the detected source language code when sl=auto.
       try {
-        const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=' +
-          encodeURIComponent(target) + '&dt=t&q=' + encodeURIComponent(trimmed);
+        const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=' +
+          encodeURIComponent(src) + '&tl=' + encodeURIComponent(target) +
+          '&dt=t&q=' + encodeURIComponent(trimmed);
         const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && Array.isArray(data[0])) {
             const out = data[0].map(seg => (seg && seg[0]) || '').join('');
-            if (out) { this.cache.set(key, out); return { ok: true, text: out }; }
+            if (out) return done(out, typeof data[2] === 'string' ? data[2] : null);
           }
         }
       } catch (e) { /* fall through to v2 */ }
@@ -49,13 +242,14 @@
       // Fallback: simple v2 endpoint
       try {
         const url2 = 'https://translate.googleapis.com/language/translate/v2?target=' +
-          encodeURIComponent(target) + '&q=' + encodeURIComponent(trimmed);
+          encodeURIComponent(target) +
+          (src !== 'auto' ? '&source=' + encodeURIComponent(src) : '') +
+          '&q=' + encodeURIComponent(trimmed);
         const res2 = await fetch(url2);
         if (res2.ok) {
           const j = await res2.json();
-          const out = j && j.data && j.data.translations && j.data.translations[0] &&
-            j.data.translations[0].translatedText;
-          if (out) { this.cache.set(key, out); return { ok: true, text: out }; }
+          const t = j && j.data && j.data.translations && j.data.translations[0];
+          if (t && t.translatedText) return done(t.translatedText, t.detectedSourceLanguage || null);
         }
       } catch (e) { /* ignore */ }
 
@@ -551,7 +745,9 @@
       bar.innerHTML = `
         <button class="bb-btn-ghost" id="bbReviewBack"><i class="fa-solid fa-arrow-left"></i> Back</button>
         <div class="bb-review-tools">
-          <button class="bb-btn-ghost" id="bbReviewTranslate"><i class="fa-solid fa-language"></i> <span id="bbReviewTranslateLbl">Translate → EN</span></button>
+          <select class="bb-lang-select" id="bbReviewLang" title="Translate into any Google Translate language">${BBTranslate.optionsHTML('en')}</select>
+          <button class="bb-btn-ghost" id="bbReviewTranslate"><i class="fa-solid fa-language"></i> <span id="bbReviewTranslateLbl">Translate</span></button>
+          <button class="bb-btn-ghost" id="bbReviewShowOrig" style="display:none;"><i class="fa-solid fa-rotate-left"></i> Show original</button>
           <button class="bb-btn-ghost" id="bbReviewRaw"><i class="fa-solid fa-eye"></i> Raw</button>
           <button class="bb-btn-gold" id="bbReviewDl"><i class="fa-solid fa-download"></i> Download .txt</button>
         </div>`;
@@ -562,10 +758,12 @@
       body.appendChild(doc);
       BBAutoFormat.render(ex.blocks, doc, false);
 
-      let showingRaw = false, currentBlocks = ex.blocks, translateLabel = 'Translate → EN';
+      let showingRaw = false;
+      let currentBlocks = ex.blocks;   // what's on screen (original or translated)
+      let originalBlocks = ex.blocks;  // untouched original
 
       bar.querySelector('#bbReviewBack').addEventListener('click', () => { this.viewing = null; this.render(); });
-      bar.querySelector('#bbReviewDl').addEventListener('click', () => this.download(ex, currentBlocks === ex.blocks ? null : currentBlocks));
+      bar.querySelector('#bbReviewDl').addEventListener('click', () => this.download(ex, currentBlocks === originalBlocks ? null : currentBlocks));
       const showBlocks = () => {
         if (showingRaw) {
           doc.classList.add('raw');
@@ -578,23 +776,38 @@
         }
       };
       bar.querySelector('#bbReviewRaw').addEventListener('click', () => { showingRaw = !showingRaw; showBlocks(); });
+
+      // ---- Translate into ANY of the 128 catalogue languages ----
+      const showOrigBtn = bar.querySelector('#bbReviewShowOrig');
       bar.querySelector('#bbReviewTranslate').addEventListener('click', async () => {
         const lbl = document.getElementById('bbReviewTranslateLbl');
-        const target = lbl.textContent.indexOf('EN') >= 0 ? 'en' : 'bn';
+        const sel = document.getElementById('bbReviewLang');
+        const target = sel.value;
+        if (!currentBlocks.length) return;
         lbl.textContent = 'Translating…';
+        sel.disabled = true;
         const texts = currentBlocks.map(b => b.text);
         const joined = texts.join('\n\u241F\n'); // segment separator preserved by translator
         const res = await BBTranslate.translate(joined, target);
+        sel.disabled = false;
         if (res.ok) {
           const parts = res.text.split('\u241F');
           currentBlocks = currentBlocks.map((b, i) => ({ ...b, text: (parts[i] || b.text).trim() }));
-          translateLabel = target === 'en' ? 'Translate → বাংলা' : 'Translate → EN';
-          lbl.textContent = translateLabel;
+          const detected = res.detected ? BBTranslate.name(res.detected) : null;
+          lbl.textContent = detected ? (BBTranslate.name(target) + ' (from ' + detected + ')') : BBTranslate.name(target);
+          showOrigBtn.style.display = '';
           showBlocks();
         } else {
           lbl.textContent = 'Translate failed';
-          setTimeout(() => { lbl.textContent = translateLabel; }, 2000);
+          setTimeout(() => { lbl.textContent = 'Translate'; }, 2000);
         }
+      });
+      // Show original restores the untouched document
+      showOrigBtn.addEventListener('click', () => {
+        currentBlocks = originalBlocks;
+        showOrigBtn.style.display = 'none';
+        document.getElementById('bbReviewTranslateLbl').textContent = 'Translate';
+        showBlocks();
       });
 
       foot.innerHTML = `<span class="bb-foot-info">${ex.title} · ${ex.charsCount} characters · formatted ${ex.blocks.length} blocks</span>`;

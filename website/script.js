@@ -193,8 +193,12 @@
   const demoTranslateStatus = $('#demoTranslateStatus');
   const exportSessionBtn = $('#exportSessionBtn');
 
+  const demoTranslateLang = $('#demoTranslateLang');
+  if (demoTranslateLang && window.BBTranslate) {
+    demoTranslateLang.innerHTML = window.BBTranslate.optionsHTML('en');
+  }
+
   if (demoTranslateBtn) {
-    let demoTranslated = false;
     demoTranslateBtn.addEventListener('click', async () => {
       const text = $$('.stream-char, .stream-space', readoutStream)
         .map((s) => s.textContent).join('');
@@ -202,16 +206,19 @@
         demoTranslateStatus.textContent = 'Compose some chords first — the output stream is empty.';
         return;
       }
-      const target = window.BBTranslate.hasBengali(text) ? 'en' : 'bn';
+      const target = demoTranslateLang && demoTranslateLang.value ? demoTranslateLang.value : 'en';
+      const detected = window.BBTranslate.detectLanguage(text);
       demoTranslateBtn.disabled = true;
       demoTranslateStatus.innerHTML = '<span class="spinner-inline"></span> Translating with Google Translate…';
       const res = await window.BBTranslate.translate(text, target);
       demoTranslateBtn.disabled = false;
       if (res.ok) {
-        demoTranslateStatus.innerHTML = '<strong></strong>';
+        const from = res.detected
+          ? window.BBTranslate.name(res.detected)
+          : (detected ? window.BBTranslate.name(detected) : 'auto');
+        demoTranslateStatus.innerHTML = '<strong></strong> <span class="demo-translate-muted"></span>';
         demoTranslateStatus.firstChild.textContent = res.text;
-        demoTranslateBtn.textContent = target === 'en' ? '→ বাংলা' : '→ EN';
-        demoTranslated = !demoTranslated;
+        demoTranslateStatus.querySelector('.demo-translate-muted').textContent = `(${from} → ${window.BBTranslate.name(target)})`;
       } else {
         demoTranslateStatus.innerHTML = '<span class="err"></span>';
         demoTranslateStatus.querySelector('.err').textContent = res.error;
