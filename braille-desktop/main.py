@@ -10,7 +10,6 @@ INDEX_FILE = os.path.abspath(os.path.join(BASE_DIR, '..', 'braille-display', 'in
 
 
 class BridgeApi:
-    """Exposed to the web UI as window.pywebview.api.*"""
 
     def __init__(self):
         self._window = None

@@ -8,7 +8,6 @@
 #define DOT_3 13
 #define DOT_4 27
 #define DOT_5 26
-#define DOT_6 25
 #define SPACE 33
 #define SHIFT 32
 // (Physical Shift button — hold while pressing dots for uppercase/numbers/math/Bangla vowel signs)
