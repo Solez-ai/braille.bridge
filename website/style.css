@@ -1534,3 +1534,23 @@ html.js-cursor .pipe, html.js-cursor .nav-burger, html.js-cursor .curved-loop {
   .reveal { opacity: 1; transform: none; }
   .device { animation: none; }
 }
+
+/* ============================================================
+   Demo extras — Export toggle + Google Translate row (shared module)
+   ============================================================ */
+.toggle-export {
+  color: var(--gold-deep);
+  border-color: var(--gold-soft);
+  background: var(--gold-tint);
+}
+.toggle-export:hover { background: var(--gold-soft); color: #fff; }
+
+.demo-translate-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 14px;
+  padding: 0 4px;
+  flex-wrap: wrap;
+}
+.demo-translate-status { font-size: 13px; color: var(--ink-soft); }
+.demo-translate-status strong { color: var(--ink); }
+.demo-translate-status .err { color: var(--red); }

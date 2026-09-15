@@ -184,6 +184,25 @@ Holding the physical Shift key while pressing a chord expands the vocabulary:
 | Shift + letter (EN)| Uppercase letter                |
 | Shift + vowel (BN) | Bangla vowel sign (kar/matra)   |
 
+### Shift Tap = Backspace
+
+Tapping Shift alone (press + release **without** composing any chord) deletes the last typed character, like a normal keyboard's Backspace. All the hold-to-modify combos above work exactly as before — only a clean, unused tap fires the delete.
+
+Guards so it never misfires:
+
+- **Dots down during the tap** → modifier mode, no delete (checked both when dots are pressed and when Shift is released mid-chord).
+- **Press shorter than 25 ms** → treated as bounce, ignored.
+- **Hold longer than 1.5 s** → ignored, so pocketing the device can't wipe text.
+- **100 ms cooldown** after a fired delete so contact bounce can't chain multiple backspaces.
+
+The deletion goes out on both outputs: a real HID backspace over Bluetooth (works in any app on the connected computer/phone), and a `SYSTEM:BKSP` control line over Serial, which the Teacher Software already handles in student view, teacher mode, and exam mode.
+
+### Shift Tap = Backspace
+
+Tapping Shift alone (press + release **without** composing any chord) acts as a **Backspace** — it deletes the last typed character. Tap-and-chord combos behave exactly as before; only a clean, unused tap fires the delete. Deliberately long presses (>1.5 s) are ignored so the key can't misfire when pocketed.
+
+The deletion is sent over both outputs: a real HID backspace to the connected device over Bluetooth, and a `SYSTEM:BKSP` control line over Serial, which the Teacher Software handles in student view, teacher mode, and exam mode.
+
 ---
 
 ## Getting Started
@@ -191,10 +210,11 @@ Holding the physical Shift key while pressing a chord expands the vocabulary:
 ### Firmware (ESP32)
 
 1. Install the [Arduino IDE](https://www.arduino.cc/en/software) and the [Arduino core for ESP32](https://github.com/espressif/arduino-esp32).
-2. Install the **ESP32 BLE Keyboard** library (`BleKeyboard` by T-vK) via the Library Manager.
-3. Open `braile/braile.ino` and upload it to an ESP32 Dev Module.
-4. Pair the device (it appears as a Bluetooth keyboard named **BrailleBridge**) with the student's phone, tablet, or computer.
-5. Open a text field, type Braille chords, and the translated text appears — while the same characters stream over USB Serial to the Teacher Software.
+2. Open `braile/braile.ino` and upload it to an ESP32 Dev Module. *(No external libraries needed — the sketch uses only the ESP32 core's built-in BLE stack.)*
+3. Pair the device (it appears as a Bluetooth keyboard named **BrailleBridge**) with the student's phone, tablet, or computer.
+4. Open a text field, type Braille chords, and the translated text appears — while the same characters stream over USB Serial **and over BLE** to the Teacher Software.
+
+> **BLE stream (Nordic UART Service):** alongside the HID keyboard service, the firmware now exposes the standard NUS (`6E400001-B5A3-F393-E0A9-E50E24DCCA9E`) — TX `…0002` notifies the exact serial stream (characters, `LANG:*`, `SYSTEM:BKSP`), RX `…0003` accepts `LANG:en` / `LANG:bn` commands back. This is the channel the future phone app (see [PHONE.md](PHONE.md)) consumes — no USB cable required.
 
 ### Teacher Software
 
@@ -217,13 +237,14 @@ Print `models/TOP_SHELL.stl` and `models/BOTTOM_SHELL.stl` on an FDM printer (PL
 
 ## Serial Protocol
 
-All translation happens on the ESP32, so the serial line carries only results at **115200 baud**:
+All translation happens on the ESP32, so the serial line carries only results at **115200 baud** (and the identical byte stream is mirrored over the BLE Nordic UART Service for the phone app):
 
 | Message            | Meaning                              |
 | ------------------ | ------------------------------------ |
 | `LANG:en`          | Language switched to English         |
 | `LANG:bn`          | Language switched to Bangla          |
 | `Invalid`          | Unrecognised chord rejected          |
+| `SYSTEM:BKSP`      | Shift tap → delete last character    |
 | `<char>`           | A translated character               |
 
 ---

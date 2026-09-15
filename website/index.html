@@ -10,8 +10,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=Noto+Serif+Bengali:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="../braille-display/shared.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 </head>
-<body>
+<body class="bb-light">
 
   <!-- ================= NAV ================= -->
   <header class="site-nav" id="siteNav">
@@ -38,6 +40,15 @@
           Read further docs
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
+        <div class="site-nav-account">
+          <div class="bb-account-chip" id="siteAccountChip" title="Teacher account — Samin Yeasar">
+            <span class="bb-chip-avatar">SY</span>
+            <span class="bb-chip-info">
+              <span class="bb-chip-name">Samin Yeasar</span>
+              <span class="bb-chip-role">Teacher</span>
+            </span>
+          </div>
+        </div>
         <button class="nav-burger" id="navBurger" aria-label="Open menu" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
@@ -564,21 +575,30 @@
               <button class="demo-dot" data-d="5" aria-pressed="false" aria-label="Dot 6"><span>6</span></button>
             </div>
 
-            <div class="demo-controls">
-              <div class="toggle-group" role="group" aria-label="Language">
-                <button class="toggle-btn active" id="langEn" aria-pressed="true">English</button>
-                <button class="toggle-btn" id="langBn" aria-pressed="false">বাংলা</button>
-              </div>
-              <button class="toggle-btn toggle-shift" id="shiftToggle" aria-pressed="false">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v14M6 9l6 6 6-6"/></svg>
-                Shift
-              </button>
-              <button class="toggle-btn toggle-space" id="spaceBtn" title="Space">Space</button>
-              <button class="toggle-btn toggle-clear" id="clearBtn" title="Clear output">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M9 6V4h6v2M6 6l1 14h10l1-14"/></svg>
-                Clear
-              </button>
-            </div>
+        <div class="demo-controls">
+          <div class="toggle-group" role="group" aria-label="Language">
+            <button class="toggle-btn active" id="langEn" aria-pressed="true">English</button>
+            <button class="toggle-btn" id="langBn" aria-pressed="false">বাংলা</button>
+          </div>
+          <button class="toggle-btn toggle-shift" id="shiftToggle" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v14M6 9l6 6 6-6"/></svg>
+            Shift
+          </button>
+          <button class="toggle-btn toggle-space" id="spaceBtn" title="Space">Space</button>
+          <button class="toggle-btn toggle-clear" id="clearBtn" title="Clear output">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M9 6V4h6v2M6 6l1 14h10l1-14"/></svg>
+            Clear
+          </button>
+          <button class="toggle-btn toggle-export" id="exportSessionBtn" title="Save this demo session to your Exports library">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+            Export
+          </button>
+        </div>
+
+        <div class="demo-translate-row">
+          <button class="bb-btn-ghost" id="demoTranslateBtn" title="Translate the output with Google Translate">Translate output</button>
+          <span class="demo-translate-status" id="demoTranslateStatus">Output translates via Google Translate — English ⇄ বাংলা.</span>
+        </div>
 
             <div class="demo-leds" aria-hidden="true">
               <span class="led led-red" id="ledEn"></span>
@@ -1116,6 +1136,8 @@
     <i></i><i></i><i></i><i></i><i></i><i></i>
   </div>
 
-  <script src="script.js"></script>
+  
+<script src="../braille-display/shared.js"></script>
+<script src="script.js"></script>
 </body>
 </html>

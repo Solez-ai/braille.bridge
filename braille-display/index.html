@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Noto+Serif+Bengali:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="shared.css">
 </head>
 <body>
 
@@ -31,6 +32,17 @@
         <button class="mode-btn" data-mode="exam" id="modeExam">
           <i class="fa-solid fa-graduation-cap"></i> Exam
         </button>
+        <button class="mode-btn" data-mode="exports" id="modeExports">
+          <i class="fa-solid fa-file-export"></i> Exports
+        </button>
+      </div>
+      <div class="bb-account-chip" id="accountChip" title="Teacher account — Samin Yeasar">
+        <span class="bb-chip-avatar">SY</span>
+        <span class="bb-chip-info">
+          <span class="bb-chip-name">Samin Yeasar</span>
+          <span class="bb-chip-role">Teacher</span>
+        </span>
+        <i class="fa-solid fa-chevron-down bb-chip-badge" style="border:none;padding:0;"></i>
       </div>
       <span class="relay-chip" id="relayChip" style="display:none;" title="Running inside the BrailleBridge desktop app — serial ports are managed by the Python relay">
         <i class="fa-solid fa-laptop-code"></i> Desktop
@@ -106,6 +118,10 @@
         </div>
         <div class="display-actions">
           <button class="btn-clear" id="btnClear"><i class="fa-solid fa-xmark"></i> Clear</button>
+        </div>
+        <div class="bb-translate-bar hidden" id="translateBar">
+          <div class="bb-translate-status" id="translateStatus">Translate output with Google Translate.</div>
+          <button class="bb-btn-ghost" id="btnTranslateLive">Translate</button>
         </div>
       </div>
       <div class="card history-card">
@@ -325,6 +341,7 @@
   </div>
 </div>
 
+<script src="shared.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

@@ -1,4 +1,19 @@
-#include <BleKeyboard.h>
+#include <Arduino.h>
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
+
+// ==========================================
+// BrailleBridge — ESP32 firmware
+//
+// BLE exposes TWO services at once:
+//   1. HID keyboard (0x1812)  → typed characters reach any paired
+//      computer/phone text field exactly like before.
+//   2. Nordic UART Service    → the raw character + control-line stream
+//      (the same bytes that go to USB Serial) mirrored over BLE so the
+//      phone app (see PHONE.md) receives it without a USB cable.
+// ==========================================
 
 // ==========================================
 // PIN DEFINITIONS
@@ -8,9 +23,11 @@
 #define DOT_3 13
 #define DOT_4 27
 #define DOT_5 26
+#define DOT_6 25
 #define SPACE 33
 #define SHIFT 32
 // (Physical Shift button — hold while pressing dots for uppercase/numbers/math/Bangla vowel signs)
+// Tap Shift alone (press + release without any chord) → Backspace (deletes last character)
 // #define RED_LED 18
 // #define GREEN_LED 19
 
@@ -54,9 +71,9 @@ const BrailleEntry brailleDict[] = {
 { 0b100101, "u", "উ" },     // dots 136 = উ
 { 0b100111, "v", "ৱ" },     // dots 1236 = ৱ (Assamese/Bengali v)
 { 0b111010, "w", nullptr },  // dots 2456 = w
-{ 0b101101, "x", "য়" },     // dots 1346 = য় (yya) — convenience
+{ 0b101101, "x", "য" },     // dots 1346 = য (yya) — convenience
 { 0b111101, "y", "য" },     // dots 13456 = য
-{ 0b110101, "z", "ড়" },     // dots 1356 = z + ড়
+{ 0b110101, "z", "ড়" },     // dots 1356 = z + ড়
 
   // ===== Bangla-only chords (standard Bharati cells) =====
   { 0b001010, nullptr, "ই" },    // dots 24 = ই
@@ -91,7 +108,7 @@ const BrailleEntry brailleDict[] = {
   // ===== Non-standard convenience chords =====
   { 0b100110, nullptr, "ি" },    // ই-কার (convenience, not a Bharati cell)
   { 0b110010, nullptr, "ূ" },    // দীর্ঘ উ-কার (convenience, not a Bharati cell)
-  // ড় moved to shared section with z at 0b110101
+  // ড় moved to shared section with z at 0b110101
   { 0b100010, nullptr, "স" },    // duplicate স at dots 236 (convenience)
 };
 
@@ -154,55 +171,313 @@ const BanglaShiftEntry banglaShiftMap[] = {
 };
 
 // ==========================================
+// FORWARD DECLARATIONS (used by the BLE layer & loop)
+// ==========================================
+extern bool isBangla;
+void sendChar(const char* c);
+void sendBackspace();
+void processChord(int chord);
+
+// ==========================================
+// BLE — SELF-CONTAINED HID KEYBOARD + NORDIC UART (NUS)
+// ==========================================
+// Replaces the old BleKeyboard dependency (which could not host a second
+// service). Same HID behaviour: service 0x1812, boot keyboard report map,
+// bonding + no-MITM pairing, device appears as "BrailleBridge".
+// Same public API surface the rest of this sketch already used:
+//   begin() / isConnected() / print() / press() / releaseAll()
+
+#define HID_SERVICE_UUID        0x1812
+#define HID_INFO_UUID           0x2A4A
+#define HID_REPORT_MAP_UUID     0x2A4B
+#define HID_CONTROL_POINT_UUID  0x2A4C
+#define HID_REPORT_UUID         0x2A4D
+#define HID_BOOT_INPUT_UUID     0x2A22
+#define HID_BOOT_OUTPUT_UUID    0x2A32
+#define DEVICE_INFO_UUID        0x180A
+#define PNP_ID_UUID             0x2A50
+#define REPORT_REF_DESC_UUID    0x2908
+#define CCCD_UUID               0x2902
+
+// Standard Nordic UART Service UUIDs (see PHONE.md §1.1)
+#define NUS_SERVICE_UUID "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
+#define NUS_TX_UUID      "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"  // ESP32 → phone (notify)
+#define NUS_RX_UUID      "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"  // phone → ESP32 (write)
+
+// Keyboard usage codes (USB HID Usage Tables)
+#define KEY_BACKSPACE 0xB2   // raw usage; press() converts 0xB2 → 0x2A
+
+// Boot keyboard report map (report ID 1) — identical layout to the one
+// BleKeyboard used, so host-side pairing/typing behaviour is unchanged.
+static const uint8_t KEYBOARD_REPORT_MAP[] = {
+  0x05, 0x01, 0x09, 0x06, 0xA1, 0x01, 0x85, 0x01, 0x05, 0x07,
+  0x19, 0xE0, 0x29, 0xE7, 0x15, 0x00, 0x25, 0x01, 0x75, 0x01,
+  0x95, 0x08, 0x81, 0x02, 0x95, 0x01, 0x75, 0x08, 0x81, 0x01,
+  0x95, 0x05, 0x75, 0x01, 0x05, 0x08, 0x19, 0x01, 0x29, 0x05,
+  0x91, 0x02, 0x95, 0x01, 0x75, 0x03, 0x91, 0x01, 0x95, 0x06,
+  0x75, 0x08, 0x15, 0x00, 0x25, 0x65, 0x05, 0x07, 0x19, 0x00,
+  0x29, 0x65, 0x81, 0x00, 0xC0
+};
+
+// ==========================================
+// GATT EVENT BRIDGE
+// Callbacks are defined BEFORE the BLE class and only touch plain globals
+// (C++ unqualified lookup in inline member bodies can't see types declared
+// after the class). loop() drains these flags via bleBridge.processEvents().
+// ==========================================
+volatile uint8_t g_bleEvents = 0;                 // bit0 = connect, bit1 = disconnect, bit2 = rx
+String g_rxValue = "";                            // last NUS RX payload
+
+class BrailleServerCallbacks : public BLEServerCallbacks {
+  void onConnect(BLEServer*) override { g_bleEvents |= 0x01; }
+  void onDisconnect(BLEServer*) override { g_bleEvents |= 0x02; }
+};
+
+class BrailleCharCallbacks : public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic* c) override {
+    g_rxValue = String(c->getValue().c_str());
+    g_bleEvents |= 0x04;
+  }
+};
+
+class BrailleBridgeBLE {
+public:
+
+  void begin(const char* name) {
+    BLEDevice::init(name);
+    BLEDevice::setEncryptionLevel(ESP_BLE_SEC_ENCRYPT_NO_MITM);
+    BLEDevice::setMTU(247);  // Bangla conjuncts + control lines must not fragment badly
+    BLESecurity* sec = new BLESecurity();
+    sec->setCapability(ESP_IO_CAP_NONE);
+    sec->setAuthenticationMode(ESP_LE_AUTH_BOND);
+
+    BLEServer* server = BLEDevice::createServer();
+    server->setCallbacks(new BrailleServerCallbacks());
+
+    // ---------- HID keyboard service ----------
+    BLEService* hid = server->createService(BLEUUID((uint16_t)HID_SERVICE_UUID));
+
+    uint8_t hidInfo[4] = { 0x11, 0x01, 0x00, 0x02 };  // bcdHID 1.11, country 0, flags
+    BLECharacteristic* cInfo = hid->createCharacteristic(BLEUUID((uint16_t)HID_INFO_UUID), BLECharacteristic::PROPERTY_READ);
+    cInfo->setValue(hidInfo, 4);
+
+    BLECharacteristic* cMap = hid->createCharacteristic(BLEUUID((uint16_t)HID_REPORT_MAP_UUID), BLECharacteristic::PROPERTY_READ);
+    cMap->setValue((uint8_t*)KEYBOARD_REPORT_MAP, sizeof(KEYBOARD_REPORT_MAP));
+
+    hid->createCharacteristic(BLEUUID((uint16_t)HID_CONTROL_POINT_UUID), BLECharacteristic::PROPERTY_WRITE_NR);
+
+    _input = hid->createCharacteristic(BLEUUID((uint16_t)HID_REPORT_UUID),
+      BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+    _input->addDescriptor(new BLE2902());
+    addReportRef(_input, 0x01, 0x01);  // report id 1, input
+
+    _bootInput = hid->createCharacteristic(BLEUUID((uint16_t)HID_BOOT_INPUT_UUID), BLECharacteristic::PROPERTY_NOTIFY);
+    _bootInput->addDescriptor(new BLE2902());
+    addReportRef(_bootInput, 0x01, 0x01);
+
+    BLECharacteristic* bootOut = hid->createCharacteristic(BLEUUID((uint16_t)HID_BOOT_OUTPUT_UUID), BLECharacteristic::PROPERTY_WRITE_NR);
+    addReportRef(bootOut, 0x01, 0x02);  // report id 1, output (LED state)
+
+    hid->start();
+
+    // ---------- Device Information (PnP ID, like the old stack) ----------
+    BLEService* devInfo = server->createService(BLEUUID((uint16_t)DEVICE_INFO_UUID));
+    BLECharacteristic* pnp = devInfo->createCharacteristic(BLEUUID((uint16_t)PNP_ID_UUID), BLECharacteristic::PROPERTY_READ);
+    uint8_t pnpVal[7] = { 0x02, 0x01, 0x00, 0x01, 0x00, 0x00, 0x01 };  // USB source, VID, PID, version
+    pnp->setValue(pnpVal, 7);
+    devInfo->start();
+
+    // ---------- Nordic UART Service (the phone-app stream) ----------
+    BLEService* nus = server->createService(BLEUUID(NUS_SERVICE_UUID));
+
+    _tx = nus->createCharacteristic(BLEUUID(NUS_TX_UUID), BLECharacteristic::PROPERTY_NOTIFY);
+    _txCccd = new BLE2902();
+    _tx->addDescriptor(_txCccd);   // stack updates this on CCCD writes; getNotifications() reads it
+
+    BLECharacteristic* rx = nus->createCharacteristic(BLEUUID(NUS_RX_UUID),
+      BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR);
+    rx->setCallbacks(new BrailleCharCallbacks());
+
+    nus->start();
+
+    // ---------- Advertising ----------
+    BLEAdvertising* adv = BLEDevice::getAdvertising();
+    adv->addServiceUUID(BLEUUID((uint16_t)HID_SERVICE_UUID));
+    adv->addServiceUUID(BLEUUID(NUS_SERVICE_UUID));
+    adv->setAppearance(962);        // 0x03C2 — generic keyboard
+    adv->setScanResponse(true);     // device name rides in the scan response
+    BLEDevice::startAdvertising();
+  }
+
+  bool isConnected() const { return _connCount > 0; }
+
+  // ---------- HID keyboard output ----------
+  void press(int k) {
+    if (k >= 0x88) k -= 0x88;   // raw usage shorthand (KEY_BACKSPACE 0xB2 → 0x2A etc.)
+    if (k >= 0xE0) { _modifiers |= (1 << (k - 0xE0)); sendReport(); return; }
+    if (k <= 0 || k > 0x65) return;
+    for (int i = 0; i < 6; i++) if (_keys[i] == k) { sendReport(); return; }
+    for (int i = 0; i < 6; i++) if (_keys[i] == 0) { _keys[i] = (uint8_t)k; sendReport(); return; }
+  }
+
+  void release(int k) {
+    if (k >= 0x88) k -= 0x88;
+    if (k >= 0xE0) { _modifiers &= ~(1 << (k - 0xE0)); sendReport(); return; }
+    for (int i = 0; i < 6; i++) if (_keys[i] == k) { _keys[i] = 0; sendReport(); return; }
+  }
+
+  void releaseAll() {
+    _modifiers = 0;
+    for (int i = 0; i < 6; i++) _keys[i] = 0;
+    sendReport();
+  }
+
+  // Type an ASCII string over HID (press+release per char, like before)
+  void print(const char* s) {
+    for (const char* p = s; *p; p++) {
+      uint8_t usage, mod;
+      if (!asciiToUsage(*p, usage, mod)) continue;  // non-mappable → skip
+      _modifiers = mod;
+      press(usage);
+      release(usage);
+      _modifiers = 0;
+    }
+  }
+
+  // ---------- NUS + Serial stream (the "serial line" that feeds the apps) ----------
+  // Mirrors every Serial write as a BLE notification. This is the byte stream
+  // the phone app subscribes to — identical content to USB Serial.
+  void streamText(const char* s, bool newline) {
+    Serial.print(s);
+    if (newline) Serial.println();
+    if (!_tx || !_connCount) return;
+    String payload(s);
+    if (newline) payload += '\n';
+    size_t mtu = BLEDevice::getMTU();
+    size_t chunk = (mtu >= 23 ? mtu - 3 : 20);
+    size_t len = payload.length();
+    for (size_t i = 0; i < len; i += chunk) {
+      size_t n = (len - i < chunk) ? (len - i) : chunk;
+      _tx->setValue((uint8_t*)payload.c_str() + i, n);
+      // notify() checks each client's CCCD internally — unsubscribed
+      // centrals are skipped automatically, so this is safe to call always.
+      _tx->notify();
+    }
+  }
+
+  void streamLine(const char* line) { streamText(line, true); }
+
+  // ---------- callbacks ----------
+  // Called from loop() — drains the callback flags set by the GATT events
+  void processEvents() {
+    noInterrupts();
+    uint8_t events = g_bleEvents;
+    g_bleEvents = 0;
+    interrupts();
+    if (events & 0x01) onCentralConnect();
+    if (events & 0x02) onCentralDisconnect();
+    if (events & 0x04) { String v = g_rxValue; onRxWrite(v); }
+  }
+
+  void onCentralConnect() { _connCount++; }
+  void onCentralDisconnect() {
+    _connCount--;
+    if (_connCount <= 0) _connCount = 0;
+    // Reset keyboard state so the next host doesn't see stuck keys
+    _modifiers = 0;
+    for (int i = 0; i < 6; i++) _keys[i] = 0;
+    BLEDevice::startAdvertising();  // like BleKeyboard: keep discoverable
+  }
+
+  void onRxWrite(const String& value) {
+    // The phone app can push control lines back over NUS. Only language
+    // commands are accepted; anything else echoes the control vocabulary.
+    String v = value; v.trim();
+    if (v == "LANG:en")      { isBangla = false; streamLine("LANG:en"); }
+    else if (v == "LANG:bn") { isBangla = true;  streamLine("LANG:bn"); }
+    else                     { streamLine("Invalid"); }
+  }
+
+private:
+  static void addReportRef(BLECharacteristic* c, uint8_t id, uint8_t type) {
+    BLEDescriptor* ref = new BLEDescriptor(BLEUUID((uint16_t)REPORT_REF_DESC_UUID));
+    uint8_t val[2] = { id, type };
+    ref->setValue(val, 2);
+    c->addDescriptor(ref);
+  }
+
+  static bool asciiToUsage(char ch, uint8_t& usage, uint8_t& mod) {
+    mod = 0;
+    if (ch >= 'a' && ch <= 'z') { usage = 0x04 + (ch - 'a'); return true; }
+    if (ch >= 'A' && ch <= 'Z') { usage = 0x04 + (ch - 'A'); mod = 0x40; return true; }  // 0x40 = left shift
+    if (ch >= '1' && ch <= '9') { usage = 0x1E + (ch - '1'); return true; }
+    switch (ch) {
+      case '0': usage = 0x27; return true;
+      case '!': usage = 0x1E; mod = 0x40; return true;
+      case '@': usage = 0x1F; mod = 0x40; return true;
+      case '#': usage = 0x20; mod = 0x40; return true;
+      case '$': usage = 0x21; mod = 0x40; return true;
+      case '%': usage = 0x22; mod = 0x40; return true;
+      case '^': usage = 0x23; mod = 0x40; return true;
+      case '&': usage = 0x24; mod = 0x40; return true;
+      case '*': usage = 0x25; mod = 0x40; return true;
+      case '(': usage = 0x26; mod = 0x40; return true;
+      case ')': usage = 0x27; mod = 0x40; return true;
+      case '\n': case '\r': usage = 0x28; return true;
+      case '\b': case 0x7F: usage = 0x2A; return true;   // backspace / delete
+      case '\t': usage = 0x2B; return true;
+      case ' ': usage = 0x2C; return true;
+      case '-': usage = 0x2D; return true;   case '_': usage = 0x2D; mod = 0x40; return true;
+      case '=': usage = 0x2E; return true;   case '+': usage = 0x2E; mod = 0x40; return true;
+      case '[': usage = 0x2F; return true;   case '{': usage = 0x2F; mod = 0x40; return true;
+      case ']': usage = 0x30; return true;   case '}': usage = 0x30; mod = 0x40; return true;
+      case '\\': usage = 0x31; return true;  case '|': usage = 0x31; mod = 0x40; return true;
+      case ';': usage = 0x33; return true;   case ':': usage = 0x33; mod = 0x40; return true;
+      case '\'': usage = 0x34; return true;  case '"': usage = 0x34; mod = 0x40; return true;
+      case '`': usage = 0x35; return true;   case '~': usage = 0x35; mod = 0x40; return true;
+      case ',': usage = 0x36; return true;   case '<': usage = 0x36; mod = 0x40; return true;
+      case '.': usage = 0x37; return true;   case '>': usage = 0x37; mod = 0x40; return true;
+      case '/': usage = 0x38; return true;   case '?': usage = 0x38; mod = 0x40; return true;
+      default: return false;
+    }
+  }
+
+  void sendReport() {
+    uint8_t report[8] = { _modifiers, 0, _keys[0], _keys[1], _keys[2], _keys[3], _keys[4], _keys[5] };
+    if (_input)    { _input->setValue(report, 8);    if (_connCount) _input->notify(); }
+    if (_bootInput){ _bootInput->setValue(report, 8); if (_connCount) _bootInput->notify(); }
+  }
+
+  BLECharacteristic* _input = nullptr;
+  BLECharacteristic* _bootInput = nullptr;
+  BLECharacteristic* _tx = nullptr;
+  BLE2902* _txCccd = nullptr;
+  uint8_t _modifiers = 0;
+  uint8_t _keys[6] = { 0, 0, 0, 0, 0, 0 };
+  int _connCount = 0;
+};
+
+BrailleBridgeBLE bleBridge;
+
+// ==========================================
 // OBJECTS & GLOBALS
 // ==========================================
-BleKeyboard bleKeyboard("BrailleBridge", "StudentProject", 100);
-
 unsigned long pressStartTime = 0;
 bool chordActive = false;
 int currentChord = 0;
 bool isBangla = false;
 bool shiftActive = false;
 
-// ==========================================
-// LED HELPERS (DISABLED)
-// ==========================================
-// void setEnglishLED() {
-//   digitalWrite(RED_LED, HIGH);
-//   digitalWrite(GREEN_LED, LOW);
-// }
-//
-// void setBanglaLED() {
-//   digitalWrite(RED_LED, LOW);
-//   digitalWrite(GREEN_LED, HIGH);
-// }
-//
-// void updateLEDs() {
-//   if (isBangla) {
-//     setBanglaLED();
-//   } else {
-//     setEnglishLED();
-//   }
-// }
-//
-// void flashValid() {
-//   digitalWrite(RED_LED, HIGH);
-//   digitalWrite(GREEN_LED, HIGH);
-//   delay(100);
-//   updateLEDs();
-// }
-//
-// void flashInvalid() {
-//   for (int i = 0; i < 3; i++) {
-//     digitalWrite(RED_LED, HIGH);
-//     digitalWrite(GREEN_LED, HIGH);
-//     delay(150);
-//     digitalWrite(RED_LED, LOW);
-//     digitalWrite(GREEN_LED, LOW);
-//     delay(150);
-//   }
-//   updateLEDs();
-// }
+// --- Shift tap → Backspace state machine ---
+// Shift normally acts as a held modifier. If it is pressed AND released
+// without any dot chord being composed meanwhile, that tap is a Backspace.
+bool shiftWasDown = false;      // Shift was held at some point since last release
+bool shiftTapUsed = false;      // a chord was processed (or Space) while Shift was held
+unsigned long shiftDownTime = 0;  // when the current Shift press started
+unsigned long lastBackspaceMs = 0;  // cooldown anchor so release bounce can't chain deletes
+const unsigned long SHIFT_TAP_MAX_MS = 1500;  // ultra-long presses are not taps (pocket/garage protection)
+const unsigned long SHIFT_TAP_MIN_MS = 25;    // shorter than this = press bounce, not a real tap
+const unsigned long SHIFT_BKSP_COOLDOWN_MS = 100;  // ignore re-arms right after a fired delete
 
 // ==========================================
 // DICTIONARY LOOKUP
@@ -237,7 +512,7 @@ void setup() {
   // pinMode(GREEN_LED, OUTPUT);
   // setEnglishLED(); // Start in English mode
 
-  bleKeyboard.begin();
+  bleBridge.begin("BrailleBridge");
   Serial.println("SYSTEM: BrailleBridge Connected. Waiting for BLE...");
 }
 
@@ -245,6 +520,8 @@ void setup() {
 // MAIN LOOP
 // ==========================================
 void loop() {
+  bleBridge.processEvents();   // handle connect/disconnect/NUS-RX events
+
   bool d1 = digitalRead(DOT_1) == LOW;
   bool d2 = digitalRead(DOT_2) == LOW;
   bool d3 = digitalRead(DOT_3) == LOW;
@@ -257,8 +534,33 @@ void loop() {
   // ----- SHIFT MODIFIER (held while pressed, like a real keyboard Shift) -----
   shiftActive = sh;  // sh is already true when pressed (digitalRead(...)==LOW)
 
+  // ----- SHIFT TAP → BACKSPACE -----
+  // Track Shift press/release edges. A clean tap (released quickly, with no
+  // chord or Space used while it was held) deletes the last typed character.
+  if (sh) {
+    if (!shiftWasDown) {           // falling edge: Shift just went down
+      shiftWasDown = true;
+      // Cooldown: if a backspace just fired, this re-arm is bounce residue,
+      // not a fresh tap — mark it used so its release can't fire again.
+      shiftTapUsed = (millis() - lastBackspaceMs) < SHIFT_BKSP_COOLDOWN_MS;
+      shiftDownTime = millis();
+    }
+  } else if (shiftWasDown) {       // rising edge: Shift just came back up
+    shiftWasDown = false;
+    bool dotsHeld = d1 || d2 || d3 || d4 || d5 || d6;
+    // Fire only on a clean tap: quick, unused, and not in the middle of a chord
+    unsigned long held = millis() - shiftDownTime;
+    if (!shiftTapUsed && !dotsHeld && held >= SHIFT_TAP_MIN_MS && held <= SHIFT_TAP_MAX_MS) {
+      sendBackspace();
+      lastBackspaceMs = millis();
+      delay(30);                 // swallow release bounce so it can't double-fire
+    }
+    shiftTapUsed = false;
+  }
+
   // ----- SPACE -----
   if (sp && !d1 && !d2 && !d3 && !d4 && !d5 && !d6) {
+    if (sh) shiftTapUsed = true;   // Shift was doing something while held
     sendChar(" ");
     delay(200);
     while (digitalRead(SPACE) == LOW) { delay(10); }
@@ -269,6 +571,7 @@ void loop() {
   bool anyDot = d1 || d2 || d3 || d4 || d5 || d6;
 
   if (anyDot) {
+    if (shiftWasDown) shiftTapUsed = true;  // dots involved → this Shift is a modifier, not a tap
     if (!chordActive) {
       chordActive = true;
       pressStartTime = millis();
@@ -290,7 +593,8 @@ void loop() {
     // D4+D5+D6 held 500ms → language toggle
     if (currentChord == 0b111000 && elapsed >= 500 && !allReleased) {
       isBangla = !isBangla;
-      Serial.println(isBangla ? "LANG:bn" : "LANG:en");
+      bleBridge.streamLine(isBangla ? "LANG:bn" : "LANG:en");
+      if (shiftActive) shiftTapUsed = true;  // Shift was part of a deliberate gesture, not a tap
       chordActive = false;
       currentChord = 0;
 
@@ -308,6 +612,7 @@ void loop() {
       if (!allReleased && currentChord == 0b111000 && elapsed < 500) {
         // Wait longer for potential toggle
       } else {
+        if (shiftActive) shiftTapUsed = true;  // chord consumed the Shift modifier
         processChord(currentChord);
         chordActive = false;
         currentChord = 0;
@@ -318,21 +623,36 @@ void loop() {
 }
 
 // ==========================================
-// SEND CHARACTER TO BLE & SERIAL
+// BACKSPACE — delete the last typed character
+// ==========================================
+void sendBackspace() {
+  if (bleBridge.isConnected()) {
+    bleBridge.press(KEY_BACKSPACE);
+    delay(8);
+    bleBridge.releaseAll();
+  }
+  bleBridge.streamLine("SYSTEM:BKSP");   // teacher app listens for this control line
+}
+
+// ==========================================
+// SEND CHARACTER TO BLE & STREAM
 // ==========================================
 void sendChar(const char* c) {
-  // BLE HID keycodes can only represent ASCII. Bangla (multi-byte UTF-8) has
-  // no keycode mapping, and pushing it through the BLE stack can wedge the
-  // ESP32 and cause a reboot. Only send ASCII to BLE; Bangla goes over USB
-  // serial only (to the teacher app), where it works.
+  // HID keycodes can only represent ASCII. Bangla (multi-byte UTF-8) has no
+  // keycode mapping, and pushing it through the HID stack can wedge the
+  // ESP32 and cause a reboot. So:
+  //   - ASCII  → HID keyboard (paired host types it out) + stream
+  //   - Bangla → stream only (USB Serial + BLE NUS → teacher/phone app)
   bool isAscii = true;
   for (const char* p = c; *p; p++) {
     if ((unsigned char)*p >= 0x80) { isAscii = false; break; }
   }
-  if (bleKeyboard.isConnected() && isAscii) {
-    bleKeyboard.print(c);
+  if (bleBridge.isConnected() && isAscii) {
+    bleBridge.print(c);
   }
-  Serial.print(c);
+  // The stream carries EVERYTHING (ASCII + Bangla + control lines) — this is
+  // what the teacher software and the phone app receive.
+  bleBridge.streamText(c, false);
 }
 
 // ==========================================

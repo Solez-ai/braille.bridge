@@ -185,6 +185,61 @@
   const ledEn = $('#ledEn');
   const ledBn = $('#ledBn');
 
+  /* ============================================================
+     BB SHARED MODULE WIRING (shared.js)
+     Account chip · Exports library · Google Translate on the demo
+     ============================================================ */
+  const demoTranslateBtn = $('#demoTranslateBtn');
+  const demoTranslateStatus = $('#demoTranslateStatus');
+  const exportSessionBtn = $('#exportSessionBtn');
+
+  if (demoTranslateBtn) {
+    let demoTranslated = false;
+    demoTranslateBtn.addEventListener('click', async () => {
+      const text = $$('.stream-char, .stream-space', readoutStream)
+        .map((s) => s.textContent).join('');
+      if (!text.trim()) {
+        demoTranslateStatus.textContent = 'Compose some chords first — the output stream is empty.';
+        return;
+      }
+      const target = window.BBTranslate.hasBengali(text) ? 'en' : 'bn';
+      demoTranslateBtn.disabled = true;
+      demoTranslateStatus.innerHTML = '<span class="spinner-inline"></span> Translating with Google Translate…';
+      const res = await window.BBTranslate.translate(text, target);
+      demoTranslateBtn.disabled = false;
+      if (res.ok) {
+        demoTranslateStatus.innerHTML = '<strong></strong>';
+        demoTranslateStatus.firstChild.textContent = res.text;
+        demoTranslateBtn.textContent = target === 'en' ? '→ বাংলা' : '→ EN';
+        demoTranslated = !demoTranslated;
+      } else {
+        demoTranslateStatus.innerHTML = '<span class="err"></span>';
+        demoTranslateStatus.querySelector('.err').textContent = res.error;
+      }
+    });
+  }
+
+  if (exportSessionBtn) {
+    exportSessionBtn.addEventListener('click', () => {
+      const text = $$('.stream-char, .stream-space', readoutStream)
+        .map((s) => s.textContent).join('');
+      if (!text.trim()) {
+        window.BBExports.toast('Compose some chords first — nothing to export yet.');
+        return;
+      }
+      const chars = Array.from(text).map((ch, i) => ({ char: ch, time: Date.now() - (text.length - i) * 250 }));
+      const id = window.BBExports.save({
+        title: 'Website Demo Session',
+        mode: 'Website Demo',
+        source: 'demo',
+        chars,
+        charsCount: text.replace(/ /g, '').length
+      });
+      window.BBExports.toast('Session saved to Exports — click the account chip → Exports library.');
+      window.BBExports.openModal();
+    });
+  }
+
   let currentChord = 0;
   let currentLang = 'en'; // 'en' | 'bn'
   let shiftActive = false;

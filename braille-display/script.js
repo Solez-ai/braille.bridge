@@ -648,6 +648,42 @@ function setMode(mode) {
 document.getElementById('modeStudent').addEventListener('click', () => setMode('student'));
 document.getElementById('modeTeacher').addEventListener('click', () => setMode('teacher'));
 document.getElementById('modeExam').addEventListener('click', () => setMode('exam'));
+// Exports mode opens the shared Exports library modal (shared.js wires the rest)
+document.getElementById('modeExports').addEventListener('click', () => BBExports.openModal());
+
+// Live output → Google Translate bar (shared.js provides BBTranslate)
+const translateBar = document.getElementById('translateBar');
+const translateStatus = document.getElementById('translateStatus');
+const btnTranslateLive = document.getElementById('btnTranslateLive');
+let liveStreamText = '';
+
+function bbGetLiveText() {
+  const spans = liveText.querySelectorAll('.live-char');
+  return Array.from(spans).map(s => s.textContent).join('');
+}
+
+btnTranslateLive.addEventListener('click', async () => {
+  const text = bbGetLiveText().trim();
+  if (!text) { translateStatus.textContent = 'Nothing to translate yet — type or receive some characters first.'; return; }
+  const target = window.BBTranslate && window.BBTranslate.hasBengali(text) ? 'en' : 'bn';
+  btnTranslateLive.disabled = true;
+  translateStatus.innerHTML = '<span class="spinner-inline"></span> Translating with Google Translate…';
+  const res = await window.BBTranslate.translate(text, target);
+  btnTranslateLive.disabled = false;
+  if (res.ok) {
+    translateStatus.innerHTML = `<strong>${res.text}</strong>`;
+    btnTranslateLive.textContent = target === 'en' ? '→ বাংলা' : '→ EN';
+  } else {
+    translateStatus.innerHTML = `<span class="err">${res.error}</span>`;
+  }
+});
+
+// Reveal the translate bar as soon as the live output has content
+const translateObserver = new MutationObserver(() => {
+  const hasContent = liveText.querySelector('.live-char') !== null;
+  translateBar.classList.toggle('hidden', !hasContent);
+});
+translateObserver.observe(liveText, { childList: true });
 
 document.getElementById('btnAddStudent').addEventListener('click', () => {
   document.getElementById('addStudentForm').classList.toggle('visible');
@@ -757,6 +793,11 @@ function formatReadableLine(line) {
 }
 
 function exportStudentLog(student) {
+  // Every export is ALSO saved to the Exports library (Exports tab)
+  if (window.BBExports) {
+    window.BBExports.saveFromStudent(student, 'Teacher App');
+    window.BBExports.toast(`"${student.name}" export saved to Exports`);
+  }
   const header = [
     'BrailleBridge Student Log',
     '=======================',
@@ -785,6 +826,11 @@ function exportStudentLog(student) {
 
 function exportAllLogs() {
   if (students.length === 0) return;
+  // Save the whole class to the Exports library before downloading
+  if (window.BBExports) {
+    window.BBExports.saveClass(students, totalCharsAllStudents, 'Teacher App');
+    window.BBExports.toast(`Class export (${students.length} students) saved to Exports`);
+  }
   if (students.length === 1) { exportStudentLog(students[0]); return; }
 
   const parts = [];
@@ -1176,6 +1222,18 @@ function openLogPreview(student) {
 
   // Wire the Export button to export this student's log
   exportBtn.onclick = () => exportStudentLog(student);
+
+  // "Save to Exports" — archive without downloading a file
+  const saveOnly = document.createElement('button');
+  saveOnly.className = 'btn-clear-all';
+  saveOnly.style.marginLeft = '6px';
+  saveOnly.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save to Exports';
+  saveOnly.onclick = () => {
+    if (window.BBExports.saveFromStudent(student, 'Teacher App')) {
+      window.BBExports.toast(`"${student.name}" saved to Exports`);
+    }
+  };
+  exportBtn.parentNode.insertBefore(saveOnly, exportBtn.nextSibling);
 
   modal.classList.add('visible');
   document.body.style.overflow = 'hidden';
