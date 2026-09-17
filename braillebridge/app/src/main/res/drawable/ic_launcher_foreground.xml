@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Squircle badge matching BrailleBridge design -->
+    <path
+        android:pathData="M34,22 L74,22 A12,12 0 0 1 86,34 L86,74 A12,12 0 0 1 74,86 L34,86 A12,12 0 0 1 22,74 L22,34 A12,12 0 0 1 34,22 Z"
+        android:fillColor="#161822"
+        android:strokeColor="#C49A4A"
+        android:strokeWidth="1.5" />
+    <!-- Top-left: Gold dot -->
+    <path
+        android:pathData="M43,43m-9,0a9,9 0 1,0 18,0a9,9 0 1,0 -18,0"
+        android:fillColor="#C49A4A" />
+    <!-- Top-right: White dot -->
+    <path
+        android:pathData="M65,43m-9,0a9,9 0 1,0 18,0a9,9 0 1,0 -18,0"
+        android:fillColor="#E8E6E0" />
+    <!-- Bottom-left: White dot -->
+    <path
+        android:pathData="M43,65m-9,0a9,9 0 1,0 18,0a9,9 0 1,0 -18,0"
+        android:fillColor="#E8E6E0" />
+    <!-- Bottom-right: Gold dot -->
+    <path
+        android:pathData="M65,65m-9,0a9,9 0 1,0 18,0a9,9 0 1,0 -18,0"
+        android:fillColor="#C49A4A" />
+</vector>

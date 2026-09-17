@@ -3,16 +3,26 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
+#include <BLEHIDDevice.h>
 
 // ==========================================
 // BrailleBridge — ESP32 firmware
 //
 // BLE exposes TWO services at once:
 //   1. HID keyboard (0x1812)  → typed characters reach any paired
-//      computer/phone text field exactly like before.
+//      computer/phone text field exactly like the original T-vK
+//      BleKeyboard build (phone keyboard mode works again).
 //   2. Nordic UART Service    → the raw character + control-line stream
 //      (the same bytes that go to USB Serial) mirrored over BLE so the
 //      phone app (see PHONE.md) receives it without a USB cable.
+//
+// HID layer rebuild notes (v3): the HID service is now created with
+// BLEHIDDevice — the SAME helper class the proven T-vK BleKeyboard
+// library uses. This restores the exact GATT layout Android's BLE HID
+// stack expects: keyboard appearance 0x03C1 (NOT generic mouse 0x03C2),
+// encrypted report characteristics, HIDS Protocol Mode, battery service,
+// Secure Connections + MITM bonding, and the T-vK report map (report ID 1
+// keyboard). The NUS service rides alongside it untouched.
 // ==========================================
 
 // ==========================================
@@ -179,24 +189,15 @@ void sendBackspace();
 void processChord(int chord);
 
 // ==========================================
-// BLE — SELF-CONTAINED HID KEYBOARD + NORDIC UART (NUS)
+// BLE — PROVEN HID KEYBOARD + NORDIC UART (NUS)
 // ==========================================
-// Replaces the old BleKeyboard dependency (which could not host a second
-// service). Same HID behaviour: service 0x1812, boot keyboard report map,
-// bonding + no-MITM pairing, device appears as "BrailleBridge".
+// The HID service is built with BLEHIDDevice — the same helper class the
+// proven T-vK BleKeyboard library uses — so phones and PCs pair and type
+// exactly as they did before the v2 rewrite (phones had stopped working).
 // Same public API surface the rest of this sketch already used:
 //   begin() / isConnected() / print() / press() / releaseAll()
 
 #define HID_SERVICE_UUID        0x1812
-#define HID_INFO_UUID           0x2A4A
-#define HID_REPORT_MAP_UUID     0x2A4B
-#define HID_CONTROL_POINT_UUID  0x2A4C
-#define HID_REPORT_UUID         0x2A4D
-#define HID_BOOT_INPUT_UUID     0x2A22
-#define HID_BOOT_OUTPUT_UUID    0x2A32
-#define DEVICE_INFO_UUID        0x180A
-#define PNP_ID_UUID             0x2A50
-#define REPORT_REF_DESC_UUID    0x2908
 #define CCCD_UUID               0x2902
 
 // Standard Nordic UART Service UUIDs (see PHONE.md §1.1)
@@ -207,10 +208,17 @@ void processChord(int chord);
 // Keyboard usage codes (USB HID Usage Tables)
 #define KEY_BACKSPACE 0xB2   // raw usage; press() converts 0xB2 → 0x2A
 
-// Boot keyboard report map (report ID 1) — identical layout to the one
-// BleKeyboard used, so host-side pairing/typing behaviour is unchanged.
+// T-vK BleKeyboard's virtual keyboard USB identity — hosts recognise it,
+// and it matches the pre-rewrite pairing behaviour.
+#define BB_VID 0x05ac
+#define BB_PID 0x820a
+#define BB_VERSION 0x0210
+
+// Boot keyboard report map — byte-identical to the one T-vK BleKeyboard
+// ships (a single keyboard INPUT collection, report ID 1). Android and
+// desktop hosts parse this layout unchanged.
 static const uint8_t KEYBOARD_REPORT_MAP[] = {
-  0x05, 0x01, 0x09, 0x06, 0xA1, 0x01, 0x85, 0x01, 0x05, 0x07,
+  0x05, 0x01, 0x09, 0x06, 0xA1, 0x01, 0x01, 0x01, 0x05, 0x07,
   0x19, 0xE0, 0x29, 0xE7, 0x15, 0x00, 0x25, 0x01, 0x75, 0x01,
   0x95, 0x08, 0x81, 0x02, 0x95, 0x01, 0x75, 0x08, 0x81, 0x01,
   0x95, 0x05, 0x75, 0x01, 0x05, 0x08, 0x19, 0x01, 0x29, 0x05,
@@ -245,47 +253,27 @@ public:
 
   void begin(const char* name) {
     BLEDevice::init(name);
-    BLEDevice::setEncryptionLevel(ESP_BLE_SEC_ENCRYPT_NO_MITM);
-    BLEDevice::setMTU(247);  // Bangla conjuncts + control lines must not fragment badly
+    // Security: bond + Secure Connections + MITM — byte-for-byte the mode
+    // the working T-vK BleKeyboard build used (ESP_LE_AUTH_REQ_SC_MITM_BOND).
     BLESecurity* sec = new BLESecurity();
-    sec->setCapability(ESP_IO_CAP_NONE);
-    sec->setAuthenticationMode(ESP_LE_AUTH_BOND);
+    sec->setAuthenticationMode(ESP_LE_AUTH_REQ_SC_MITM_BOND);
+    BLEDevice::setMTU(247);  // Bangla conjuncts + control lines must not fragment badly
 
     BLEServer* server = BLEDevice::createServer();
     server->setCallbacks(new BrailleServerCallbacks());
 
-    // ---------- HID keyboard service ----------
-    BLEService* hid = server->createService(BLEUUID((uint16_t)HID_SERVICE_UUID));
+    // ---------- HID keyboard service (via BLEHIDDevice, like T-vK) ----------
+    // This helper produces the exact GATT layout of the previously-working
+    // keyboard: 0x1812 + HIDS mandatory characteristics + Protocol Mode,
+    // encrypted 0x2A4D report characteristics with 0x2908 Report Reference
+    // and 0x2902 CCCDs, plus the 0x180F battery service hosts query.
+    _hid = new BLEHIDDevice(server);
+    _input = _hid->inputReport(1);      // report ID 1 → keyboard
+    _output = _hid->outputReport(1);    // keyboard LED output (host → device)
 
-    uint8_t hidInfo[4] = { 0x11, 0x01, 0x00, 0x02 };  // bcdHID 1.11, country 0, flags
-    BLECharacteristic* cInfo = hid->createCharacteristic(BLEUUID((uint16_t)HID_INFO_UUID), BLECharacteristic::PROPERTY_READ);
-    cInfo->setValue(hidInfo, 4);
-
-    BLECharacteristic* cMap = hid->createCharacteristic(BLEUUID((uint16_t)HID_REPORT_MAP_UUID), BLECharacteristic::PROPERTY_READ);
-    cMap->setValue((uint8_t*)KEYBOARD_REPORT_MAP, sizeof(KEYBOARD_REPORT_MAP));
-
-    hid->createCharacteristic(BLEUUID((uint16_t)HID_CONTROL_POINT_UUID), BLECharacteristic::PROPERTY_WRITE_NR);
-
-    _input = hid->createCharacteristic(BLEUUID((uint16_t)HID_REPORT_UUID),
-      BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
-    _input->addDescriptor(new BLE2902());
-    addReportRef(_input, 0x01, 0x01);  // report id 1, input
-
-    _bootInput = hid->createCharacteristic(BLEUUID((uint16_t)HID_BOOT_INPUT_UUID), BLECharacteristic::PROPERTY_NOTIFY);
-    _bootInput->addDescriptor(new BLE2902());
-    addReportRef(_bootInput, 0x01, 0x01);
-
-    BLECharacteristic* bootOut = hid->createCharacteristic(BLEUUID((uint16_t)HID_BOOT_OUTPUT_UUID), BLECharacteristic::PROPERTY_WRITE_NR);
-    addReportRef(bootOut, 0x01, 0x02);  // report id 1, output (LED state)
-
-    hid->start();
-
-    // ---------- Device Information (PnP ID, like the old stack) ----------
-    BLEService* devInfo = server->createService(BLEUUID((uint16_t)DEVICE_INFO_UUID));
-    BLECharacteristic* pnp = devInfo->createCharacteristic(BLEUUID((uint16_t)PNP_ID_UUID), BLECharacteristic::PROPERTY_READ);
-    uint8_t pnpVal[7] = { 0x02, 0x01, 0x00, 0x01, 0x00, 0x00, 0x01 };  // USB source, VID, PID, version
-    pnp->setValue(pnpVal, 7);
-    devInfo->start();
+    _hid->hidInfo(0x00, 0x01);          // country 0, flags: normally connectable
+    _hid->pnp(0x02, BB_VID, BB_PID, BB_VERSION);  // USB SIG, T-vK keyboard identity
+    _hid->reportMap((uint8_t*)KEYBOARD_REPORT_MAP, sizeof(KEYBOARD_REPORT_MAP));
 
     // ---------- Nordic UART Service (the phone-app stream) ----------
     BLEService* nus = server->createService(BLEUUID(NUS_SERVICE_UUID));
@@ -298,14 +286,15 @@ public:
       BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR);
     rx->setCallbacks(new BrailleCharCallbacks());
 
+    _hid->startServices();
     nus->start();
 
-    // ---------- Advertising ----------
+    // ---------- Advertising (T-vK advertising shape, plus NUS) ----------
     BLEAdvertising* adv = BLEDevice::getAdvertising();
-    adv->addServiceUUID(BLEUUID((uint16_t)HID_SERVICE_UUID));
+    adv->setAppearance(HID_KEYBOARD);          // 0x03C1 — a KEYBOARD (was 0x03C2 = mouse!)
+    adv->addServiceUUID(_hid->hidService()->getUUID());
     adv->addServiceUUID(BLEUUID(NUS_SERVICE_UUID));
-    adv->setAppearance(962);        // 0x03C2 — generic keyboard
-    adv->setScanResponse(true);     // device name rides in the scan response
+    adv->setScanResponse(false);               // T-vK ships without scan response
     BLEDevice::startAdvertising();
   }
 
@@ -399,12 +388,8 @@ public:
   }
 
 private:
-  static void addReportRef(BLECharacteristic* c, uint8_t id, uint8_t type) {
-    BLEDescriptor* ref = new BLEDescriptor(BLEUUID((uint16_t)REPORT_REF_DESC_UUID));
-    uint8_t val[2] = { id, type };
-    ref->setValue(val, 2);
-    c->addDescriptor(ref);
-  }
+  // BLEHIDDevice creates the encrypted report characteristics + Report
+  // Reference descriptors itself, so no manual 0x2908 helper is needed.
 
   static bool asciiToUsage(char ch, uint8_t& usage, uint8_t& mod) {
     mod = 0;
@@ -444,12 +429,15 @@ private:
 
   void sendReport() {
     uint8_t report[8] = { _modifiers, 0, _keys[0], _keys[1], _keys[2], _keys[3], _keys[4], _keys[5] };
-    if (_input)    { _input->setValue(report, 8);    if (_connCount) _input->notify(); }
-    if (_bootInput){ _bootInput->setValue(report, 8); if (_connCount) _bootInput->notify(); }
+    if (_input) {
+      _input->setValue(report, 8);
+      if (_connCount) _input->notify();
+    }
   }
 
+  BLEHIDDevice* _hid = nullptr;
   BLECharacteristic* _input = nullptr;
-  BLECharacteristic* _bootInput = nullptr;
+  BLECharacteristic* _output = nullptr;
   BLECharacteristic* _tx = nullptr;
   BLE2902* _txCccd = nullptr;
   uint8_t _modifiers = 0;

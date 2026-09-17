@@ -1,0 +1,7 @@
+<resources>
+    <color name="bg_dark">#0F111A</color>
+    <color name="gold">#C49A4A</color>
+    <color name="gold_light">#DBB86A</color>
+    <color name="gold_dark">#A07828</color>
+    <color name="white">#FFFFFF</color>
+</resources>

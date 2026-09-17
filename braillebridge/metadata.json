@@ -1,0 +1,6 @@
+{
+  "name": "BrailleBridge",
+  "description": "BrailleBridge educational platform with Bluetooth Low Energy connectivity for students and teachers",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -215,6 +215,8 @@ The deletion is sent over both outputs: a real HID backspace to the connected de
 4. Open a text field, type Braille chords, and the translated text appears — while the same characters stream over USB Serial **and over BLE** to the Teacher Software.
 
 > **BLE stream (Nordic UART Service):** alongside the HID keyboard service, the firmware now exposes the standard NUS (`6E400001-B5A3-F393-E0A9-E50E24DCCA9E`) — TX `…0002` notifies the exact serial stream (characters, `LANG:*`, `SYSTEM:BKSP`), RX `…0003` accepts `LANG:en` / `LANG:bn` commands back. This is the channel the future phone app (see [PHONE.md](PHONE.md)) consumes — no USB cable required.
+>
+> **Phone HID fix (firmware v3):** the HID service is now built with the core's `BLEHIDDevice` helper — the same GATT layout the original library-based build used (keyboard appearance 0x03C1, encrypted report characteristics, battery service, Secure Connections + MITM bonding). This restores **system-wide keyboard typing on Android phones** (WhatsApp text fields, etc.), which had regressed during the v2 custom-GATT rewrite. Still zero external libraries.
 
 ### Teacher Software
 
