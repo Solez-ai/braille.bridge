@@ -45,12 +45,12 @@ jobs:
           -keyalg RSA -keysize 2048 -validity 10000
           -dname "CN=Android Debug,O=Android,C=US"
 
-      # --no-daemon: ephemeral CI runners gain nothing from a daemon and lose
-      # flakiness; tee captures full output so the failure step can grep it.
+      # tee captures full output so the failure step can grep the real error.
+      # Kotlin compiles in-process (see gradle.properties) — single JVM, 4GB heap.
       - name: Build debug APK
         run: |
           set -o pipefail
-          gradle :app:assembleDebug --stacktrace --no-daemon 2>&1 | tee build_output.txt | tail -n 60
+          gradle :app:assembleDebug --stacktrace 2>&1 | tee build_output.txt | tail -n 60
 
       # Guarantees the REAL error is visible in the log even when Gradle's
       # summary is truncated.
