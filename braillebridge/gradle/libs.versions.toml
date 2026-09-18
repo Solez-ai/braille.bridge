@@ -9,7 +9,9 @@ lifecycleRuntimeKtx = "2.8.7"
 activityCompose = "1.10.1"
 composeBom = "2024.09.00"
 firebaseBom = "34.17.0"
-ksp = "2.3.5"
+# KSP 2.3.5 has a known CI crash (ApplicationManager.getApplication() null on
+# cold Gradle runs — google/ksp#2763, fixed in 2.3.6+). 2.3.7 = fix + stability.
+ksp = "2.3.7"
 roborazzi = "1.59.0"
 secrets = "2.0.1"
 googleServices = "4.5.0"
