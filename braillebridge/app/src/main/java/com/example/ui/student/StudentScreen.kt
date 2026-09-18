@@ -98,6 +98,8 @@ fun StudentScreen(
         BrailleDict.resolveChord(chord, isBangla, shiftActive)
     }
 
+    // Outer page scroll + inner text-area scroll (each needs its own state)
+    val pageScrollState = rememberScrollState()
     val textScrollState = rememberScrollState()
 
     // Auto-follow the caret as new characters stream in
@@ -108,7 +110,7 @@ fun StudentScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(scrollState)
+            .verticalScroll(pageScrollState)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
