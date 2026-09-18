@@ -47,18 +47,20 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.LanguageDropdown
 import androidx.compose.ui.unit.sp
@@ -96,7 +98,12 @@ fun StudentScreen(
         BrailleDict.resolveChord(chord, isBangla, shiftActive)
     }
 
-    val scrollState = rememberScrollState()
+    val textScrollState = rememberScrollState()
+
+    // Auto-follow the caret as new characters stream in
+    LaunchedEffect(currentText) {
+        textScrollState.animateScrollTo(textScrollState.maxValue)
+    }
 
     Column(
         modifier = modifier
@@ -131,7 +138,7 @@ fun StudentScreen(
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = if (isConnected) "BrailleBridge Connected" else "Connect BLE Device",
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
                         color = if (isConnected) AccentGreen else MaterialTheme.colorScheme.onSurface
                     )
@@ -162,7 +169,7 @@ fun StudentScreen(
                         Spacer(modifier = Modifier.width(5.dp))
                         Text(
                             text = if (isBangla) "বাংলা (BN)" else "English (EN)",
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (isBangla) AccentGreen else AccentRed
                         )
@@ -188,7 +195,7 @@ fun StudentScreen(
                         Spacer(modifier = Modifier.width(5.dp))
                         Text(
                             text = "Shift",
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (shiftActive) Gold else TextMuted
                         )
@@ -214,46 +221,68 @@ fun StudentScreen(
                 ) {
                     Text(
                         text = "LIVE OUTPUT",
-                        fontSize = 11.sp,
+                        fontSize = 12.sp,
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = "${chars.size} chars",
-                        fontSize = 11.sp,
+                        fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Text stream container
+                // Live output — a real text area: wrapping, scrolling, auto-follow caret
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(110.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant
+                        .height(190.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                 ) {
-                    Box(modifier = Modifier.padding(12.dp)) {
-                        if (currentText.isEmpty()) {
+                    if (currentText.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize()) {
                             Text(
-                                text = "Start typing on the 6-dot cell or connected BrailleBridge...",
-                                fontSize = 13.sp,
+                                text = "Waiting for input — type chords on the BrailleBridge or tap the dots below…",
+                                modifier = Modifier.align(Alignment.Center),
+                                fontSize = 15.sp,
+                                lineHeight = 22.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                        } else {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = currentText,
-                                    fontFamily = FontFamily.Serif,
-                                    fontSize = 18.sp,
-                                    lineHeight = 24.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                BlinkingCursor(color = MaterialTheme.colorScheme.primary)
-                            }
+                        }
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(textScrollState)
+                                .padding(14.dp)
+                        ) {
+                            val caretColor = MaterialTheme.colorScheme.primary
+                            val caretAlpha by rememberInfiniteTransition(label = "caret").animateFloat(
+                                initialValue = 0.15f,
+                                targetValue = 1f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(500, easing = FastOutSlowInEasing),
+                                    repeatMode = RepeatMode.Reverse
+                                ),
+                                label = "caret_alpha"
+                            )
+                            Text(
+                                text = buildAnnotatedString {
+                                    append(currentText)
+                                    withStyle(SpanStyle(background = caretColor.copy(alpha = caretAlpha))) {
+                                        append("▏")
+                                    }
+                                },
+                                fontFamily = FontFamily.Serif,
+                                fontSize = 20.sp,
+                                lineHeight = 28.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     }
                 }
@@ -291,7 +320,7 @@ fun StudentScreen(
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = if (translateResult == null) "Translate" else "Translate",
-                                        fontSize = 11.sp
+                                        fontSize = 13.sp
                                     )
                                 }
                             }
@@ -311,7 +340,7 @@ fun StudentScreen(
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
                                     text = tr.feedback,
-                                    fontSize = 11.sp,
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.padding(horizontal = 2.dp)
@@ -346,7 +375,7 @@ fun StudentScreen(
                                 Text(
                                     text = err,
                                     modifier = Modifier.padding(8.dp),
-                                    fontSize = 12.sp,
+                                    fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -367,7 +396,7 @@ fun StudentScreen(
             Column(modifier = Modifier.padding(8.dp)) {
                 Text(
                     text = "RECENT CHARACTERS",
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -375,7 +404,7 @@ fun StudentScreen(
                 if (recentChars.isEmpty()) {
                     Text(
                         text = "—",
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
@@ -391,7 +420,7 @@ fun StudentScreen(
                                 Text(
                                     text = if (ch.char == " ") "␣" else ch.char,
                                     fontFamily = FontFamily.Serif,
-                                    fontSize = 13.sp,
+                                    fontSize = 15.sp,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                     color = if (ch.char == " ") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                 )
@@ -427,18 +456,18 @@ fun StudentScreen(
                     Text(
                         text = "0b${chord.toString(2).padStart(6, '0')}",
                         fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = if (pressedDots.isEmpty()) "No dots active" else "Dots: ${pressedDots.sorted().joinToString(", ")}",
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = "→ ${resolvedChar ?: "—"}",
-                        fontSize = 16.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (resolvedChar != null) MaterialTheme.colorScheme.primary else TextMuted
                     )
@@ -448,11 +477,11 @@ fun StudentScreen(
 
                 // The 6-dot cell
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(36.dp),
+                    horizontalArrangement = Arrangement.spacedBy(44.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Left Column (Dots 1, 2, 3)
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                         BrailleDotButton(dotIndex = 1, isPressed = pressedDots.contains(1)) {
                             viewModel.toggleDot(1)
                         }
@@ -465,7 +494,7 @@ fun StudentScreen(
                     }
 
                     // Right Column (Dots 4, 5, 6)
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                         BrailleDotButton(dotIndex = 4, isPressed = pressedDots.contains(4)) {
                             viewModel.toggleDot(4)
                         }
@@ -497,10 +526,10 @@ fun StudentScreen(
                         Icon(
                             imageVector = Icons.Default.KeyboardReturn,
                             contentDescription = "Commit",
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Commit", fontSize = 12.sp)
+                        Text("Commit", fontSize = 14.sp)
                     }
 
                     OutlinedButton(
@@ -511,10 +540,10 @@ fun StudentScreen(
                         Icon(
                             imageVector = Icons.Default.SpaceBar,
                             contentDescription = "Space",
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Space", fontSize = 12.sp)
+                        Text("Space", fontSize = 14.sp)
                     }
 
                     OutlinedButton(
@@ -525,10 +554,10 @@ fun StudentScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Backspace,
                             contentDescription = "Backspace",
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Bksp", fontSize = 12.sp)
+                        Text("Bksp", fontSize = 14.sp)
                     }
                 }
             }
@@ -549,10 +578,10 @@ fun StudentScreen(
                 Icon(
                     imageVector = Icons.Default.Clear,
                     contentDescription = "Clear",
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Clear", fontSize = 12.sp)
+                Text("Clear", fontSize = 14.sp)
             }
 
             Button(
@@ -568,10 +597,10 @@ fun StudentScreen(
                     imageVector = Icons.Default.ScreenShare,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Send to Teacher", fontSize = 12.sp)
+                Text("Send to Teacher", fontSize = 14.sp)
             }
         }
     }
@@ -599,7 +628,7 @@ private fun BrailleDotButton(
 
     Box(
         modifier = Modifier
-            .size(54.dp)
+            .size(64.dp)
             .clip(CircleShape)
             .background(bgBrush)
             .border(
@@ -613,32 +642,10 @@ private fun BrailleDotButton(
         Text(
             text = dotIndex.toString(),
             fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
+            fontSize = 18.sp,
             color = if (isPressed) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
 
-@Composable
-private fun BlinkingCursor(
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "cursor")
-    val cursorAlpha by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "cursor_alpha"
-    )
-    Box(
-        modifier = modifier
-            .width(2.dp)
-            .height(20.dp)
-            .graphicsLayer { alpha = cursorAlpha }
-            .background(color)
-    )
-}
+

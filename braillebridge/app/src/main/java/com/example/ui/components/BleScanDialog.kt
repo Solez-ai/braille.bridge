@@ -92,8 +92,9 @@ fun BleScanDialog(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "Searching for nearby BrailleBridge BLE devices over Nordic UART Service (NUS).",
+                    text = "Tip: pair BrailleBridge in the phone's Bluetooth settings first — the app then picks it up automatically. Or connect directly below.",
                     fontSize = 12.sp,
+                    lineHeight = 17.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
@@ -158,7 +159,7 @@ fun BleScanDialog(
                     )
                     IconButton(
                         onClick = {
-                            BleProxyService.instance?.startScan()
+                            BleProxyService.instance?.startManualScan()
                         },
                         modifier = Modifier.size(24.dp)
                     ) {
@@ -196,10 +197,16 @@ fun BleScanDialog(
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp),
+                            .height(220.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(scannedDevices) { dev ->
+                        val sortedDevices = scannedDevices.sortedWith(
+                            compareByDescending<ScannedBleDevice> { d ->
+                                d.name.contains("Braille", ignoreCase = true)
+                            }.thenByDescending { d -> d.name != "Unknown" && d.name.isNotBlank() }
+                             .thenByDescending { d -> d.rssi }
+                        )
+                        items(sortedDevices, key = { it.address }) { dev ->
                             val isThisConnected = isConnected && dev.address == connectedAddress
                             Surface(
                                 modifier = Modifier

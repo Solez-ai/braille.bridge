@@ -586,24 +586,30 @@ void BBKeyboard::queueNusRx(const char* data, size_t len) {
 
 void BBKeyboard::streamText(const char* s, bool newline) {
   // Mirror the USB Serial stream to the phone app over NUS notifications.
-  // Chunks respect the negotiated MTU so nothing is silently truncated.
+  // PROTOCOL RULE: a line's terminating '\n' must ride in the SAME
+  // notification as its text. The receiving side treats a chunk without
+  // '\n' as typed characters — splitting text and newline across two
+  // notifications makes control lines (LANG:*, SYSTEM:*) show up as
+  // literal text on the phone and breaks backspace handling.
   if (!_nusTx || !_connCount || !_nusSubscribed) return;
 
   size_t len = strlen(s);
+  size_t total = len + (newline ? 1 : 0);
   uint16_t mtu = BLEDevice::getMTU();
   size_t chunkCap = (mtu > 3) ? (mtu - 3) : 20;
 
   size_t off = 0;
-  while (off < len) {
-    size_t n = (len - off) < chunkCap ? (len - off) : chunkCap;
-    _nusTx->setValue((uint8_t*)(s + off), n);
+  while (off < total) {
+    uint8_t chunk[280];                       // stack buffer; MTU 247 → 244-byte payload max
+    size_t cap = (total - off) < sizeof(chunk) ? (total - off) : sizeof(chunk);
+    size_t n = cap < chunkCap ? cap : chunkCap;
+    for (size_t i = 0; i < n; i++) {
+      size_t idx = off + i;
+      chunk[i] = (idx == len) ? '\n' : s[idx];  // newline sits logically at position len
+    }
+    _nusTx->setValue(chunk, n);
     _nusTx->notify();
     off += n;
-  }
-  if (newline) {
-    uint8_t lf = '\n';
-    _nusTx->setValue(&lf, 1);
-    _nusTx->notify();
   }
 }
 

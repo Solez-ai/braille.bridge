@@ -130,6 +130,15 @@ class BleProxyService : Service() {
                         }
                     }
                 }
+                // API 33+: fires whenever any LE device enters/leaves the GATT-connected
+                // set — including the OS's own HID-host connection to BrailleBridge.
+                // ACTION_ACL_CONNECTED does NOT fire for that path (it is classic-BR/EDR
+                // oriented), so this broadcast is the reliable trigger on modern phones.
+                BluetoothManager.ACTION_GATT_CONNECTED_DEVICES_CHANGED -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        checkSystemConnectedDevices()
+                    }
+                }
                 BluetoothAdapter.ACTION_STATE_CHANGED -> {
                     val state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
                     if (state == BluetoothAdapter.STATE_ON) {
@@ -159,15 +168,11 @@ class BleProxyService : Service() {
                 _scannedDevices.value = deviceMap.values.toList()
             }
 
-            // Auto-connect check for known assignments, last connected device, or BrailleBridge
-            val assignments = settingsStore.getAssignments()
-            val lastAddress = settingsStore.getLastDeviceAddress()
-            val isKnown = assignments.values.contains(address) || address == lastAddress
-            val isBraille = isBrailleBridgeDevice(name)
-
-            if ((isKnown || (isBraille && connections.isEmpty())) &&
-                (!connections.containsKey(address) || connections[address]?.isConnected != true)) {
-                Log.d(TAG, "Auto-connecting discovered device: $name ($address)")
+            // Auto-connect when a scan reveals a BrailleBridge and nothing is connected yet
+            if (isBrailleBridgeDevice(name) &&
+                connections.values.none { it.isConnected } &&
+                (connections[address]?.isConnected != true)) {
+                Log.d(TAG, "Auto-connecting discovered device: '$name' ($address)")
                 connectDevice(device)
             }
         }
@@ -196,6 +201,9 @@ class BleProxyService : Service() {
             addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
             addAction(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED)
             addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                addAction(BluetoothManager.ACTION_GATT_CONNECTED_DEVICES_CHANGED)
+            }
         }
         try {
             registerReceiver(nativeBluetoothReceiver, filter)
@@ -243,22 +251,19 @@ class BleProxyService : Service() {
 
     @SuppressLint("MissingPermission")
     fun handleNativeConnectedDevice(device: BluetoothDevice) {
-        val name = device.name ?: ""
+        val name = try { device.name ?: "" } catch (e: SecurityException) { "" }
         val address = device.address
-        val assignments = settingsStore.getAssignments()
-        val lastAddress = settingsStore.getLastDeviceAddress()
 
-        val isBraille = isBrailleBridgeDevice(name)
-        val isKnown = assignments.values.contains(address) || address == lastAddress
+        Log.d(TAG, "Native device connected: '$name' ($address)")
 
-        Log.d(TAG, "Native device connected: '$name' ($address), isBraille=$isBraille, isKnown=$isKnown")
-
-        // If it matches BrailleBridge or is known, or if it's the only bonded device and last connected
-        if (isBraille || isKnown || (name.isBlank() && address == lastAddress)) {
-            if (!connections.containsKey(address) || connections[address]?.isConnected != true) {
-                Log.d(TAG, "Auto picking up native Bluetooth connection: $name ($address)")
-                connectDevice(device)
-            }
+        // Recognition is NAME-based only — fresh HID bonds frequently report an
+        // empty device.name, so address/assignment checks must never gate pickup.
+        if (!isBrailleBridgeDevice(name)) {
+            return
+        }
+        if (!connections.containsKey(address) || connections[address]?.isConnected != true) {
+            Log.d(TAG, "Auto picking up native BrailleBridge connection: '$name' ($address)")
+            connectDevice(device)
         }
     }
 
@@ -267,21 +272,39 @@ class BleProxyService : Service() {
         val adapter = bluetoothAdapter ?: return
         if (!adapter.isEnabled) return
 
-        val assignments = settingsStore.getAssignments()
-        val lastAddress = settingsStore.getLastDeviceAddress()
+        // 1. HIGHEST RELIABILITY: devices the system reports as GATT-connected right
+        //    now (covers the OS's own HID-host connection to BrailleBridge, where
+        //    device.name may still be blank on a fresh bond).
+        try {
+            val manager = bluetoothManager
+            if (manager != null) {
+                val connectedGatt = manager.getConnectedDevices(BluetoothProfile.GATT)
+                for (dev in connectedGatt) {
+                    val name = try { dev.name ?: "" } catch (e: SecurityException) { "" }
+                    if (isBrailleBridgeDevice(name)) {
+                        if (!connections.containsKey(dev.address) || connections[dev.address]?.isConnected != true) {
+                            Log.d(TAG, "Auto-connecting system-connected GATT device: '$name' (${dev.address})")
+                            connectDevice(dev)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking connected GATT devices", e)
+        }
 
-        // 1. Check all bonded (paired) devices on the phone
+        // 2. Fallback: bonded (paired) devices — picks BrailleBridge up again after
+        //    an app restart or BT toggle when the OS has not yet reported it GATT-
+        //    connected. connectGatt() is idempotent-ish: it joins the existing ACL
+        //    link if one is already up.
         try {
             val bonded = adapter.bondedDevices
             if (bonded != null) {
                 for (dev in bonded) {
-                    val name = dev.name ?: ""
-                    val addr = dev.address
-                    val isBraille = isBrailleBridgeDevice(name)
-                    val isKnown = assignments.values.contains(addr) || addr == lastAddress
-                    if (isBraille || isKnown) {
-                        if (!connections.containsKey(addr) || connections[addr]?.isConnected != true) {
-                            Log.d(TAG, "Auto-connecting bonded native device: $name ($addr)")
+                    val name = try { dev.name ?: "" } catch (e: SecurityException) { "" }
+                    if (isBrailleBridgeDevice(name)) {
+                        if (!connections.containsKey(dev.address) || connections[dev.address]?.isConnected != true) {
+                            Log.d(TAG, "Auto-connecting bonded BrailleBridge device: '$name' (${dev.address})")
                             connectDevice(dev)
                         }
                     }
@@ -289,19 +312,6 @@ class BleProxyService : Service() {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error checking bonded devices", e)
-        }
-
-        // 2. Check GATT connected devices
-        try {
-            val manager = bluetoothManager
-            if (manager != null) {
-                val connectedGatt = manager.getConnectedDevices(BluetoothProfile.GATT)
-                for (dev in connectedGatt) {
-                    handleNativeConnectedDevice(dev)
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error checking connected GATT devices", e)
         }
     }
 
