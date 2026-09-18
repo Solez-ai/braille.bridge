@@ -134,7 +134,8 @@ class BleProxyService : Service() {
                 // set — including the OS's own HID-host connection to BrailleBridge.
                 // ACTION_ACL_CONNECTED does NOT fire for that path (it is classic-BR/EDR
                 // oriented), so this broadcast is the reliable trigger on modern phones.
-                BluetoothManager.ACTION_GATT_CONNECTED_DEVICES_CHANGED -> {
+                // NOTE: the framework constant is @hide — match the literal action string.
+                "android.bluetooth.action.GATT_CONNECTED_DEVICES_CHANGED" -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         checkSystemConnectedDevices()
                     }
@@ -202,7 +203,8 @@ class BleProxyService : Service() {
             addAction(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED)
             addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                addAction(BluetoothManager.ACTION_GATT_CONNECTED_DEVICES_CHANGED)
+                // Constant is @hide; the literal action string is the public contract
+                addAction("android.bluetooth.action.GATT_CONNECTED_DEVICES_CHANGED")
             }
         }
         try {
@@ -434,9 +436,14 @@ class BleProxyService : Service() {
         periodicScanRunnable?.let { handler.removeCallbacks(it) }
         val r = object : Runnable {
             override fun run() {
-                try {
-                    // Check if already connected - if connected, we do not need continuous aggressive scanning
-                    val hasConnected = connections.values.any { it.isConnected }
+            try {
+                // Safety net: if BrailleBridge connected through the phone's native
+                // Bluetooth settings and no broadcast caught it (app was backgrounded,
+                // or this OEM build never sends it), the periodic poll picks it up.
+                checkSystemConnectedDevices()
+
+                // Check if already connected - if connected, we do not need continuous aggressive scanning
+                val hasConnected = connections.values.any { it.isConnected }
                     if (!hasConnected) {
                         startScan(highDuty = false)
                         handler.postDelayed({
