@@ -93,6 +93,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Scanned BLE Devices
     val scannedDevices = MutableStateFlow<List<ScannedBleDevice>>(emptyList())
 
+    // Connection diagnostics console (most recent last, capped)
+    val debugLog = MutableStateFlow<List<String>>(emptyList())
+    private fun emitDebug(message: String) {
+        val stamped = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US)
+            .format(java.util.Date()) + "  " + message
+        val next = debugLog.value.toMutableList()
+        next.add(stamped)
+        while (next.size > 60) next.removeAt(0)
+        debugLog.value = next
+    }
+
     private val handler = Handler(Looper.getMainLooper())
 
     init {
@@ -175,6 +186,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             is BleEvent.IncomingChars -> {
                 handleIncomingChars(event.address, event.chars)
+            }
+            is BleEvent.Debug -> {
+                emitDebug(event.message)
             }
         }
     }

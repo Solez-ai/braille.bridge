@@ -15,14 +15,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,8 +35,9 @@ import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothConnected
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.GTranslate
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.KeyboardReturn
 import androidx.compose.material.icons.filled.ScreenShare
 import androidx.compose.material.icons.filled.SpaceBar
@@ -50,7 +54,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,14 +66,14 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import com.example.ui.components.LanguageDropdown
-import androidx.compose.ui.unit.sp
 import com.example.protocol.BrailleDict
 import com.example.protocol.TimedChar
 import com.example.ui.MainViewModel
-import com.example.ui.theme.AccentBlue
+import com.example.ui.components.LanguageDropdown
 import com.example.ui.theme.AccentGreen
 import com.example.ui.theme.AccentRed
 import com.example.ui.theme.Gold
@@ -91,75 +97,80 @@ fun StudentScreen(
     val translateTarget by viewModel.studentTranslateTarget.collectAsState()
     val translateError by viewModel.studentTranslateError.collectAsState()
     val isConnected by viewModel.isStudentDeviceConnected.collectAsState()
-    val connectedAddress by viewModel.activeStudentDeviceAddress.collectAsState()
+    val debugLog by viewModel.debugLog.collectAsState()
 
     val currentText = remember(chars) { chars.joinToString("") { it.char } }
     val resolvedChar = remember(chord, isBangla, shiftActive) {
         BrailleDict.resolveChord(chord, isBangla, shiftActive)
     }
 
-    // Outer page scroll + inner text-area scroll (each needs its own state)
-    val pageScrollState = rememberScrollState()
+    // Inner text-area scroll (auto-follows the caret) + diagnostics scroll
     val textScrollState = rememberScrollState()
+    val debugScrollState = rememberScrollState()
+    var showDiagnostics by remember { mutableStateOf(false) }
 
-    // Auto-follow the caret as new characters stream in
     LaunchedEffect(currentText) {
         textScrollState.animateScrollTo(textScrollState.maxValue)
+    }
+    LaunchedEffect(debugLog.size, showDiagnostics) {
+        if (showDiagnostics) debugScrollState.animateScrollTo(debugScrollState.maxValue)
     }
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(pageScrollState)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Top status row: Connection status + Mode LED indicators
+        // ── Top status row: connection badge + mode LEDs ──────────────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // BLE connection badge
             Surface(
                 color = if (isConnected) AccentGreen.copy(alpha = 0.15f)
                 else MaterialTheme.colorScheme.surfaceVariant,
                 shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.clickable { viewModel.showBleScanDialog.value = true }
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .clickable { viewModel.showBleScanDialog.value = true }
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = if (isConnected) Icons.Default.BluetoothConnected else Icons.Default.Bluetooth,
-                        contentDescription = "Bluetooth",
+                        contentDescription = null,
                         tint = if (isConnected) AccentGreen else MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = if (isConnected) "BrailleBridge Connected" else "Connect BLE Device",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
+                        style = MaterialTheme.typography.labelMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         color = if (isConnected) AccentGreen else MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.width(8.dp))
 
             // Language & Shift LEDs
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // English / বাংলা LED
                 Surface(
                     color = if (isBangla) AccentGreen.copy(alpha = 0.2f) else AccentRed.copy(alpha = 0.2f),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.clickable { viewModel.toggleLanguage() }
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
@@ -170,22 +181,20 @@ fun StudentScreen(
                         )
                         Spacer(modifier = Modifier.width(5.dp))
                         Text(
-                            text = if (isBangla) "বাংলা (BN)" else "English (EN)",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
+                            text = if (isBangla) "বাংলা" else "EN",
+                            style = MaterialTheme.typography.labelMedium,
                             color = if (isBangla) AccentGreen else AccentRed
                         )
                     }
                 }
 
-                // Shift LED
                 Surface(
                     color = if (shiftActive) Gold.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.clickable { viewModel.toggleShift() }
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
@@ -197,8 +206,7 @@ fun StudentScreen(
                         Spacer(modifier = Modifier.width(5.dp))
                         Text(
                             text = "Shift",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelMedium,
                             color = if (shiftActive) Gold else TextMuted
                         )
                     }
@@ -206,11 +214,14 @@ fun StudentScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // Live Output Display Card
+        // ── Live Output card — adaptive: fills all leftover vertical space ────
         Surface(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .defaultMinSize(minHeight = 200.dp),
             shape = RoundedCornerShape(14.dp),
             color = MaterialTheme.colorScheme.surface,
             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
@@ -223,25 +234,83 @@ fun StudentScreen(
                 ) {
                     Text(
                         text = "LIVE OUTPUT",
-                        fontSize = 12.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Text(
-                        text = "${chars.size} chars",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "${chars.size} chars",
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        // Pipeline diagnostics toggle — shows exactly where the
+                        // BLE chain stops if characters never appear.
+                        IconButton(
+                            onClick = { showDiagnostics = !showDiagnostics },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (showDiagnostics) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = if (showDiagnostics) "Hide diagnostics" else "Show connection diagnostics",
+                                tint = if (debugLog.any { it.contains("❌") }) MaterialTheme.colorScheme.error
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+
+                AnimatedVisibility(visible = showDiagnostics) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp)
+                            .padding(top = 6.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    ) {
+                        if (debugLog.isEmpty()) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                Text(
+                                    text = "No events yet — connect BrailleBridge to see the pipeline.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.align(Alignment.Center),
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        } else {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(debugScrollState)
+                                    .padding(8.dp)
+                            ) {
+                                debugLog.forEach { entry ->
+                                    Text(
+                                        text = entry,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = when {
+                                            entry.contains("❌") -> MaterialTheme.colorScheme.error
+                                            entry.contains("✅") -> AccentGreen
+                                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Live output — a real text area: wrapping, scrolling, auto-follow caret
+                // The text area itself — wraps, scrolls, auto-follows caret
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(190.dp),
+                        .weight(1f),
                     shape = RoundedCornerShape(10.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
@@ -250,9 +319,11 @@ fun StudentScreen(
                         Box(modifier = Modifier.fillMaxSize()) {
                             Text(
                                 text = "Waiting for input — type chords on the BrailleBridge or tap the dots below…",
-                                modifier = Modifier.align(Alignment.Center),
-                                fontSize = 15.sp,
-                                lineHeight = 22.sp,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .padding(16.dp),
+                                textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -280,16 +351,16 @@ fun StudentScreen(
                                         append("▏")
                                     }
                                 },
-                                fontFamily = FontFamily.Serif,
-                                fontSize = 20.sp,
-                                lineHeight = 28.sp,
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontFamily = FontFamily.Serif
+                                ),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
                 }
 
-                // Google Translate Bar (appears whenever stream has content)
+                // Google Translate bar (only when there is content)
                 AnimatedVisibility(visible = currentText.isNotBlank()) {
                     Column(modifier = Modifier.padding(top = 10.dp)) {
                         Row(
@@ -297,53 +368,38 @@ fun StudentScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            LanguageDropdown(
+                                selectedCode = translateTarget,
+                                onLanguageSelected = { newCode ->
+                                    viewModel.setStudentTranslateTarget(newCode)
+                                },
+                                enabled = !isTranslating
+                            )
+
+                            OutlinedButton(
+                                onClick = { viewModel.translateStudentStream() },
+                                shape = RoundedCornerShape(8.dp),
+                                enabled = !isTranslating,
+                                modifier = Modifier.defaultMinSize(minHeight = 48.dp)
                             ) {
-                                LanguageDropdown(
-                                    selectedCode = translateTarget,
-                                    onLanguageSelected = { newCode ->
-                                        viewModel.setStudentTranslateTarget(newCode)
-                                    },
-                                    enabled = !isTranslating
+                                Icon(
+                                    imageVector = Icons.Default.GTranslate,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
                                 )
-
-                                OutlinedButton(
-                                    onClick = { viewModel.translateStudentStream() },
-                                    shape = RoundedCornerShape(8.dp),
-                                    enabled = !isTranslating
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.GTranslate,
-                                        contentDescription = "Translate",
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = if (translateResult == null) "Translate" else "Translate",
-                                        fontSize = 13.sp
-                                    )
-                                }
-                            }
-
-                            if (isTranslating) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(text = "Translate", style = MaterialTheme.typography.labelLarge)
                             }
                         }
 
-                        // Detected language feedback
                         translateResult?.let { tr ->
                             if (tr.feedback.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
                                     text = tr.feedback,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.padding(horizontal = 2.dp)
                                 )
@@ -358,14 +414,12 @@ fun StudentScreen(
                                 Text(
                                     text = tr.text,
                                     modifier = Modifier.padding(10.dp),
-                                    fontSize = 14.sp,
-                                    fontFamily = FontFamily.Serif,
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Serif),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
 
-                        // Inline error message
                         translateError?.let { err ->
                             Spacer(modifier = Modifier.height(6.dp))
                             Surface(
@@ -377,7 +431,7 @@ fun StudentScreen(
                                 Text(
                                     text = err,
                                     modifier = Modifier.padding(8.dp),
-                                    fontSize = 13.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -389,28 +443,32 @@ fun StudentScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Recent Characters Strip (rolling 80-char window)
+        // ── Recent characters strip ───────────────────────────────────────────
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(10.dp),
             color = MaterialTheme.colorScheme.surface
         ) {
-            Column(modifier = Modifier.padding(8.dp)) {
+            Column(modifier = Modifier.padding(10.dp)) {
                 Text(
                     text = "RECENT CHARACTERS",
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.Monospace,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 if (recentChars.isEmpty()) {
                     Text(
                         text = "—",
-                        fontSize = 13.sp,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
+                    val listState = rememberLazyListState()
+                    LaunchedEffect(recentChars.size) {
+                        if (recentChars.isNotEmpty()) listState.animateScrollToItem(recentChars.size - 1)
+                    }
                     LazyRow(
+                        state = listState,
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
@@ -421,8 +479,7 @@ fun StudentScreen(
                             ) {
                                 Text(
                                     text = if (ch.char == " ") "␣" else ch.char,
-                                    fontFamily = FontFamily.Serif,
-                                    fontSize = 15.sp,
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Serif),
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                     color = if (ch.char == " ") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                 )
@@ -433,12 +490,9 @@ fun StudentScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // 6-Dot Clickable Braille Cell
-        // Layout: 2 columns x 3 rows
-        // Left Column: Dot 1 (top), Dot 2 (mid), Dot 3 (bottom)
-        // Right Column: Dot 4 (top), Dot 5 (mid), Dot 6 (bottom)
+        // ── 6-dot braille cell ────────────────────────────────────────────────
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -449,7 +503,6 @@ fun StudentScreen(
                 modifier = Modifier.padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Chord readout & mapping line
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -457,61 +510,43 @@ fun StudentScreen(
                 ) {
                     Text(
                         text = "0b${chord.toString(2).padStart(6, '0')}",
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = if (pressedDots.isEmpty()) "No dots active" else "Dots: ${pressedDots.sorted().joinToString(", ")}",
-                        fontSize = 13.sp,
+                        text = if (pressedDots.isEmpty()) "No dots" else "Dots ${pressedDots.sorted().joinToString(",")}",
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = "→ ${resolvedChar ?: "—"}",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.headlineSmall,
                         color = if (resolvedChar != null) MaterialTheme.colorScheme.primary else TextMuted
                     )
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // The 6-dot cell
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(44.dp),
+                    horizontalArrangement = Arrangement.spacedBy(36.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Left Column (Dots 1, 2, 3)
-                    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                        BrailleDotButton(dotIndex = 1, isPressed = pressedDots.contains(1)) {
-                            viewModel.toggleDot(1)
-                        }
-                        BrailleDotButton(dotIndex = 2, isPressed = pressedDots.contains(2)) {
-                            viewModel.toggleDot(2)
-                        }
-                        BrailleDotButton(dotIndex = 3, isPressed = pressedDots.contains(3)) {
-                            viewModel.toggleDot(3)
-                        }
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        BrailleDotButton(dotIndex = 1, isPressed = pressedDots.contains(1)) { viewModel.toggleDot(1) }
+                        BrailleDotButton(dotIndex = 2, isPressed = pressedDots.contains(2)) { viewModel.toggleDot(2) }
+                        BrailleDotButton(dotIndex = 3, isPressed = pressedDots.contains(3)) { viewModel.toggleDot(3) }
                     }
-
-                    // Right Column (Dots 4, 5, 6)
-                    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                        BrailleDotButton(dotIndex = 4, isPressed = pressedDots.contains(4)) {
-                            viewModel.toggleDot(4)
-                        }
-                        BrailleDotButton(dotIndex = 5, isPressed = pressedDots.contains(5)) {
-                            viewModel.toggleDot(5)
-                        }
-                        BrailleDotButton(dotIndex = 6, isPressed = pressedDots.contains(6)) {
-                            viewModel.toggleDot(6)
-                        }
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        BrailleDotButton(dotIndex = 4, isPressed = pressedDots.contains(4)) { viewModel.toggleDot(4) }
+                        BrailleDotButton(dotIndex = 5, isPressed = pressedDots.contains(5)) { viewModel.toggleDot(5) }
+                        BrailleDotButton(dotIndex = 6, isPressed = pressedDots.contains(6)) { viewModel.toggleDot(6) }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Cell control bar: Commit, Space, Backspace
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -523,35 +558,41 @@ fun StudentScreen(
                             containerColor = MaterialTheme.colorScheme.primary
                         ),
                         shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.weight(1.2f)
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.KeyboardReturn,
-                            contentDescription = "Commit",
+                            contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Commit", fontSize = 14.sp)
+                        Text("Commit", style = MaterialTheme.typography.labelLarge, maxLines = 1)
                     }
 
                     OutlinedButton(
                         onClick = { viewModel.addSpace() },
                         shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.SpaceBar,
-                            contentDescription = "Space",
+                            contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Space", fontSize = 14.sp)
+                        Text("Space", style = MaterialTheme.typography.labelLarge, maxLines = 1)
                     }
 
                     OutlinedButton(
                         onClick = { viewModel.handleBackspace() },
                         shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Backspace,
@@ -559,15 +600,15 @@ fun StudentScreen(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Bksp", fontSize = 14.sp)
+                        Text("Bksp", style = MaterialTheme.typography.labelLarge, maxLines = 1)
                     }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // Lower action toolbar: Clear, Send to Teacher, Connect
+        // ── Lower toolbar ─────────────────────────────────────────────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -575,15 +616,17 @@ fun StudentScreen(
             OutlinedButton(
                 onClick = { viewModel.clearStudentStream() },
                 shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Clear,
-                    contentDescription = "Clear",
+                    contentDescription = null,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Clear", fontSize = 14.sp)
+                Text("Clear", style = MaterialTheme.typography.labelLarge, maxLines = 1)
             }
 
             Button(
@@ -593,7 +636,9 @@ fun StudentScreen(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier.weight(1.2f)
+                modifier = Modifier
+                    .weight(1.4f)
+                    .heightIn(min = 48.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.ScreenShare,
@@ -602,7 +647,12 @@ fun StudentScreen(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Send to Teacher", fontSize = 14.sp)
+                Text(
+                    "Send to Teacher",
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
@@ -614,11 +664,8 @@ private fun BrailleDotButton(
     isPressed: Boolean,
     onClick: () -> Unit
 ) {
-    // Replicates 145deg gradient with hard drop-shadow from style.css
     val bgBrush = if (isPressed) {
-        Brush.linearGradient(
-            colors = listOf(GoldLight, GoldDark)
-        )
+        Brush.linearGradient(colors = listOf(GoldLight, GoldDark))
     } else {
         Brush.linearGradient(
             colors = listOf(
@@ -630,7 +677,7 @@ private fun BrailleDotButton(
 
     Box(
         modifier = Modifier
-            .size(64.dp)
+            .size(56.dp)
             .clip(CircleShape)
             .background(bgBrush)
             .border(
@@ -643,11 +690,8 @@ private fun BrailleDotButton(
     ) {
         Text(
             text = dotIndex.toString(),
-            fontWeight = FontWeight.Bold,
-            fontSize = 18.sp,
+            style = MaterialTheme.typography.titleMedium,
             color = if (isPressed) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
-
-

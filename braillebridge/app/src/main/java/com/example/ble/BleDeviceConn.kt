@@ -20,7 +20,8 @@ class BleDeviceConn(
     val desiredName: String? = null,
     private val onLine: (String) -> Unit,
     private val onChars: (String) -> Unit,
-    private val onStateChange: (Boolean, String) -> Unit
+    private val onStateChange: (Boolean, String) -> Unit,
+    private val onDebug: (String) -> Unit = {}
 ) {
     companion object {
         const val TAG = "BleDeviceConn"
@@ -58,8 +59,12 @@ class BleDeviceConn(
                 isConnected = true
                 reconnectBackoffMs = 1000L
                 onStateChange(true, device.address)
+                onDebug("🔗 GATT link up — discovering services")
                 gatt.discoverServices()
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                if (isConnected || status != BluetoothGatt.GATT_SUCCESS) {
+                    onDebug("⚠️ GATT disconnected (status=$status)")
+                }
                 isConnected = false
                 onStateChange(false, device.address)
                 try {
@@ -71,28 +76,35 @@ class BleDeviceConn(
                 if (isDesired) {
                     scheduleReconnect()
                 }
+            } else if (status != BluetoothGatt.GATT_SUCCESS) {
+                onDebug("⚠️ GATT event status=$status")
             }
         }
 
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
             if (status != BluetoothGatt.GATT_SUCCESS) {
+                onDebug("❌ Service discovery failed (status=$status)")
                 Log.e(TAG, "Service discovery failed: status=$status")
                 return
             }
             val service = gatt.getService(SERVICE_UUID)
             if (service == null) {
+                onDebug("❌ NUS service missing on device — firmware too old?")
                 Log.e(TAG, "NUS service not found on ${device.address} — firmware may lack the Nordic UART service")
                 return
             }
             val txChar = service.getCharacteristic(TX_CHAR_UUID)
             if (txChar == null) {
+                onDebug("❌ NUS TX characteristic missing")
                 Log.e(TAG, "NUS TX characteristic not found on ${device.address}")
                 return
             }
             // Local subscription enable — must precede the CCCD write.
             if (!gatt.setCharacteristicNotification(txChar, true)) {
+                onDebug("⚠️ Local notification enable returned false")
                 Log.e(TAG, "setCharacteristicNotification returned false for NUS TX")
             }
+            onDebug("✅ NUS service found — subscribing")
             subscribeNusCccd(gatt)
         }
 
@@ -101,12 +113,14 @@ class BleDeviceConn(
             val txChar = gatt.getService(SERVICE_UUID)?.getCharacteristic(TX_CHAR_UUID)
             val descriptor = txChar?.getDescriptor(CCCD_UUID)
             if (descriptor == null) {
+                onDebug("❌ NUS CCCD (0x2902) missing — cannot subscribe")
                 Log.e(TAG, "NUS TX CCCD (0x2902) missing — cannot subscribe")
                 return
             }
             subscribeAttempted = true
             descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
             if (!gatt.writeDescriptor(descriptor)) {
+                onDebug("⚠️ CCCD write rejected by stack")
                 Log.e(TAG, "writeDescriptor(CCCD) rejected by stack — requesting MTU anyway")
                 gatt.requestMtu(247)
             }
@@ -115,8 +129,10 @@ class BleDeviceConn(
         override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
             if (descriptor.uuid == CCCD_UUID) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
+                    onDebug("✅ Subscribed — waiting for data…")
                     Log.d(TAG, "NUS CCCD subscribed — requesting MTU 247")
                 } else {
+                    onDebug("❌ Subscribe write failed (status=$status)")
                     Log.e(TAG, "NUS CCCD write failed: status=$status — continuing without optimized MTU")
                 }
                 // Proceed regardless: default 23-byte MTU still carries the small
@@ -127,6 +143,7 @@ class BleDeviceConn(
 
         override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
             Log.d(TAG, "MTU changed to $mtu, status=$status")
+            onDebug("📡 MTU negotiated: $mtu bytes")
             // Faster connection interval → snappier character-by-character notifications
             try {
                 gatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)
@@ -139,11 +156,13 @@ class BleDeviceConn(
                 val g = gattRef
                 if (g != null && isConnected && !notificationsFlowing && subscribeAttempted) {
                     Log.w(TAG, "No data since subscribe — retrying NUS CCCD write once")
+                    onDebug("⏳ No data yet — retrying subscribe once")
                     subscribeAttempted = true
                     val d = g.getService(SERVICE_UUID)?.getCharacteristic(TX_CHAR_UUID)?.getDescriptor(CCCD_UUID)
                     if (d != null) {
                         d.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                         if (!g.writeDescriptor(d)) {
+                            onDebug("❌ Subscribe retry rejected")
                             Log.e(TAG, "CCCD retry also rejected")
                         }
                     }
@@ -178,7 +197,10 @@ class BleDeviceConn(
 
     private fun processIncomingBytes(bytes: ByteArray) {
         if (bytes.isEmpty()) return
-        notificationsFlowing = true
+        if (!notificationsFlowing) {
+            notificationsFlowing = true
+            onDebug("✅ Data flowing — ${bytes.size} bytes")
+        }
         val decoded = reassembler.feed(bytes)
         if (decoded.isNotEmpty()) {
             lineFeed.feed(decoded)
@@ -194,6 +216,7 @@ class BleDeviceConn(
             gattRef = gatt
         } catch (e: Exception) {
             Log.e(TAG, "connect failed", e)
+            onDebug("❌ connectGatt threw: ${e.message}")
             scheduleReconnect()
         }
     }
@@ -219,6 +242,7 @@ class BleDeviceConn(
         handler.postDelayed({
             if (isDesired && !isConnected) {
                 Log.d(TAG, "Reconnecting to ${device.address} after $reconnectBackoffMs ms")
+                onDebug("🔄 Reconnecting in ${reconnectBackoffMs / 1000}s…")
                 connect()
                 reconnectBackoffMs = (reconnectBackoffMs * 2).coerceAtMost(10000L)
             }

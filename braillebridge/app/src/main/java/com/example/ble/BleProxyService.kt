@@ -46,6 +46,8 @@ sealed class BleEvent {
     data class DeviceDisconnected(val address: String) : BleEvent()
     data class IncomingLine(val address: String, val line: String) : BleEvent()
     data class IncomingChars(val address: String, val chars: String) : BleEvent()
+    /** Human-readable pipeline diagnostic, surfaced in the in-app console. */
+    data class Debug(val message: String) : BleEvent()
 }
 
 class BleProxyService : Service() {
@@ -174,6 +176,7 @@ class BleProxyService : Service() {
                 connections.values.none { it.isConnected } &&
                 (connections[address]?.isConnected != true)) {
                 Log.d(TAG, "Auto-connecting discovered device: '$name' ($address)")
+                _events.tryEmit(BleEvent.Debug("📡 Scan found '$name' — auto-connecting"))
                 connectDevice(device)
             }
         }
@@ -188,6 +191,7 @@ class BleProxyService : Service() {
         super.onCreate()
         instance = this
         settingsStore = SettingsStore(this)
+        _events.tryEmit(BleEvent.Debug("🟢 BLE service started"))
 
         bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
         bluetoothAdapter = bluetoothManager?.adapter
@@ -265,6 +269,7 @@ class BleProxyService : Service() {
         }
         if (!connections.containsKey(address) || connections[address]?.isConnected != true) {
             Log.d(TAG, "Auto picking up native BrailleBridge connection: '$name' ($address)")
+            _events.tryEmit(BleEvent.Debug("📡 Native BT connect: '$name' — picking up"))
             connectDevice(device)
         }
     }
@@ -471,6 +476,10 @@ class BleProxyService : Service() {
             }
         }
 
+        val devName = try { device.name ?: "?" } catch (_: SecurityException) { "?" }
+        Log.i(TAG, "connectDevice: $devName ($address)")
+        _events.tryEmit(BleEvent.Debug("→ Connecting GATT to '$devName' ($address)"))
+
         val conn = BleDeviceConn(
             context = this,
             device = device,
@@ -480,6 +489,10 @@ class BleProxyService : Service() {
             },
             onChars = { chars ->
                 _events.tryEmit(BleEvent.IncomingChars(address, chars))
+            },
+            onDebug = { msg ->
+                Log.i(TAG, "conn: $msg")
+                _events.tryEmit(BleEvent.Debug(msg))
             },
             onStateChange = { connected, devAddr ->
                 updateNotification()
