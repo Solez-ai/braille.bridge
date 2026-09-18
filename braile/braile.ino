@@ -1,9 +1,5 @@
 #include <Arduino.h>
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLEUtils.h>
-#include <BLE2902.h>
-#include <BLEHIDDevice.h>
+#include "BBKeyboard.h"
 
 // ==========================================
 // BrailleBridge — ESP32 firmware
@@ -16,13 +12,14 @@
 //      (the same bytes that go to USB Serial) mirrored over BLE so the
 //      phone app (see PHONE.md) receives it without a USB cable.
 //
-// HID layer rebuild notes (v3): the HID service is now created with
-// BLEHIDDevice — the SAME helper class the proven T-vK BleKeyboard
-// library uses. This restores the exact GATT layout Android's BLE HID
-// stack expects: keyboard appearance 0x03C1 (NOT generic mouse 0x03C2),
-// encrypted report characteristics, HIDS Protocol Mode, battery service,
-// Secure Connections + MITM bonding, and the T-vK report map (report ID 1
-// keyboard). The NUS service rides alongside it untouched.
+// HID layer (v4): back on the PROVEN T-vK BleKeyboard code — vendored as
+// BBKeyboard (braile/BBKeyboard.h/.cpp) so the sketch needs no library
+// install. Its GATT layout, pairing mode, report map and advertising are
+// byte-for-byte the library build that worked on phones and PCs in v1;
+// only the Nordic UART Service was grafted on for the phone app.
+// (History: the v2/v3 hand-rolled GATT rewrite broke typing everywhere —
+// malformed report-map Report-ID item — and later broke discoverability
+// via an overflowing advertising payload. Both are gone with the rewrite.)
 // ==========================================
 
 // ==========================================
@@ -189,263 +186,25 @@ void sendBackspace();
 void processChord(int chord);
 
 // ==========================================
-// BLE — PROVEN HID KEYBOARD + NORDIC UART (NUS)
+// BLE OBJECT — vendored T-vK library + NUS
 // ==========================================
-// The HID service is built with BLEHIDDevice — the same helper class the
-// proven T-vK BleKeyboard library uses — so phones and PCs pair and type
-// exactly as they did before the v2 rewrite (phones had stopped working).
-// Same public API surface the rest of this sketch already used:
-//   begin() / isConnected() / print() / press() / releaseAll()
+BBKeyboard bleKeyboard("BrailleBridge");   // T-vK BleKeyboard + NUS (see BBKeyboard.h)
 
-#define HID_SERVICE_UUID        0x1812
-#define CCCD_UUID               0x2902
+// Stream a piece of text to BOTH outputs: USB Serial (teacher app) and
+// BLE NUS (phone app). ASCII, Bangla and control lines all flow through here.
+void streamOut(const char* s, bool newline) {
+  Serial.print(s);
+  if (newline) Serial.println();
+  bleKeyboard.streamText(s, newline);
+}
 
-// Standard Nordic UART Service UUIDs (see PHONE.md §1.1)
-#define NUS_SERVICE_UUID "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
-#define NUS_TX_UUID      "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"  // ESP32 → phone (notify)
-#define NUS_RX_UUID      "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"  // phone → ESP32 (write)
-
-// Keyboard usage codes (USB HID Usage Tables)
-#define KEY_BACKSPACE 0xB2   // raw usage; press() converts 0xB2 → 0x2A
-
-// T-vK BleKeyboard's virtual keyboard USB identity — hosts recognise it,
-// and it matches the pre-rewrite pairing behaviour.
-#define BB_VID 0x05ac
-#define BB_PID 0x820a
-#define BB_VERSION 0x0210
-
-// Boot keyboard report map — byte-identical to the one T-vK BleKeyboard
-// ships (a single keyboard INPUT collection, report ID 1). Android and
-// desktop hosts parse this layout unchanged.
-static const uint8_t KEYBOARD_REPORT_MAP[] = {
-  0x05, 0x01, 0x09, 0x06, 0xA1, 0x01, 0x01, 0x01, 0x05, 0x07,
-  0x19, 0xE0, 0x29, 0xE7, 0x15, 0x00, 0x25, 0x01, 0x75, 0x01,
-  0x95, 0x08, 0x81, 0x02, 0x95, 0x01, 0x75, 0x08, 0x81, 0x01,
-  0x95, 0x05, 0x75, 0x01, 0x05, 0x08, 0x19, 0x01, 0x29, 0x05,
-  0x91, 0x02, 0x95, 0x01, 0x75, 0x03, 0x91, 0x01, 0x95, 0x06,
-  0x75, 0x08, 0x15, 0x00, 0x25, 0x65, 0x05, 0x07, 0x19, 0x00,
-  0x29, 0x65, 0x81, 0x00, 0xC0
-};
-
-// ==========================================
-// GATT EVENT BRIDGE
-// Callbacks are defined BEFORE the BLE class and only touch plain globals
-// (C++ unqualified lookup in inline member bodies can't see types declared
-// after the class). loop() drains these flags via bleBridge.processEvents().
-// ==========================================
-volatile uint8_t g_bleEvents = 0;                 // bit0 = connect, bit1 = disconnect, bit2 = rx
-String g_rxValue = "";                            // last NUS RX payload
-
-class BrailleServerCallbacks : public BLEServerCallbacks {
-  void onConnect(BLEServer*) override { g_bleEvents |= 0x01; }
-  void onDisconnect(BLEServer*) override { g_bleEvents |= 0x02; }
-};
-
-class BrailleCharCallbacks : public BLECharacteristicCallbacks {
-  void onWrite(BLECharacteristic* c) override {
-    g_rxValue = String(c->getValue().c_str());
-    g_bleEvents |= 0x04;
-  }
-};
-
-class BrailleBridgeBLE {
-public:
-
-  void begin(const char* name) {
-    BLEDevice::init(name);
-    // Security: bond + Secure Connections + MITM — byte-for-byte the mode
-    // the working T-vK BleKeyboard build used (ESP_LE_AUTH_REQ_SC_MITM_BOND).
-    BLESecurity* sec = new BLESecurity();
-    sec->setAuthenticationMode(ESP_LE_AUTH_REQ_SC_MITM_BOND);
-    BLEDevice::setMTU(247);  // Bangla conjuncts + control lines must not fragment badly
-
-    BLEServer* server = BLEDevice::createServer();
-    server->setCallbacks(new BrailleServerCallbacks());
-
-    // ---------- HID keyboard service (via BLEHIDDevice, like T-vK) ----------
-    // This helper produces the exact GATT layout of the previously-working
-    // keyboard: 0x1812 + HIDS mandatory characteristics + Protocol Mode,
-    // encrypted 0x2A4D report characteristics with 0x2908 Report Reference
-    // and 0x2902 CCCDs, plus the 0x180F battery service hosts query.
-    _hid = new BLEHIDDevice(server);
-    _input = _hid->inputReport(1);      // report ID 1 → keyboard
-    _output = _hid->outputReport(1);    // keyboard LED output (host → device)
-
-    _hid->hidInfo(0x00, 0x01);          // country 0, flags: normally connectable
-    _hid->pnp(0x02, BB_VID, BB_PID, BB_VERSION);  // USB SIG, T-vK keyboard identity
-    _hid->reportMap((uint8_t*)KEYBOARD_REPORT_MAP, sizeof(KEYBOARD_REPORT_MAP));
-
-    // ---------- Nordic UART Service (the phone-app stream) ----------
-    BLEService* nus = server->createService(BLEUUID(NUS_SERVICE_UUID));
-
-    _tx = nus->createCharacteristic(BLEUUID(NUS_TX_UUID), BLECharacteristic::PROPERTY_NOTIFY);
-    _txCccd = new BLE2902();
-    _tx->addDescriptor(_txCccd);   // stack updates this on CCCD writes; getNotifications() reads it
-
-    BLECharacteristic* rx = nus->createCharacteristic(BLEUUID(NUS_RX_UUID),
-      BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR);
-    rx->setCallbacks(new BrailleCharCallbacks());
-
-    _hid->startServices();
-    nus->start();
-
-    // ---------- Advertising (T-vK advertising shape, plus NUS) ----------
-    BLEAdvertising* adv = BLEDevice::getAdvertising();
-    adv->setAppearance(HID_KEYBOARD);          // 0x03C1 — a KEYBOARD (was 0x03C2 = mouse!)
-    adv->addServiceUUID(_hid->hidService()->getUUID());
-    adv->addServiceUUID(BLEUUID(NUS_SERVICE_UUID));
-    adv->setScanResponse(false);               // T-vK ships without scan response
-    BLEDevice::startAdvertising();
-  }
-
-  bool isConnected() const { return _connCount > 0; }
-
-  // ---------- HID keyboard output ----------
-  void press(int k) {
-    if (k >= 0x88) k -= 0x88;   // raw usage shorthand (KEY_BACKSPACE 0xB2 → 0x2A etc.)
-    if (k >= 0xE0) { _modifiers |= (1 << (k - 0xE0)); sendReport(); return; }
-    if (k <= 0 || k > 0x65) return;
-    for (int i = 0; i < 6; i++) if (_keys[i] == k) { sendReport(); return; }
-    for (int i = 0; i < 6; i++) if (_keys[i] == 0) { _keys[i] = (uint8_t)k; sendReport(); return; }
-  }
-
-  void release(int k) {
-    if (k >= 0x88) k -= 0x88;
-    if (k >= 0xE0) { _modifiers &= ~(1 << (k - 0xE0)); sendReport(); return; }
-    for (int i = 0; i < 6; i++) if (_keys[i] == k) { _keys[i] = 0; sendReport(); return; }
-  }
-
-  void releaseAll() {
-    _modifiers = 0;
-    for (int i = 0; i < 6; i++) _keys[i] = 0;
-    sendReport();
-  }
-
-  // Type an ASCII string over HID (press+release per char, like before)
-  void print(const char* s) {
-    for (const char* p = s; *p; p++) {
-      uint8_t usage, mod;
-      if (!asciiToUsage(*p, usage, mod)) continue;  // non-mappable → skip
-      _modifiers = mod;
-      press(usage);
-      release(usage);
-      _modifiers = 0;
-    }
-  }
-
-  // ---------- NUS + Serial stream (the "serial line" that feeds the apps) ----------
-  // Mirrors every Serial write as a BLE notification. This is the byte stream
-  // the phone app subscribes to — identical content to USB Serial.
-  void streamText(const char* s, bool newline) {
-    Serial.print(s);
-    if (newline) Serial.println();
-    if (!_tx || !_connCount) return;
-    String payload(s);
-    if (newline) payload += '\n';
-    size_t mtu = BLEDevice::getMTU();
-    size_t chunk = (mtu >= 23 ? mtu - 3 : 20);
-    size_t len = payload.length();
-    for (size_t i = 0; i < len; i += chunk) {
-      size_t n = (len - i < chunk) ? (len - i) : chunk;
-      _tx->setValue((uint8_t*)payload.c_str() + i, n);
-      // notify() checks each client's CCCD internally — unsubscribed
-      // centrals are skipped automatically, so this is safe to call always.
-      _tx->notify();
-    }
-  }
-
-  void streamLine(const char* line) { streamText(line, true); }
-
-  // ---------- callbacks ----------
-  // Called from loop() — drains the callback flags set by the GATT events
-  void processEvents() {
-    noInterrupts();
-    uint8_t events = g_bleEvents;
-    g_bleEvents = 0;
-    interrupts();
-    if (events & 0x01) onCentralConnect();
-    if (events & 0x02) onCentralDisconnect();
-    if (events & 0x04) { String v = g_rxValue; onRxWrite(v); }
-  }
-
-  void onCentralConnect() { _connCount++; }
-  void onCentralDisconnect() {
-    _connCount--;
-    if (_connCount <= 0) _connCount = 0;
-    // Reset keyboard state so the next host doesn't see stuck keys
-    _modifiers = 0;
-    for (int i = 0; i < 6; i++) _keys[i] = 0;
-    BLEDevice::startAdvertising();  // like BleKeyboard: keep discoverable
-  }
-
-  void onRxWrite(const String& value) {
-    // The phone app can push control lines back over NUS. Only language
-    // commands are accepted; anything else echoes the control vocabulary.
-    String v = value; v.trim();
-    if (v == "LANG:en")      { isBangla = false; streamLine("LANG:en"); }
-    else if (v == "LANG:bn") { isBangla = true;  streamLine("LANG:bn"); }
-    else                     { streamLine("Invalid"); }
-  }
-
-private:
-  // BLEHIDDevice creates the encrypted report characteristics + Report
-  // Reference descriptors itself, so no manual 0x2908 helper is needed.
-
-  static bool asciiToUsage(char ch, uint8_t& usage, uint8_t& mod) {
-    mod = 0;
-    if (ch >= 'a' && ch <= 'z') { usage = 0x04 + (ch - 'a'); return true; }
-    if (ch >= 'A' && ch <= 'Z') { usage = 0x04 + (ch - 'A'); mod = 0x40; return true; }  // 0x40 = left shift
-    if (ch >= '1' && ch <= '9') { usage = 0x1E + (ch - '1'); return true; }
-    switch (ch) {
-      case '0': usage = 0x27; return true;
-      case '!': usage = 0x1E; mod = 0x40; return true;
-      case '@': usage = 0x1F; mod = 0x40; return true;
-      case '#': usage = 0x20; mod = 0x40; return true;
-      case '$': usage = 0x21; mod = 0x40; return true;
-      case '%': usage = 0x22; mod = 0x40; return true;
-      case '^': usage = 0x23; mod = 0x40; return true;
-      case '&': usage = 0x24; mod = 0x40; return true;
-      case '*': usage = 0x25; mod = 0x40; return true;
-      case '(': usage = 0x26; mod = 0x40; return true;
-      case ')': usage = 0x27; mod = 0x40; return true;
-      case '\n': case '\r': usage = 0x28; return true;
-      case '\b': case 0x7F: usage = 0x2A; return true;   // backspace / delete
-      case '\t': usage = 0x2B; return true;
-      case ' ': usage = 0x2C; return true;
-      case '-': usage = 0x2D; return true;   case '_': usage = 0x2D; mod = 0x40; return true;
-      case '=': usage = 0x2E; return true;   case '+': usage = 0x2E; mod = 0x40; return true;
-      case '[': usage = 0x2F; return true;   case '{': usage = 0x2F; mod = 0x40; return true;
-      case ']': usage = 0x30; return true;   case '}': usage = 0x30; mod = 0x40; return true;
-      case '\\': usage = 0x31; return true;  case '|': usage = 0x31; mod = 0x40; return true;
-      case ';': usage = 0x33; return true;   case ':': usage = 0x33; mod = 0x40; return true;
-      case '\'': usage = 0x34; return true;  case '"': usage = 0x34; mod = 0x40; return true;
-      case '`': usage = 0x35; return true;   case '~': usage = 0x35; mod = 0x40; return true;
-      case ',': usage = 0x36; return true;   case '<': usage = 0x36; mod = 0x40; return true;
-      case '.': usage = 0x37; return true;   case '>': usage = 0x37; mod = 0x40; return true;
-      case '/': usage = 0x38; return true;   case '?': usage = 0x38; mod = 0x40; return true;
-      default: return false;
-    }
-  }
-
-  void sendReport() {
-    uint8_t report[8] = { _modifiers, 0, _keys[0], _keys[1], _keys[2], _keys[3], _keys[4], _keys[5] };
-    if (_input) {
-      _input->setValue(report, 8);
-      if (_connCount) _input->notify();
-    }
-  }
-
-  BLEHIDDevice* _hid = nullptr;
-  BLECharacteristic* _input = nullptr;
-  BLECharacteristic* _output = nullptr;
-  BLECharacteristic* _tx = nullptr;
-  BLE2902* _txCccd = nullptr;
-  uint8_t _modifiers = 0;
-  uint8_t _keys[6] = { 0, 0, 0, 0, 0, 0 };
-  int _connCount = 0;
-};
-
-BrailleBridgeBLE bleBridge;
+// Phone app → device control lines over NUS RX (same vocabulary as Serial).
+void onNusControl(const String& value) {
+  String v = value; v.trim();
+  if (v == "LANG:en")      { isBangla = false; streamOut("LANG:en", true); }
+  else if (v == "LANG:bn") { isBangla = true;  streamOut("LANG:bn", true); }
+  else                     { streamOut("Invalid", true); }
+}
 
 // ==========================================
 // OBJECTS & GLOBALS
@@ -500,7 +259,8 @@ void setup() {
   // pinMode(GREEN_LED, OUTPUT);
   // setEnglishLED(); // Start in English mode
 
-  bleBridge.begin("BrailleBridge");
+  bleKeyboard.begin();
+  bleKeyboard.setNusRxHandler(onNusControl);
   Serial.println("SYSTEM: BrailleBridge Connected. Waiting for BLE...");
 }
 
@@ -508,7 +268,7 @@ void setup() {
 // MAIN LOOP
 // ==========================================
 void loop() {
-  bleBridge.processEvents();   // handle connect/disconnect/NUS-RX events
+  bleKeyboard.processEvents();   // handle connect/disconnect/NUS-RX events
 
   bool d1 = digitalRead(DOT_1) == LOW;
   bool d2 = digitalRead(DOT_2) == LOW;
@@ -581,7 +341,7 @@ void loop() {
     // D4+D5+D6 held 500ms → language toggle
     if (currentChord == 0b111000 && elapsed >= 500 && !allReleased) {
       isBangla = !isBangla;
-      bleBridge.streamLine(isBangla ? "LANG:bn" : "LANG:en");
+      streamOut(isBangla ? "LANG:bn" : "LANG:en", true);
       if (shiftActive) shiftTapUsed = true;  // Shift was part of a deliberate gesture, not a tap
       chordActive = false;
       currentChord = 0;
@@ -614,12 +374,12 @@ void loop() {
 // BACKSPACE — delete the last typed character
 // ==========================================
 void sendBackspace() {
-  if (bleBridge.isConnected()) {
-    bleBridge.press(KEY_BACKSPACE);
+  if (bleKeyboard.isConnected()) {
+    bleKeyboard.press(KEY_BACKSPACE);
     delay(8);
-    bleBridge.releaseAll();
+    bleKeyboard.releaseAll();
   }
-  bleBridge.streamLine("SYSTEM:BKSP");   // teacher app listens for this control line
+  streamOut("SYSTEM:BKSP", true);   // teacher app listens for this control line
 }
 
 // ==========================================
@@ -635,12 +395,12 @@ void sendChar(const char* c) {
   for (const char* p = c; *p; p++) {
     if ((unsigned char)*p >= 0x80) { isAscii = false; break; }
   }
-  if (bleBridge.isConnected() && isAscii) {
-    bleBridge.print(c);
+  if (bleKeyboard.isConnected() && isAscii) {
+    bleKeyboard.print(c);
   }
   // The stream carries EVERYTHING (ASCII + Bangla + control lines) — this is
   // what the teacher software and the phone app receive.
-  bleBridge.streamText(c, false);
+  streamOut(c, false);
 }
 
 // ==========================================

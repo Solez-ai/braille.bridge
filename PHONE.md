@@ -17,7 +17,7 @@
 
 | Rule | Value (do not change) | Source of truth |
 |---|---|---|
-| Device BLE name | `BrailleBridge` | `braile/braile.ino` — `BleKeyboard bleKeyboard("BrailleBridge", "StudentProject", 100)` |
+| Device BLE name | `BrailleBridge` | `braile/braile.ino` — `BBKeyboard bleKeyboard("BrailleBridge")` (vendored T-vK library + NUS) |
 | Serial baud (legacy/USB) | 115200 (also 9600/57600/38400 selectable) | `braille-display` UI + `braille-desktop/main.py` |
 | Chord collection window | **180 ms** timeout, process on all-released OR timeout | `loop()` in `braile.ino` |
 | Language toggle chord | Dots **4+5+6 held 500 ms** → toggle EN/BN, wait for release, then 50 ms settle | `loop()` |
@@ -42,18 +42,21 @@ notifications**. The protocol layer above it must not change.
 
 ### 1.1 The ESP32 side — ✅ IMPLEMENTED (`braile/braile.ino`)
 
-The firmware no longer uses the `BleKeyboard` library (it could not host a
-second service). It now runs a **self-contained GATT server** on the ESP32
-core's built-in BLE stack exposing both services at once:
+The firmware runs the **T-vK BleKeyboard code that worked in v1 — vendored
+into the sketch folder** as `braile/BBKeyboard.h/.cpp` (class renamed
+`BBKeyboard`), with the **Nordic UART Service grafted on** as a second
+service. No library install needed. This is the proven pairing/typing stack
+(keyboard appearance 0x03C1, SC+MITM bonding, T-vK report map and
+advertising shape) plus one added data channel:
 
-1. **HID over GATT (0x1812):** identical report map / bonding / no-MITM
-   pairing to what `BleKeyboard` provided — paired hosts still see a keyboard
-   named **BrailleBridge** and receive ASCII typing as before.
+1. **HID over GATT (0x1812):** byte-for-byte the library build — paired
+   hosts see a keyboard named **BrailleBridge** and receive ASCII typing
+   exactly as v1 did on phones and PCs.
 2. **Nordic UART Service (the proxy channel):** the *raw character +
    control-line stream* that goes to Serial is mirrored over BLE:
 
 ```cpp
-// implemented — braile.ino (BrailleBridgeBLE class)
+// implemented — BBKeyboard.h (NUS ADDITION section)
 #define NUS_SERVICE_UUID "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
 #define NUS_TX_UUID      "6E400002-…"   // notify: chars, LANG:*, SYSTEM:BKSP
 #define NUS_RX_UUID      "6E400003-…"   // write: phone can send LANG:en/LANG:bn
