@@ -508,9 +508,17 @@ void BBKeyboard::onConnect(BLEServer* pServer) {
   desc = (BLE2902*)this->inputMediaKeys->getDescriptorByUUID(BLEUUID((uint16_t)0x2902));
   desc->setNotifications(true);
 
+  // NUS ADDITION: force-enable NUS notifications — the SAME treatment T-vK
+  // just applied to the HID characteristics above. Some hosts subscribe
+  // without the CCCD write visibly landing in the descriptor object; without
+  // this the NUS stream stays dead while HID typing works (exact symptom of
+  // the v4 firmware). Matches the proven upstream pattern.
+  if (this->_nusTxCccd) this->_nusTxCccd->setNotifications(true);
+
   // NUS ADDITION: track connections, queue event for loop()
   portENTER_CRITICAL(&s_nusMux);
   this->_connCount++;
+  this->_nusSubscribed = true;   // force-enabled above; CCCD sync confirms later
   if (this->_nusEventCount < NUS_EVENT_MAX) this->_nusEvents[this->_nusEventCount++] = NUS_EVT_CONNECT;
   portEXIT_CRITICAL(&s_nusMux);
 }
@@ -522,6 +530,9 @@ void BBKeyboard::onDisconnect(BLEServer* pServer) {
   desc->setNotifications(false);
   desc = (BLE2902*)this->inputMediaKeys->getDescriptorByUUID(BLEUUID((uint16_t)0x2902));
   desc->setNotifications(false);
+
+  // NUS ADDITION: mirror the HID treatment — disable while no client
+  if (this->_nusTxCccd) this->_nusTxCccd->setNotifications(false);
 
   advertising->start();
 
