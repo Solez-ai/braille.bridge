@@ -20,10 +20,10 @@ jobs:
         working-directory: braillebridge
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -45,8 +45,19 @@ jobs:
           -keyalg RSA -keysize 2048 -validity 10000
           -dname "CN=Android Debug,O=Android,C=US"
 
+      # --no-daemon: ephemeral CI runners gain nothing from a daemon and lose
+      # flakiness; tee captures full output so the failure step can grep it.
       - name: Build debug APK
-        run: gradle :app:assembleDebug --stacktrace
+        run: |
+          set -o pipefail
+          gradle :app:assembleDebug --stacktrace --no-daemon 2>&1 | tee build_output.txt | tail -n 60
+
+      # Guarantees the REAL error is visible in the log even when Gradle's
+      # summary is truncated.
+      - name: Print error details on failure
+        if: failure()
+        run: |
+          grep -n -E "error:|^e: |Exception|OutOfMemory|FAILED|Caused by" build_output.txt | head -60 || true
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
