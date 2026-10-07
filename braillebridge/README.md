@@ -43,3 +43,5 @@ Student / Teacher / Exam / Exports tabs, teacher account (Samin Yeasar),
 Google Translate with the full ~128-language catalogue, auto-formatted
 export review with .txt download — all mirroring `braille-display/` and
 `braille-desktop/`. Protocol and firmware details live in `PHONE.md`.
+
+The BrailleBridge project (all components, including this app) is licensed under the GNU General Public License v3.0 — see the [LICENSE](../LICENSE) file at the repository root.

@@ -1,0 +1,4 @@
+# Keep the BrailleBridge-2 dev folder entirely out of the repository.
+# It is already untracked; this just makes sure it can never be
+# added accidentally (git add ., IDE dialogs, etc.).
+/braille bridge 2/

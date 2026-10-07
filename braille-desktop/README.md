@@ -24,6 +24,13 @@ python main.py
 | Persists student ⇄ COM port assignments | `data/assignments.json` |
 | Auto-saves each session as readable prose | `logs/` (on disconnect, Save Logs button, and app close) |
 
+## License
+
+This desktop Teacher Software (Python relay + embedded web UI) is part of
+the BrailleBridge project and is licensed under the **GNU General Public
+License, Version 3.0** — see the [LICENSE](../LICENSE) file at the
+repository root for the full text.
+
 ## Notes
 
 - The window is Edge WebView2 (bundled with Windows 10/11). The browser

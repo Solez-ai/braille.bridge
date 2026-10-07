@@ -101,7 +101,7 @@ BrailleBridge addresses the whole gap: the student writes through familiar Brail
 ├── models/
 │   ├── TOP_SHELL.stl         # 3D-printable enclosure top
 │   └── BOTTOM_SHELL.stl      # 3D-printable enclosure bottom
-├── LICENSE                   # Apache License 2.0
+├── LICENSE                   # GNU General Public License v3.0
 └── README.md
 ```
 
@@ -277,7 +277,7 @@ xelatex braillebridge.tex
 
 ## License
 
-Licensed under the **Apache License, Version 2.0**. See [LICENSE](LICENSE) for the full text.
+Licensed under the **GNU General Public License, Version 3.0**. See [LICENSE](LICENSE) for the full text.
 
 ---
 
