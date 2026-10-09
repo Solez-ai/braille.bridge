@@ -1,22 +1,9 @@
-// ============================================================================
-// BBKeyboard — vendored from T-vK's ESP32_BLE_Keyboard (BleKeyboard v0.0.4)
-// ============================================================================
-// WHY THIS FILE EXISTS
-//   The v1 firmware used the BleKeyboard library and Bluetooth pairing/typing
-//   worked on phones AND PCs. The v2/v3 rewrites replaced it with hand-rolled
-//   GATT code and broke discoverability + typing (report-map tag bug,
-//   advertising overflow). Per decision: return to the PROVEN library code.
-//
-//   The only modifications from upstream BleKeyboard are marked "NUS ADDITION"
-//   below. Everything else — report map, BLEHIDDevice usage, security mode,
-//   advertising shape, pairing callbacks — is byte-for-byte T-vK 0.0.4.
-//   Do not "clean up" the upstream parts; they are the reason it works.
-//
-//   NUS ADDITION (the one new feature): a Nordic UART Service so the
-//   BrailleBridge phone app can read the same character/control-line stream
-//   that goes to USB Serial. NUS lives on its own service UUID; it does NOT
-//   change HID behaviour, the report map, or the advertising payload.
-// ============================================================================
+// BBKeyboard — vendored from T-vK's ESP32_BLE_Keyboard (BleKeyboard v0.0.4).
+// HID pairing/typing broke under the hand-rolled GATT rewrites, so upstream
+// code is kept byte-for-byte; do not restructure it. The single modification
+// (marked "NUS") adds a Nordic UART Service so the phone app can read the
+// character/control-line stream normally going to USB Serial. NUS does not
+// touch HID behaviour, the report map or advertising.
 
 #ifndef BB_KEYBOARD_H
 #define BB_KEYBOARD_H
@@ -32,7 +19,7 @@ class BLE2902;  // only used as a pointer here; full type included in the .cpp
 
 #include "Print.h"
 
-// NUS ADDITION: standard Nordic UART Service UUIDs (PHONE.md §1.1)
+// Nordic UART Service UUIDs (PHONE.md §1.1)
 #define NUS_SERVICE_UUID "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
 #define NUS_TX_UUID      "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"  // ESP32 → phone (notify)
 #define NUS_RX_UUID      "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"  // phone → ESP32 (write)
@@ -153,7 +140,7 @@ private:
   uint16_t pid       = 0x820a;
   uint16_t version   = 0x0210;
 
-  // ---- NUS ADDITION: state (upstream BleKeyboard has nothing below) ----
+  // NUS state (not present in upstream BleKeyboard)
   static const uint8_t NUS_EVT_CONNECT = 1;      // deferred event codes
   static const uint8_t NUS_EVT_DISCONNECT = 2;
   static const uint8_t NUS_EVT_RX = 3;
@@ -192,16 +179,13 @@ public:
   void set_product_id(uint16_t pid);
   void set_version(uint16_t version);
 
-  // ---- NUS ADDITION: stream + event API used by the BrailleBridge sketch ----
-  // streamText mirrors the USB Serial byte stream to the phone app.
+  // NUS stream/event API: streamText mirrors USB Serial to the phone app.
   void streamText(const char* s, bool newline);
   void streamLine(const char* line) { streamText(line, true); }
   // processEvents drains queued connect/disconnect/NUS-RX events.
   // Call from loop() — the chord state machine must run outside BLE callbacks.
   void processEvents();
-  // RX callback shim hands the payload here (public: called from the shim).
   void queueNusRx(const char* data, size_t len);
-  // Register the handler invoked (in loop() context) for NUS RX payloads.
   void setNusRxHandler(void (*handler)(const String&)) { _nusRxHandler = handler; }
   // True once the phone has enabled NUS notifications.
   bool nusSubscribed() const { return _nusSubscribed; }
@@ -214,7 +198,7 @@ protected:
 
 };
 
-// NUS ADDITION: RX callback shim — routes NUS writes into BBKeyboard.// Defined in the .cpp; needs the single instance pointer declared there.
+// NUS RX callback shim — routes NUS writes into BBKeyboard.
 class BBKeyboardNusRxCallbacks : public BLECharacteristicCallbacks {
 public:
   void onWrite(BLECharacteristic* characteristic) override;

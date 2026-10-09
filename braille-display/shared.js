@@ -1,26 +1,8 @@
-/* ============================================================
-   BrailleBridge — shared.js
-   Teacher Account UI · Google Translate bridge · Log Auto-Formatter
-   · Exports library (saved + reviewable exports)
-
-   Loaded by BOTH apps:
-     - braille-desktop / braille-display  (teacher platform)
-     - website                            (showcase site, demo exports)
-
-   Exposes globals: BBTranslate, BBAutoFormat, BBExports, BBAccount
-   Everything is self-contained — no dependencies on script.js.
-   ============================================================ */
+/* BrailleBridge — shared.js Teacher Account UI · Google Translate bridge · Log Auto-Formatter · Exports library (saved + reviewable exports) Loaded by BOTH apps: - braille-desktop / braille-display  (teacher platform) - website                            (showcase site, demo exports) Exposes globals: BBTranslate, BBAutoFormat, BBExports, BBAccount Everything is self-contained — no dependencies on script.js. */
 (function () {
   'use strict';
 
-  /* ============================================================
-     1. GOOGLE TRANSLATE BRIDGE - ALL LANGUAGES
-     Uses the public translate_a/single endpoint (gtx client) with a
-     v2 fallback. Source language is auto-detected by the API (sl=auto)
-     and reported back so the UI can show "Bangla -> Spanish" etc.
-     The full Google Translate catalogue is supported: every language
-     Google Translate offers (~110+ codes).
-     ============================================================ */
+  /* 1. GOOGLE TRANSLATE BRIDGE - ALL LANGUAGES Uses the public translate_a/single endpoint (gtx client) with a v2 fallback. Source language is auto-detected by the API (sl=auto) and reported back so the UI can show "Bangla -> Spanish" etc. The full Google Translate catalogue is supported: every language Google Translate offers (~110+ codes). */
   const BBTranslate = {
     cache: new Map(),
 
@@ -257,14 +239,7 @@
     }
   };
 
-  /* ============================================================
-     2. AUTO-FORMATTER
-     Understands what the student typed and turns the raw character
-     stream into structured, reviewable documents:
-       titles · headings (Chapter/Section/Lesson/Exercise + Bangla)
-       paragraphs (sentence spacing) · bullet lists · numbered lists
-       per-line timestamps preserved from the original typing session
-     ============================================================ */
+  /* 2. AUTO-FORMATTER Understands what the student typed and turns the raw character stream into structured, reviewable documents: titles · headings (Chapter/Section/Lesson/Exercise + Bangla) paragraphs (sentence spacing) · bullet lists · numbered lists per-line timestamps preserved from the original typing session */
   const BBAutoFormat = {
 
     // Split a raw char stream (with optional {char, time} entries) into
@@ -424,13 +399,7 @@
     }
   };
 
-  /* ============================================================
-     3. EXPORTS LIBRARY
-     "Save to Exports" persists every export (student log, class log,
-     demo session) into localStorage. The teacher opens the Exports
-     tab later to review formatted documents, translate them, and
-     re-download — a proper archive instead of loose .txt files.
-     ============================================================ */
+  /* 3. EXPORTS LIBRARY "Save to Exports" persists every export (student log, class log, demo session) into localStorage. The teacher opens the Exports tab later to review formatted documents, translate them, and re-download — a proper archive instead of loose .txt files. */
   const STORE_KEY = window.location.pathname.indexOf('website') >= 0
     ? 'bb-site-exports-v1' : 'bb-exports-v1';
 
@@ -854,11 +823,7 @@
     }
   };
 
-  /* ============================================================
-     4. ACCOUNT ENTRY POINTS
-     The host page provides a trigger element (#accountChip or
-     #siteAccountChip); shared.js wires it to the modal.
-     ============================================================ */
+  /* 4. ACCOUNT ENTRY POINTS The host page provides a trigger element (#accountChip or #siteAccountChip); shared.js wires it to the modal. */
   function init() {
     BBExports.ensureModals();
     const chip = document.getElementById('accountChip') || document.getElementById('siteAccountChip');

@@ -27,8 +27,7 @@ READ_SIZE = 256
 CONTROL_PREFIXES = ('SYSTEM:', 'LANG:', 'Invalid', 'SHIFT')
 
 # ESP32 ROM boot preamble — printed to serial on every reset BEFORE the
-# firmware runs. These lines are not user text; drop them so they never
-# pollute the live output or the saved logs.
+# firmware runs. Not user text; drop it so it never pollutes output or logs.
 BOOT_PREFIXES = ('ets ', 'rst:0x', 'boot:0x', 'configSPIWP', 'clk_drv:',
                  'q_drv:', 'd_drv:', 'cs0_drv:', 'hd_drv:', 'wp_drv:',
                  'mode:DIO', 'load:0x', 'entry 0x')
@@ -45,7 +44,7 @@ class RelayManager:
         self._monitor = threading.Thread(target=self._monitor_loop, daemon=True)
         self._monitor.start()
 
-    # ------------------------------------------------------------ discovery
+    # discovery
     def list_ports(self):
         """Enumerate COM ports. On Windows, pyserial's setupapi/WMI enumeration
         can transiently return empty even while the OS knows the port is there
@@ -100,7 +99,7 @@ class RelayManager:
         except Exception:
             return []
 
-    # ----------------------------------------------------------- lifecycle
+    # lifecycle
     def open_port(self, port_name, baud=115200):
         with self._lock:
             existing = self._conns.get(port_name)
@@ -158,7 +157,7 @@ class RelayManager:
         for port_name in list(self._conns.keys()):
             self.close_port(port_name)
 
-    # ---------------------------------------------------------- assignments
+    # assignments
     def get_assignments(self):
         try:
             with open(ASSIGN_FILE, 'r', encoding='utf-8') as f:
@@ -182,7 +181,7 @@ class RelayManager:
         except Exception:
             return False
 
-    # -------------------------------------------------------------- logging
+    # logging
     def save_all_logs(self):
         saved = 0
         with self._lock:
@@ -255,7 +254,7 @@ class RelayManager:
         flush_line()
         return lines
 
-    # ----------------------------------------------------------- reader loop
+    # reader loop
     def _read_loop(self, port_name, conn):
         ser = conn['serial']
         # Incremental decoder: a multi-byte UTF-8 character (Bangla) split
@@ -297,7 +296,7 @@ class RelayManager:
         stripped = line.strip()
         if not stripped:
             return
-        # ---- ESP32 boot preamble suppression ----
+        # boot preamble suppression
         if stripped.startswith('ets '):
             conn['boot_suppress'] = True
             return
@@ -309,7 +308,7 @@ class RelayManager:
                 return
         if stripped.startswith(BOOT_PREFIXES):
             return
-        # ---- normal forwarding ----
+        # normal forwarding
         if stripped.startswith(CONTROL_PREFIXES):
             self.emit('data', port_name, stripped + '\n')
             return

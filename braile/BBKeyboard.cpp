@@ -1,8 +1,5 @@
-// ============================================================================
-// BBKeyboard — vendored from T-vK's ESP32_BLE_Keyboard (BleKeyboard v0.0.4)
-// See BBKeyboard.h for the rationale. Upstream code paths are kept verbatim;
-// NUS additions are marked "NUS ADDITION".
-// ============================================================================
+// BBKeyboard — vendored from T-vK's ESP32_BLE_Keyboard (BleKeyboard v0.0.4).
+// Upstream code paths are kept verbatim; NUS additions are marked "NUS".
 
 #include "BBKeyboard.h"
 
@@ -20,12 +17,12 @@
 #include "esp_log.h"
 static const char* LOG_TAG = "BLEDevice";
 
-// NUS ADDITION: guard for deferred-event queue + RX buffer (touched from the
-// BLE task in callbacks and from loop() in processEvents).
+// Guard for the deferred-event queue + RX buffer, which the BLE task touches
+// in callbacks and loop() touches in processEvents().
 static portMUX_TYPE s_nusMux = portMUX_INITIALIZER_UNLOCKED;
 
-// NUS ADDITION: single-instance self pointer — the NUS RX callback shim
-// (BBKeyboardNusRxCallbacks) routes writes into the one BBKeyboard instance.
+// Single-instance self pointer: the NUS RX callback shim routes writes into
+// the one BBKeyboard instance.
 static BBKeyboard* s_bbSelf = nullptr;
 
 // Report IDs:
@@ -102,16 +99,16 @@ BBKeyboard::BBKeyboard(std::string deviceName, std::string deviceManufacturer, u
     , deviceName(std::string(deviceName).substr(0, 15))
     , deviceManufacturer(std::string(deviceManufacturer).substr(0,15))
     , batteryLevel(batteryLevel) {
-  for (int i = 0; i < NUS_EVENT_MAX; i++) _nusEvents[i] = 0;  // NUS ADDITION
-  s_bbSelf = this;  // NUS ADDITION: single-instance RX routing
+  for (int i = 0; i < NUS_EVENT_MAX; i++) _nusEvents[i] = 0;
+  s_bbSelf = this;
 }
 
 void BBKeyboard::begin(void)
 {
   BLEDevice::init(deviceName);
 
-  // NUS ADDITION: larger ATT MTU so Bangla conjuncts and control lines
-  // notify in fewer chunks. Does not affect HID or advertising.
+  // Larger ATT MTU so Bangla conjuncts and control lines notify in fewer
+  // chunks. Does not affect HID or advertising.
   BLEDevice::setMTU(247);
 
   BLEServer* pServer = BLEDevice::createServer();
@@ -135,7 +132,7 @@ void BBKeyboard::begin(void)
   hid->reportMap((uint8_t*)_hidReportDescriptor, sizeof(_hidReportDescriptor));
   hid->startServices();
 
-  // ---------------- NUS ADDITION: Nordic UART Service ----------------
+  // ---------------- Nordic UART Service ----------------
   // Own service, created AFTER the HID services are started, exactly like
   // any normal secondary service. The HID service above is untouched.
   BLEService* nus = pServer->createService(BLEUUID(NUS_SERVICE_UUID));
@@ -508,14 +505,14 @@ void BBKeyboard::onConnect(BLEServer* pServer) {
   desc = (BLE2902*)this->inputMediaKeys->getDescriptorByUUID(BLEUUID((uint16_t)0x2902));
   desc->setNotifications(true);
 
-  // NUS ADDITION: force-enable NUS notifications — the SAME treatment T-vK
+  // Force-enable NUS notifications — the same treatment T-vK just applied
   // just applied to the HID characteristics above. Some hosts subscribe
   // without the CCCD write visibly landing in the descriptor object; without
   // this the NUS stream stays dead while HID typing works (exact symptom of
   // the v4 firmware). Matches the proven upstream pattern.
   if (this->_nusTxCccd) this->_nusTxCccd->setNotifications(true);
 
-  // NUS ADDITION: track connections, queue event for loop()
+  // Track connections, queue event for loop()
   portENTER_CRITICAL(&s_nusMux);
   this->_connCount++;
   this->_nusSubscribed = true;   // force-enabled above; CCCD sync confirms later
@@ -531,13 +528,13 @@ void BBKeyboard::onDisconnect(BLEServer* pServer) {
   desc = (BLE2902*)this->inputMediaKeys->getDescriptorByUUID(BLEUUID((uint16_t)0x2902));
   desc->setNotifications(false);
 
-  // NUS ADDITION: mirror the HID treatment — disable while no client
+  // Disable NUS notifications while no client is connected
   if (this->_nusTxCccd) this->_nusTxCccd->setNotifications(false);
 
   advertising->start();
 
-  // NUS ADDITION: track disconnection, queue event for loop().
-  // (advertising->start() above is upstream's own re-advertise call.)
+  // Track disconnection, queue event for loop().
+  // (the advertising->start() above is upstream's own re-advertise call.)
   portENTER_CRITICAL(&s_nusMux);
   this->_connCount--;
   if (this->_connCount < 0) this->_connCount = 0;
@@ -565,9 +562,7 @@ void BBKeyboard::delay_ms(uint64_t ms) {
   }
 }
 
-// ============================================================================
-// NUS ADDITIONS — implementation of the stream/event API.
-// ============================================================================
+// NUS — implementation of the stream/event API.
 
 void BBKeyboardNusRxCallbacks::onWrite(BLECharacteristic* characteristic) {
   if (s_bbSelf) s_bbSelf->queueNusRx(characteristic->getValue().c_str(), characteristic->getValue().length());

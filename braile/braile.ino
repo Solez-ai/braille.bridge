@@ -1,30 +1,6 @@
 #include <Arduino.h>
 #include "BBKeyboard.h"
 
-// ==========================================
-// BrailleBridge — ESP32 firmware
-//
-// BLE exposes TWO services at once:
-//   1. HID keyboard (0x1812)  → typed characters reach any paired
-//      computer/phone text field exactly like the original T-vK
-//      BleKeyboard build (phone keyboard mode works again).
-//   2. Nordic UART Service    → the raw character + control-line stream
-//      (the same bytes that go to USB Serial) mirrored over BLE so the
-//      phone app (see PHONE.md) receives it without a USB cable.
-//
-// HID layer (v4): back on the PROVEN T-vK BleKeyboard code — vendored as
-// BBKeyboard (braile/BBKeyboard.h/.cpp) so the sketch needs no library
-// install. Its GATT layout, pairing mode, report map and advertising are
-// byte-for-byte the library build that worked on phones and PCs in v1;
-// only the Nordic UART Service was grafted on for the phone app.
-// (History: the v2/v3 hand-rolled GATT rewrite broke typing everywhere —
-// malformed report-map Report-ID item — and later broke discoverability
-// via an overflowing advertising payload. Both are gone with the rewrite.)
-// ==========================================
-
-// ==========================================
-// PIN DEFINITIONS
-// ==========================================
 #define DOT_1 14
 #define DOT_2 12
 #define DOT_3 13
@@ -33,37 +9,30 @@
 #define DOT_6 25
 #define SPACE 33
 #define SHIFT 32
-// (Physical Shift button — hold while pressing dots for uppercase/numbers/math/Bangla vowel signs)
-// Tap Shift alone (press + release without any chord) → Backspace (deletes last character)
+// Shift: hold for uppercase/numbers/math/Bangla vowel signs.
+// Tapping Shift alone deletes the last character.
+
 // #define RED_LED 18
 // #define GREEN_LED 19
 
-// ==========================================
-// BRAILLE ENTRY STRUCTURE
-// ==========================================
 struct BrailleEntry {
   uint8_t chord;
   const char* english;
   const char* bangla;
 };
 
-// ==========================================
-// BRAILLE DICTIONARY — Bharati Braille Standard
-// ==========================================
-// Based on the Bharati Braille standard (https://en.wikipedia.org/wiki/Bharati_Braille)
-// Dot patterns follow International Phonetic Alphabet (IPA) mappings.
-//
+// Bharati Braille cells (en.wikipedia.org/wiki/Bharati_Braille).
 const BrailleEntry brailleDict[] = {
-// ===== Shared English + Bangla chords (Bharati standard) =====
+// Shared English + Bangla chords
 { 0b000001, "a", "অ" },     // dot 1 = অ
 { 0b000011, "b", "ব" },     // dots 12 = ব
 { 0b001001, "c", "চ" },     // dots 14 = চ
 { 0b011001, "d", "দ" },     // dots 145 = দ
 { 0b010001, "e", "এ" },     // dots 15 = এ
-{ 0b001011, "f", nullptr },  // dots 124 = (no standard Bharati Bengali)
+{ 0b001011, "f", nullptr },  // dots 124
 { 0b011011, "g", "গ" },     // dots 1245 = গ
 { 0b010011, "h", "হ" },     // dots 125 = হ
-{ 0b001000, "i", "্" },     // dot 4 = হসন্ত (virama/halant)
+{ 0b001000, "i", "্" },     // dot 4 = hasanta (virama)
 { 0b011010, "j", "জ" },     // dots 245 = জ
 { 0b000101, "k", "ক" },     // dots 13 = ক
 { 0b000111, "l", "ল" },     // dots 123 = ল
@@ -76,53 +45,51 @@ const BrailleEntry brailleDict[] = {
 { 0b001100, "s", "ঐ" },     // dots 34 = ঐ
 { 0b011100, "t", "আ" },     // dots 345 = আ
 { 0b100101, "u", "উ" },     // dots 136 = উ
-{ 0b100111, "v", "ৱ" },     // dots 1236 = ৱ (Assamese/Bengali v)
-{ 0b111010, "w", nullptr },  // dots 2456 = w
-{ 0b101101, "x", "য" },     // dots 1346 = য (yya) — convenience
+{ 0b100111, "v", "ৱ" },     // dots 1236 = ৱ
+{ 0b111010, "w", nullptr },  // dots 2456
+{ 0b101101, "x", "য" },     // dots 1346 = য
 { 0b111101, "y", "য" },     // dots 13456 = য
-{ 0b110101, "z", "ড়" },     // dots 1356 = z + ড়
+{ 0b110101, "z", "ড়" },     // dots 1356 = ড়
 
-  // ===== Bangla-only chords (standard Bharati cells) =====
-  { 0b001010, nullptr, "ই" },    // dots 24 = ই
-  { 0b010010, nullptr, "ঞ" },    // dots 25 = ঞ
-  { 0b001110, nullptr, "স" },    // dots 234 = স
-  { 0b111111, nullptr, "ঢ" },    // all 6 dots = ঢ
-  { 0b100001, nullptr, "ছ" },    // dots 16 = ছ
-  { 0b100011, nullptr, "ঘ" },    // dots 126 = ঘ
-  { 0b011000, nullptr, "ভ" },    // dots 45 = ভ (you said 245 but জ is already there, 45 per standard Bharati)
-  { 0b111001, nullptr, "থ" },    // dots 1456 = থ
-  { 0b110110, nullptr, "ঠ" },    // dots 2456 = ঠ
-  { 0b101010, nullptr, "ঔ" },    // dots 246 = ঔ
-  { 0b010110, nullptr, "ফ" },    // dots 235 = ফ
-  { 0b110100, nullptr, "ঝ" },    // dots 356 = ঝ
-  { 0b101011, nullptr, "ড" },    // dots 1246 = ড
-  { 0b010100, nullptr, "ঈ" },    // dots 35 = ঈ
+// Bangla-only standard cells
+{ 0b001010, nullptr, "ই" },    // dots 24
+{ 0b010010, nullptr, "ঞ" },    // dots 25
+{ 0b001110, nullptr, "স" },    // dots 234
+{ 0b111111, nullptr, "ঢ" },    // dots 123456
+{ 0b100001, nullptr, "ছ" },    // dots 16
+{ 0b100011, nullptr, "ঘ" },    // dots 126
+{ 0b011000, nullptr, "ভ" },    // dots 45
+{ 0b111001, nullptr, "থ" },    // dots 1456
+{ 0b110110, nullptr, "ঠ" },    // dots 2456
+{ 0b101010, nullptr, "ঔ" },    // dots 246
+{ 0b010110, nullptr, "ফ" },    // dots 235
+{ 0b110100, nullptr, "ঝ" },    // dots 356
+{ 0b101011, nullptr, "ড" },    // dots 1246
+{ 0b010100, nullptr, "ঈ" },    // dots 35
 
-  // ===== Additional Bharati cells (not in original dict) =====
-  { 0b011110, nullptr, "ত" },    // dots 2345 = ত
-  { 0b101000, nullptr, "খ" },    // dots 46 = খ
-  { 0b101100, nullptr, "ঙ" },    // dots 346 = ঙ
-  { 0b111110, nullptr, "ট" },    // dots 23456 = ট
-  { 0b101110, nullptr, "ধ" },    // dots 2346 = ধ
-  { 0b111100, nullptr, "ণ" },    // dots 3456 = ণ
-  { 0b110011, nullptr, "ঊ" },    // dots 1256 = ঊ
-  { 0b101111, nullptr, "ষ" },    // dots 12346 = ষ
-  { 0b110001, nullptr, "শ" },    // dots 156 = শ
-  { 0b110000, nullptr, "ং" },    // dots 56 = অনুস্বার
-  // ঃ (visarga) at dot 6 (0b100000) — available for future use
-  { 0b010000, nullptr, "ঁ" },    // dot 5 = চন্দ্রবিন্দু
+// Additional Bharati cells
+{ 0b011110, nullptr, "ত" },    // dots 2345
+{ 0b101000, nullptr, "খ" },    // dots 46
+{ 0b101100, nullptr, "ঙ" },    // dots 346
+{ 0b111110, nullptr, "ট" },    // dots 23456
+{ 0b101110, nullptr, "ধ" },    // dots 2346
+{ 0b111100, nullptr, "ণ" },    // dots 3456
+{ 0b110011, nullptr, "ঊ" },    // dots 1256
+{ 0b101111, nullptr, "ষ" },    // dots 12346
+{ 0b110001, nullptr, "শ" },    // dots 156
+{ 0b110000, nullptr, "ং" },    // dots 56 = anusvara
+// ঃ (visarga) at dot 6 (0b100000) — free for future use
+{ 0b010000, nullptr, "ঁ" },    // dot 5 = chandrabindu
 
-  // ===== Non-standard convenience chords =====
-  { 0b100110, nullptr, "ি" },    // ই-কার (convenience, not a Bharati cell)
-  { 0b110010, nullptr, "ূ" },    // দীর্ঘ উ-কার (convenience, not a Bharati cell)
-  // ড় moved to shared section with z at 0b110101
-  { 0b100010, nullptr, "স" },    // duplicate স at dots 236 (convenience)
+// Convenience chords (not standard Bharati cells)
+{ 0b100110, nullptr, "ি" },    // i-kar
+{ 0b110010, nullptr, "ূ" },    // dirgho u-kar
+{ 0b100010, nullptr, "স" },    // স at dots 236
 };
 
-// Number mappings for Shift + a-j
+// Shift + a-j chords produce digits 1–0.
 const char* numberMap[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" };
 
-// Chords for a-j (used for number lookup)
 const uint8_t numberChords[] = {
   0b000001,  // a → 1
   0b000011,  // b → 2
@@ -136,69 +103,58 @@ const uint8_t numberChords[] = {
   0b011010,  // j → 0
 };
 
-// Shift symbols — math & punctuation via Shift + chord (language-independent)
-// Note: some punctuation shares chord values with math; math entries come first in conflicts.
+// Shift + chord math/punctuation, language-independent.
 struct ShiftSymbol {
   uint8_t chord;
   const char* symbol;
 };
 
 const ShiftSymbol shiftSymbols[] = {
-  // Math symbols
-  { 0b010110, "+" },   // dots 235 = plus
-  { 0b100100, "-" },   // dots 36  = minus
-  { 0b100110, "×" },   // dots 236 = times
-  { 0b110110, "=" },   // dots 2356 = equals
-  { 0b001100, "÷" },   // dots 34  = divide
-
-  // Punctuation & decimal
-  { 0b000010, "," },   // dot 2   = comma
-  { 0b000110, ";" },   // dots 23 = semicolon
-  { 0b010010, ":" },   // dots 25 = colon
-  { 0b110010, "." },   // dots 256 = decimal point / period
+  { 0b010110, "+" },   // dots 235
+  { 0b100100, "-" },   // dots 36
+  { 0b100110, "×" },   // dots 236
+  { 0b110110, "=" },   // dots 2356
+  { 0b001100, "÷" },   // dots 34
+  { 0b000010, "," },   // dot 2
+  { 0b000110, ";" },   // dots 23
+  { 0b010010, ":" },   // dots 25
+  { 0b110010, "." },   // dots 256
 };
 
-// Bangla vowel → vowel sign mapping (Shift + vowel → kar/matra)
+// Shift + vowel chord → Bangla kar (matra).
 struct BanglaShiftEntry {
   uint8_t chord;
-  const char* kar; // vowel sign
+  const char* kar;
 };
 
 const BanglaShiftEntry banglaShiftMap[] = {
-  { 0b000001, nullptr },   // অ → (no sign)
-  { 0b011100, "া" },       // আ → আ-কার  (Bharati: dots 345)
-  { 0b001010, "ি" },       // ই → ই-কার  (Bharati: dots 24)
-  { 0b010100, "ী" },       // ঈ → দীর্ঘ ই-কার (Bharati: dots 35)
-  { 0b100101, "ু" },       // উ → উ-কার  (Bharati: dots 136)
-  { 0b110011, "ূ" },       // ঊ → দীর্ঘ উ-কার (Bharati: dots 1256)
-  { 0b010001, "ে" },       // এ → এ-কার  (Bharati: dots 15)
-  { 0b001100, "ৈ" },       // ঐ → ঐ-কার  (Bharati: dots 34)
-  { 0b010101, "ো" },       // ও → ও-কার  (Bharati: dots 135)
-  { 0b101010, "ৌ" },       // ঔ → ঔ-কার  (Bharati: dots 246)
+  { 0b000001, nullptr },   // অ has no sign
+  { 0b011100, "া" },       // আ-কার
+  { 0b001010, "ি" },       // ই-কার
+  { 0b010100, "ী" },       // ঈ-কার
+  { 0b100101, "ু" },       // উ-কার
+  { 0b110011, "ূ" },       // ঊ-কার
+  { 0b010001, "ে" },       // এ-কার
+  { 0b001100, "ৈ" },       // ঐ-কার
+  { 0b010101, "ো" },       // ও-কার
+  { 0b101010, "ৌ" },       // ঔ-কার
 };
 
-// ==========================================
-// FORWARD DECLARATIONS (used by the BLE layer & loop)
-// ==========================================
 extern bool isBangla;
 void sendChar(const char* c);
 void sendBackspace();
 void processChord(int chord);
 
-// ==========================================
-// BLE OBJECT — vendored T-vK library + NUS
-// ==========================================
-BBKeyboard bleKeyboard("BrailleBridge");   // T-vK BleKeyboard + NUS (see BBKeyboard.h)
+BBKeyboard bleKeyboard("BrailleBridge");
 
-// Stream a piece of text to BOTH outputs: USB Serial (teacher app) and
-// BLE NUS (phone app). ASCII, Bangla and control lines all flow through here.
+// Send to both outputs: USB Serial and BLE NUS.
 void streamOut(const char* s, bool newline) {
   Serial.print(s);
   if (newline) Serial.println();
   bleKeyboard.streamText(s, newline);
 }
 
-// Phone app → device control lines over NUS RX (same vocabulary as Serial).
+// Control lines arriving from the phone over NUS RX.
 void onNusControl(const String& value) {
   String v = value; v.trim();
   if (v == "LANG:en")      { isBangla = false; streamOut("LANG:en", true); }
@@ -206,43 +162,33 @@ void onNusControl(const String& value) {
   else                     { streamOut("Invalid", true); }
 }
 
-// ==========================================
-// OBJECTS & GLOBALS
-// ==========================================
 unsigned long pressStartTime = 0;
 bool chordActive = false;
 int currentChord = 0;
 bool isBangla = false;
 bool shiftActive = false;
 
-// --- Shift tap → Backspace state machine ---
-// Shift normally acts as a held modifier. If it is pressed AND released
-// without any dot chord being composed meanwhile, that tap is a Backspace.
-bool shiftWasDown = false;      // Shift was held at some point since last release
-bool shiftTapUsed = false;      // a chord was processed (or Space) while Shift was held
-unsigned long shiftDownTime = 0;  // when the current Shift press started
-unsigned long lastBackspaceMs = 0;  // cooldown anchor so release bounce can't chain deletes
-const unsigned long SHIFT_TAP_MAX_MS = 1500;  // ultra-long presses are not taps (pocket/garage protection)
-const unsigned long SHIFT_TAP_MIN_MS = 25;    // shorter than this = press bounce, not a real tap
-const unsigned long SHIFT_BKSP_COOLDOWN_MS = 100;  // ignore re-arms right after a fired delete
+// Shift tap = backspace. Shift stays a modifier while dots are held; a quick
+// press+release with no chord in between deletes one character.
+bool shiftWasDown = false;
+bool shiftTapUsed = false;
+unsigned long shiftDownTime = 0;
+unsigned long lastBackspaceMs = 0;
+const unsigned long SHIFT_TAP_MAX_MS = 1500;      // long presses are not taps
+const unsigned long SHIFT_TAP_MIN_MS = 25;        // shorter = bounce, not a tap
+const unsigned long SHIFT_BKSP_COOLDOWN_MS = 100; // stops release bounce double-firing
 
-// ==========================================
-// DICTIONARY LOOKUP
-// ==========================================
 const char* lookupChord(int chord, bool bangla) {
   for (unsigned int i = 0; i < sizeof(brailleDict) / sizeof(brailleDict[0]); i++) {
     if (brailleDict[i].chord == chord) {
       if (bangla && brailleDict[i].bangla != nullptr) return brailleDict[i].bangla;
       if (!bangla && brailleDict[i].english != nullptr) return brailleDict[i].english;
-      return nullptr; // chord exists but not in this language
+      return nullptr;
     }
   }
-  return nullptr; // not found
+  return nullptr;
 }
 
-// ==========================================
-// SETUP
-// ==========================================
 void setup() {
   Serial.begin(115200);
 
@@ -257,18 +203,15 @@ void setup() {
 
   // pinMode(RED_LED, OUTPUT);
   // pinMode(GREEN_LED, OUTPUT);
-  // setEnglishLED(); // Start in English mode
+  // setEnglishLED();
 
   bleKeyboard.begin();
   bleKeyboard.setNusRxHandler(onNusControl);
   Serial.println("SYSTEM: BrailleBridge Connected. Waiting for BLE...");
 }
 
-// ==========================================
-// MAIN LOOP
-// ==========================================
 void loop() {
-  bleKeyboard.processEvents();   // handle connect/disconnect/NUS-RX events
+  bleKeyboard.processEvents();
 
   bool d1 = digitalRead(DOT_1) == LOW;
   bool d2 = digitalRead(DOT_2) == LOW;
@@ -279,47 +222,42 @@ void loop() {
   bool sp = digitalRead(SPACE) == LOW;
   bool sh = digitalRead(SHIFT) == LOW;
 
-  // ----- SHIFT MODIFIER (held while pressed, like a real keyboard Shift) -----
-  shiftActive = sh;  // sh is already true when pressed (digitalRead(...)==LOW)
+  shiftActive = sh;
 
-  // ----- SHIFT TAP → BACKSPACE -----
-  // Track Shift press/release edges. A clean tap (released quickly, with no
-  // chord or Space used while it was held) deletes the last typed character.
+  // Shift press/release edge tracking for the tap-to-backspace gesture.
   if (sh) {
-    if (!shiftWasDown) {           // falling edge: Shift just went down
+    if (!shiftWasDown) {
       shiftWasDown = true;
-      // Cooldown: if a backspace just fired, this re-arm is bounce residue,
-      // not a fresh tap — mark it used so its release can't fire again.
+      // If a backspace just fired, this re-arm is bounce residue — mark it
+      // used so its release cannot fire again.
       shiftTapUsed = (millis() - lastBackspaceMs) < SHIFT_BKSP_COOLDOWN_MS;
       shiftDownTime = millis();
     }
-  } else if (shiftWasDown) {       // rising edge: Shift just came back up
+  } else if (shiftWasDown) {
     shiftWasDown = false;
     bool dotsHeld = d1 || d2 || d3 || d4 || d5 || d6;
-    // Fire only on a clean tap: quick, unused, and not in the middle of a chord
     unsigned long held = millis() - shiftDownTime;
     if (!shiftTapUsed && !dotsHeld && held >= SHIFT_TAP_MIN_MS && held <= SHIFT_TAP_MAX_MS) {
       sendBackspace();
       lastBackspaceMs = millis();
-      delay(30);                 // swallow release bounce so it can't double-fire
+      delay(30);  // swallow release bounce
     }
     shiftTapUsed = false;
   }
 
-  // ----- SPACE -----
+  // Space inserts a space only when no dot is held.
   if (sp && !d1 && !d2 && !d3 && !d4 && !d5 && !d6) {
-    if (sh) shiftTapUsed = true;   // Shift was doing something while held
+    if (sh) shiftTapUsed = true;
     sendChar(" ");
     delay(200);
     while (digitalRead(SPACE) == LOW) { delay(10); }
     return;
   }
 
-  // ----- CHORD DETECTION -----
   bool anyDot = d1 || d2 || d3 || d4 || d5 || d6;
 
   if (anyDot) {
-    if (shiftWasDown) shiftTapUsed = true;  // dots involved → this Shift is a modifier, not a tap
+    if (shiftWasDown) shiftTapUsed = true;  // Shift is a modifier here, not a tap
     if (!chordActive) {
       chordActive = true;
       pressStartTime = millis();
@@ -338,15 +276,14 @@ void loop() {
     unsigned long elapsed = millis() - pressStartTime;
     bool allReleased = !anyDot;
 
-    // D4+D5+D6 held 500ms → language toggle
+    // D4+D5+D6 held for 500ms toggles the language.
     if (currentChord == 0b111000 && elapsed >= 500 && !allReleased) {
       isBangla = !isBangla;
       streamOut(isBangla ? "LANG:bn" : "LANG:en", true);
-      if (shiftActive) shiftTapUsed = true;  // Shift was part of a deliberate gesture, not a tap
+      if (shiftActive) shiftTapUsed = true;
       chordActive = false;
       currentChord = 0;
 
-      // Wait for all three keys to be released
       while (digitalRead(DOT_4) == LOW || digitalRead(DOT_5) == LOW || digitalRead(DOT_6) == LOW) {
         delay(10);
       }
@@ -354,13 +291,13 @@ void loop() {
       return;
     }
 
-    // Process when all released or timeout (180ms)
+    // A chord commits when all dots release or after 180ms, but D4+D5+D6
+    // waits up to 500ms so a language toggle can still be detected.
     if (allReleased || elapsed > 180) {
-      // If D4+D5+D6 is still held and < 500ms, keep waiting
       if (!allReleased && currentChord == 0b111000 && elapsed < 500) {
-        // Wait longer for potential toggle
+        // keep waiting
       } else {
-        if (shiftActive) shiftTapUsed = true;  // chord consumed the Shift modifier
+        if (shiftActive) shiftTapUsed = true;
         processChord(currentChord);
         chordActive = false;
         currentChord = 0;
@@ -370,27 +307,19 @@ void loop() {
   }
 }
 
-// ==========================================
-// BACKSPACE — delete the last typed character
-// ==========================================
 void sendBackspace() {
   if (bleKeyboard.isConnected()) {
     bleKeyboard.press(KEY_BACKSPACE);
     delay(8);
     bleKeyboard.releaseAll();
   }
-  streamOut("SYSTEM:BKSP", true);   // teacher app listens for this control line
+  streamOut("SYSTEM:BKSP", true);
 }
 
-// ==========================================
-// SEND CHARACTER TO BLE & STREAM
-// ==========================================
 void sendChar(const char* c) {
-  // HID keycodes can only represent ASCII. Bangla (multi-byte UTF-8) has no
-  // keycode mapping, and pushing it through the HID stack can wedge the
-  // ESP32 and cause a reboot. So:
-  //   - ASCII  → HID keyboard (paired host types it out) + stream
-  //   - Bangla → stream only (USB Serial + BLE NUS → teacher/phone app)
+  // HID keycodes cover ASCII only; pushing multi-byte UTF-8 (Bangla) through
+  // the HID stack can wedge the ESP32. So ASCII goes to HID + stream, Bangla
+  // goes to the stream only.
   bool isAscii = true;
   for (const char* p = c; *p; p++) {
     if ((unsigned char)*p >= 0x80) { isAscii = false; break; }
@@ -398,33 +327,23 @@ void sendChar(const char* c) {
   if (bleKeyboard.isConnected() && isAscii) {
     bleKeyboard.print(c);
   }
-  // The stream carries EVERYTHING (ASCII + Bangla + control lines) — this is
-  // what the teacher software and the phone app receive.
   streamOut(c, false);
 }
 
-// ==========================================
-// PROCESS A BRAILLE CHORD
-// ==========================================
 void processChord(int chord) {
-  // ----- SHIFTED CHORD (activated by physical SHIFT button) -----
   if (shiftActive) {
-    // shiftActive follows the button state in loop(), so it resets naturally on release
-
-    // Check for numbers (a-j chords → 1-0)
+    // Numbers (a-j chords → 1-0)
     for (int i = 0; i < 10; i++) {
       if (chord == numberChords[i]) {
         sendChar(numberMap[i]);
-        // flashValid();
         return;
       }
     }
 
-    // Check for shift symbols — math & punctuation (language-independent)
+    // Math & punctuation
     for (unsigned int i = 0; i < sizeof(shiftSymbols) / sizeof(shiftSymbols[0]); i++) {
       if (chord == shiftSymbols[i].chord) {
         sendChar(shiftSymbols[i].symbol);
-        // flashValid();
         return;
       }
     }
@@ -435,44 +354,35 @@ void processChord(int chord) {
       if (ch != nullptr && ch[0] >= 'a' && ch[0] <= 'z') {
         char upper[2] = { (char)(ch[0] - 32), '\0' };
         sendChar(upper);
-        // flashValid();
         return;
       }
     }
-    // Bangla shifted: vowel → vowel sign (কার)
+    // Bangla: vowel chord → kar (matra)
     else {
-      // Check vowel sign map first
       for (unsigned int i = 0; i < sizeof(banglaShiftMap) / sizeof(banglaShiftMap[0]); i++) {
         if (banglaShiftMap[i].chord == chord) {
           if (banglaShiftMap[i].kar != nullptr) {
             sendChar(banglaShiftMap[i].kar);
-            // flashValid();
             return;
           }
-          // অ has no vowel sign → fall through to normal output
-          break;
+          break;  // অ has no sign — fall through to normal output
         }
       }
 
-      // Not a vowel chord, or অ → output normal Bangla character
       const char* ch = lookupChord(chord, true);
       if (ch != nullptr) {
         sendChar(ch);
-        // flashValid();
         return;
       }
     }
 
-    // Unknown shifted chord → silently ignore
-    // flashInvalid();
-    // Serial.println("Invalid");
+    // Unknown shifted chord: ignore
     return;
   }
 
-  // ----- NORMAL (UNSHIFTED) CHORD -----
+  // Unshifted chord
   const char* result = lookupChord(chord, isBangla);
   if (result != nullptr) {
     sendChar(result);
   }
-  // Unknown chord → silently ignore
 }

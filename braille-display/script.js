@@ -1,11 +1,6 @@
-/* ============================================================
-   BrailleBridge — Educational Platform
-   script.js
-   ============================================================ */
+/* BrailleBridge — Educational Platform script.js */
 
-/* ============================================================
-   BRAILLE DICTIONARY
-   ============================================================ */
+/* BRAILLE DICTIONARY */
 const brailleDict = [
   { chord: 0b000001, english: 'a', bangla: '\u0985' },
   { chord: 0b000011, english: 'b', bangla: '\u09AC' },
@@ -97,9 +92,7 @@ for (const s of shiftSymbols) charToChord.set(s.symbol, s.chord);
 for (const s of banglaShiftMap) if (s.kar) charToChord.set(s.kar, s.chord);
 for (const e of brailleDict) if (e.english && e.english.length === 1 && e.english >= 'a' && e.english <= 'z') charToChord.set(e.english.toUpperCase(), e.chord);
 
-/* ============================================================
-   UI STATE
-   ============================================================ */
+/* UI STATE */
 let isBangla = false;
 let shiftActive = false;
 let isConnected = false;
@@ -232,13 +225,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-/* ============================================================
-   DESKTOP RELAY TRANSPORT (pywebview)
-   When running inside braille-desktop (Python + pywebview), the Python relay
-   owns the COM ports. The UI connects through window.pywebview.api and Python
-   pushes serial data in via the __relayOn* callbacks below. In a plain
-   browser, RELAY stays false and the original Web Serial path is used.
-   ============================================================ */
+/* DESKTOP RELAY TRANSPORT (pywebview) When running inside braille-desktop (Python + pywebview), the Python relay owns the COM ports. The UI connects through window.pywebview.api and Python pushes serial data in via the __relayOn* callbacks below. In a plain browser, RELAY stays false and the original Web Serial path is used. */
 let RELAY = false;
 let relayApi = null;
 let relayStudentPort = null;          // student-view port currently open via relay
@@ -398,9 +385,7 @@ window.addEventListener('pywebviewready', () => {
   }
 });
 
-/* ============================================================
-   SERIAL (Student View)
-   ============================================================ */
+/* SERIAL (Student View) */
 let port = null, reader = null;
 const btnConnect = document.getElementById('btnConnect');
 const btnIcon = document.getElementById('btnIcon');
@@ -487,10 +472,7 @@ function updateSerialUI(connected) {
   if (connected) setMirrorOnline(); else setMirrorOffline();
 }
 
-/* ============================================================
-   SEND TO TEACHER (mirror the student-view connection into the
-   teacher roster — one connection, two views)
-   ============================================================ */
+/* SEND TO TEACHER (mirror the student-view connection into the teacher roster — one connection, two views) */
 let mirrorStudentId = null;
 
 function openSendModal() {
@@ -620,9 +602,7 @@ function handleBackspace() {
   }
 }
 
-/* ============================================================
-   TEACHER MODE — Multi-Port Serial
-   ============================================================ */
+/* TEACHER MODE — Multi-Port Serial */
 const STUDENT_COLORS = ['#5a8ae0','#d45a5a','#5ab85a','#c49a4a','#8a6ad4','#4ac8b8','#e08a5a','#5ab8b8'];
 let students = [], studentIdCounter = 0, totalCharsAllStudents = 0;
 
@@ -1189,9 +1169,7 @@ function rebuildExamFeed(student) {
   renderCharsInto(examText, student.chars);
 }
 
-/* ============================================================
-   LOG PREVIEW MODAL (Readable Prose)
-   ============================================================ */
+/* LOG PREVIEW MODAL (Readable Prose) */
 let previewStudentId = null;
 
 function openLogPreview(student) {
@@ -1264,9 +1242,7 @@ document.addEventListener('keydown', e => {
   }
 });
 
-/* ============================================================
-   EXPANDED VIEW (Per-Student Modal)
-   ============================================================ */
+/* EXPANDED VIEW (Per-Student Modal) */
 let expandStudentId = null;
 
 function openExpandView(student) {
@@ -1462,9 +1438,7 @@ function updateExamMiniDots(studentId, lastChar) {
   }
 }
 
-/* ============================================================
-   THEME (Light / Dark Mode)
-   ============================================================ */
+/* THEME (Light / Dark Mode) */
 const themeToggle = document.getElementById('themeToggle');
 
 function applyTheme(light) {
@@ -1499,9 +1473,7 @@ document.addEventListener('keydown', (e) => {
   } catch(e) {}
 })();
 
-/* ============================================================
-   INIT
-   ============================================================ */
+/* INIT */
 updateIndicators();
 console.log('BrailleBridge Platform ready.');
 console.log('Shortcuts: 1-6=toggle dots, Enter=send chord, L=toggle language, S=toggle shift, Space=space');
