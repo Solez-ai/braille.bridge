@@ -162,11 +162,61 @@ void onNusControl(const String& value) {
   else                     { streamOut("Invalid", true); }
 }
 
-unsigned long pressStartTime = 0;
-bool chordActive = false;
-int currentChord = 0;
 bool isBangla = false;
 bool shiftActive = false;
+
+// Switches bounce for several ms on press and release. Every pin goes through
+// a stability filter: a state change only becomes "real" after the raw pin
+// has read the same value for DEBOUNCE_MS. Without this, a bouncing release
+// re-opens a chord after it was committed and the same character gets typed
+// again (this was the double-letter bug).
+const unsigned long DEBOUNCE_MS = 15;
+
+enum { P_D1, P_D2, P_D3, P_D4, P_D5, P_D6, P_SPACE, P_SHIFT, PIN_COUNT };
+
+struct PinFilter {
+  uint8_t pin;
+  bool raw;        // last raw reading (pressed = true)
+  bool stable;     // filtered state
+  unsigned long lastChange;
+};
+
+PinFilter filters[PIN_COUNT] = {
+  { DOT_1, false, false, 0 }, { DOT_2, false, false, 0 },
+  { DOT_3, false, false, 0 }, { DOT_4, false, false, 0 },
+  { DOT_5, false, false, 0 }, { DOT_6, false, false, 0 },
+  { SPACE, false, false, 0 }, { SHIFT, false, false, 0 },
+};
+
+// Read one pin's filtered pressed-state. Call every loop iteration.
+bool pressed(uint8_t idx) {
+  PinFilter& f = filters[idx];
+  bool now = digitalRead(f.pin) == LOW;
+  unsigned long t = millis();
+  if (now != f.raw) {
+    f.raw = now;
+    f.lastChange = t;
+  } else if (f.stable != f.raw && (t - f.lastChange) >= DEBOUNCE_MS) {
+    f.stable = f.raw;
+  }
+  return f.stable;
+}
+
+// Dots pressed (filtered).
+bool dotPressed(uint8_t idx) { return pressed(idx); }
+
+// A chord is assembled while dots are held and is only decoded once every
+// dot has been released. Decoding on release is what makes three- and more-key
+// combinations reliable: the full set of dots is known before anything is
+// sent, no matter how far apart the fingers land or how long they stay down.
+// (The old firmware committed after 180 ms while keys were still held, which
+// split late-landing fingers into a second wrong chord.)
+bool chordActive = false;
+int currentChord = 0;
+unsigned long pressStartTime = 0;
+unsigned long lastChordChange = 0;
+bool chordCommitted = false;   // auto-commit while held (stuck-key safety) already done
+const unsigned long CHORD_HOLD_MAX_MS = 5000;  // if nothing changes for this long, decode what is held
 
 // Shift tap = backspace. Shift stays a modifier while dots are held; a quick
 // press+release with no chord in between deletes one character.
@@ -177,6 +227,8 @@ unsigned long lastBackspaceMs = 0;
 const unsigned long SHIFT_TAP_MAX_MS = 1500;      // long presses are not taps
 const unsigned long SHIFT_TAP_MIN_MS = 25;        // shorter = bounce, not a tap
 const unsigned long SHIFT_BKSP_COOLDOWN_MS = 100; // stops release bounce double-firing
+
+bool spaceWasDown = false;
 
 const char* lookupChord(int chord, bool bangla) {
   for (unsigned int i = 0; i < sizeof(brailleDict) / sizeof(brailleDict[0]); i++) {
@@ -213,23 +265,25 @@ void setup() {
 void loop() {
   bleKeyboard.processEvents();
 
-  bool d1 = digitalRead(DOT_1) == LOW;
-  bool d2 = digitalRead(DOT_2) == LOW;
-  bool d3 = digitalRead(DOT_3) == LOW;
-  bool d4 = digitalRead(DOT_4) == LOW;
-  bool d5 = digitalRead(DOT_5) == LOW;
-  bool d6 = digitalRead(DOT_6) == LOW;
-  bool sp = digitalRead(SPACE) == LOW;
-  bool sh = digitalRead(SHIFT) == LOW;
+  bool d1 = dotPressed(P_D1);
+  bool d2 = dotPressed(P_D2);
+  bool d3 = dotPressed(P_D3);
+  bool d4 = dotPressed(P_D4);
+  bool d5 = dotPressed(P_D5);
+  bool d6 = dotPressed(P_D6);
+  bool sp = pressed(P_SPACE);
+  bool sh = pressed(P_SHIFT);
 
   shiftActive = sh;
+  bool anyDot = d1 || d2 || d3 || d4 || d5 || d6;
 
   // Shift press/release edge tracking for the tap-to-backspace gesture.
   if (sh) {
     if (!shiftWasDown) {
       shiftWasDown = true;
       // If a backspace just fired, this re-arm is bounce residue — mark it
-      // used so its release cannot fire again.
+      // used so its release cannot fire again. (Debouncing makes this rare,
+      // but the guard stays for safety.)
       shiftTapUsed = (millis() - lastBackspaceMs) < SHIFT_BKSP_COOLDOWN_MS;
       shiftDownTime = millis();
     }
@@ -240,43 +294,52 @@ void loop() {
     if (!shiftTapUsed && !dotsHeld && held >= SHIFT_TAP_MIN_MS && held <= SHIFT_TAP_MAX_MS) {
       sendBackspace();
       lastBackspaceMs = millis();
-      delay(30);  // swallow release bounce
     }
     shiftTapUsed = false;
   }
 
-  // Space inserts a space only when no dot is held.
-  if (sp && !d1 && !d2 && !d3 && !d4 && !d5 && !d6) {
-    if (sh) shiftTapUsed = true;
-    sendChar(" ");
-    delay(200);
-    while (digitalRead(SPACE) == LOW) { delay(10); }
-    return;
+  // Space inserts a space only when no dot is held: one char per press,
+  // edge-triggered so holding it cannot spam.
+  if (sp) {
+    if (!spaceWasDown && !anyDot) {
+      if (sh) shiftTapUsed = true;
+      sendChar(" ");
+      spaceWasDown = true;
+      return;  // one loop pass per press; state is edge-tracked
+    }
+  } else {
+    spaceWasDown = false;
   }
-
-  bool anyDot = d1 || d2 || d3 || d4 || d5 || d6;
 
   if (anyDot) {
     if (shiftWasDown) shiftTapUsed = true;  // Shift is a modifier here, not a tap
     if (!chordActive) {
       chordActive = true;
+      chordCommitted = false;
       pressStartTime = millis();
+      lastChordChange = pressStartTime;
       currentChord = 0;
     }
 
-    if (d1) currentChord |= (1 << 0);
-    if (d2) currentChord |= (1 << 1);
-    if (d3) currentChord |= (1 << 2);
-    if (d4) currentChord |= (1 << 3);
-    if (d5) currentChord |= (1 << 4);
-    if (d6) currentChord |= (1 << 5);
+    int newChord = currentChord;
+    if (d1) newChord |= (1 << 0);
+    if (d2) newChord |= (1 << 1);
+    if (d3) newChord |= (1 << 2);
+    if (d4) newChord |= (1 << 3);
+    if (d5) newChord |= (1 << 4);
+    if (d6) newChord |= (1 << 5);
+    if (newChord != currentChord) {
+      currentChord = newChord;
+      lastChordChange = millis();  // fingers are still landing
+    }
   }
 
   if (chordActive) {
     unsigned long elapsed = millis() - pressStartTime;
     bool allReleased = !anyDot;
 
-    // D4+D5+D6 held for 500ms toggles the language.
+    // D4+D5+D6 held for 500ms toggles the language. This one is decoded while
+    // held (a long hold is its meaning), then the keys must be released.
     if (currentChord == 0b111000 && elapsed >= 500 && !allReleased) {
       isBangla = !isBangla;
       streamOut(isBangla ? "LANG:bn" : "LANG:en", true);
@@ -284,25 +347,33 @@ void loop() {
       chordActive = false;
       currentChord = 0;
 
-      while (digitalRead(DOT_4) == LOW || digitalRead(DOT_5) == LOW || digitalRead(DOT_6) == LOW) {
-        delay(10);
+      // Wait for dots 4/5/6 to be released (filtered, bounded).
+      unsigned long waitStart = millis();
+      while (millis() - waitStart < 2000) {
+        bleKeyboard.processEvents();
+        if (!(pressed(P_D4) || pressed(P_D5) || pressed(P_D6))) break;
+        delay(2);
       }
-      delay(50);
+      delay(20);
       return;
     }
 
-    // A chord commits when all dots release or after 180ms, but D4+D5+D6
-    // waits up to 500ms so a language toggle can still be detected.
-    if (allReleased || elapsed > 180) {
-      if (!allReleased && currentChord == 0b111000 && elapsed < 500) {
-        // keep waiting
-      } else {
-        if (shiftActive) shiftTapUsed = true;
-        processChord(currentChord);
-        chordActive = false;
-        currentChord = 0;
-        delay(50);
-      }
+    if (allReleased) {
+      // Full release reached: decode the complete chord (skip the second send
+      // if the stuck-key safety already decoded this chord while it was held).
+      if (shiftActive) shiftTapUsed = true;
+      if (!chordCommitted) processChord(currentChord);
+      chordActive = false;
+      currentChord = 0;
+    } else if (!chordCommitted &&
+               currentChord != 0b111000 &&
+               (millis() - lastChordChange) > CHORD_HOLD_MAX_MS) {
+      // Stuck-key safety: nothing has changed for five seconds and the chord
+      // is not the language toggle — decode what is held so the device never
+      // locks up waiting for a release that may never come.
+      if (shiftActive) shiftTapUsed = true;
+      processChord(currentChord);
+      chordCommitted = true;
     }
   }
 }

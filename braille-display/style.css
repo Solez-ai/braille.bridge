@@ -922,6 +922,146 @@ body {
   .expand-modal-body { font-size: 40px; padding: 20px; min-height: 180px; }
 }
 
+/* ---- Learn mode (Learner update) ---- */
+.view-learn { display: none; flex-direction: column; gap: 14px; }
+.app.mode-learn { max-width: 980px; }
+.app.mode-learn .view-student,
+.app.mode-learn .view-teacher,
+.app.mode-learn .view-exam { display: none; }
+.app.mode-learn .view-learn { display: flex; }
+
+.learn-card {
+  background: var(--bg-panel);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-soft);
+  padding: 22px 24px;
+}
+.learn-card-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; margin-bottom: 18px;
+}
+.learn-eyebrow {
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;
+}
+.learn-title {
+  font-family: var(--font-serif); font-size: 22px; font-weight: 600;
+  color: var(--text-primary); letter-spacing: -0.02em; margin: 0 0 4px;
+}
+.learn-sub { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin: 0; max-width: 560px; }
+.learn-key {
+  font-family: var(--font-mono); font-size: 11px; padding: 1px 5px;
+  background: var(--bg-surface); border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px; color: var(--text-primary);
+}
+
+.learn-lang-toggle {
+  display: flex; gap: 0; background: var(--bg-surface);
+  border-radius: 6px; padding: 2px; flex-shrink: 0;
+}
+.learn-lang-btn {
+  border: none; background: transparent; color: var(--text-muted);
+  font-family: var(--font-sans); font-size: 12px; font-weight: 500;
+  padding: 5px 14px; border-radius: 4px; cursor: pointer;
+  transition: var(--transition);
+}
+.learn-lang-btn:hover { color: var(--text-secondary); }
+.learn-lang-btn:active { transform: scale(0.97); }
+.learn-lang-btn.active { background: var(--bg-panel); color: var(--text-primary); }
+
+.learn-connect-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.learn-port-row { display: flex; align-items: center; gap: 8px; }
+.learn-port-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.learn-connect-btn { padding: 7px 16px; font-size: 12.5px; }
+.learn-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; color: var(--text-muted);
+  background: var(--bg-card); border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px; padding: 5px 10px;
+}
+.learn-chip strong { color: var(--text-primary); font-weight: 600; }
+
+.learn-input {
+  width: 100%; box-sizing: border-box;
+  font-family: var(--font-serif); font-size: 26px; letter-spacing: -0.01em;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 16px 18px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.learn-input::placeholder { color: var(--text-muted); opacity: 0.6; font-family: var(--font-sans); font-size: 15px; }
+.learn-input:focus { border-color: var(--gold); }
+
+.learn-words {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-top: 14px; min-height: 30px; max-height: 130px; overflow-y: auto;
+}
+.learn-words-empty { font-size: 12px; color: var(--text-muted); font-style: italic; opacity: 0.6; padding: 4px 0; }
+.learn-word-chip {
+  font-family: var(--font-sans); font-size: 13px; color: var(--text-primary);
+  background: var(--bg-card); border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 6px; padding: 5px 12px;
+  animation: fadeIn 0.2s ease;
+}
+.learn-actions { display: flex; gap: 8px; margin-top: 14px; }
+
+/* Decoder */
+.decode-row { display: flex; gap: 10px; margin-bottom: 14px; }
+.decode-row input {
+  flex: 1;
+  font-family: var(--font-sans); font-size: 14px; color: var(--text-primary);
+  background: var(--bg-card); border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px; padding: 9px 14px; outline: none;
+  transition: border-color 0.15s ease;
+}
+.decode-row input::placeholder { color: var(--text-muted); opacity: 0.6; }
+.decode-row input:focus { border-color: var(--gold); }
+
+.decode-sequence { display: flex; flex-direction: column; gap: 6px; }
+.decode-empty { font-size: 12px; color: var(--text-muted); font-style: italic; opacity: 0.6; padding: 6px 0; }
+.decode-chip {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg-card); border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px; padding: 8px 14px;
+}
+.decode-step {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  color: var(--text-muted); width: 22px; text-align: right; flex-shrink: 0;
+}
+.decode-char {
+  font-family: var(--font-sans); font-size: 17px; font-weight: 600;
+  color: var(--text-primary); min-width: 30px; text-align: center;
+}
+.decode-char[data-bangla="1"] { font-family: var(--font-bangla); }
+.decode-dots {
+  font-family: var(--font-mono); font-size: 11.5px; color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+.decode-shift {
+  font-size: 10px; font-weight: 600; color: var(--gold);
+  border: 1px solid rgba(196, 154, 74, 0.35); border-radius: 4px;
+  padding: 2px 7px; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.decode-space, .decode-unknown { background: transparent; border-style: dashed; }
+.decode-unknown .decode-char { color: var(--text-muted); opacity: 0.5; }
+
+/* Learn mode in light theme: swap the dark-style hairline borders */
+.light-mode .learn-card { border-color: rgba(0, 0, 0, 0.08); }
+.light-mode .learn-input,
+.light-mode .decode-row input { border-color: rgba(0, 0, 0, 0.14); }
+.light-mode .decode-chip,
+.light-mode .learn-chip,
+.light-mode .learn-word-chip { border-color: rgba(0, 0, 0, 0.08); }
+.light-mode .decode-row input:focus,
+.light-mode .learn-input:focus { border-color: #b08030; }
+.light-mode .learn-lang-btn.active { background: #fff; }
+.light-mode .learn-key,
+.light-mode .learn-chip { background: #ececf0; }
+
 /* ---- Reduced motion: cross-fades instead of movement ---- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -941,6 +1081,9 @@ body {
   .roster-list { max-height: 260px; }
   .exam-text { font-size: 36px; min-height: 100px; max-height: 200px; }
   .exam-grid { grid-template-columns: 1fr; }
+  .learn-card { padding: 16px 18px; }
+  .learn-card-head { flex-direction: column; gap: 10px; }
+  .learn-input { font-size: 20px; }
 }
 @media (max-width: 640px) {
   body { padding: 10px; }

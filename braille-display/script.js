@@ -205,6 +205,9 @@ function clearDisplay() {
 }
 
 document.addEventListener('keydown', (e) => {
+  // Learn mode owns the keyboard (its input field drives speech via learner.js);
+  // the on-screen dot/Enter/L/S shortcuts below would fight it.
+  if (document.getElementById('app').classList.contains('mode-learn')) return;
   const n = parseInt(e.key);
   if (n >= 1 && n <= 6) { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return; e.preventDefault(); dotBtns[n-1].classList.toggle('active'); updateChordDisplay(); return; }
   if (e.key === ' ' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') { e.preventDefault(); appendChar(' '); return; }
@@ -612,7 +615,7 @@ function getInitials(name) { return name.split(' ').map(w => w[0]).join('').toUp
 function setMode(mode) {
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
   const app = document.getElementById('app');
-  app.classList.remove('mode-teacher', 'mode-exam');
+  app.classList.remove('mode-teacher', 'mode-exam', 'mode-learn');
   if (mode === 'student') {
     document.getElementById('modeStudent').classList.add('active');
   } else if (mode === 'teacher') {
@@ -623,11 +626,17 @@ function setMode(mode) {
     app.classList.add('mode-exam');
     renderExamGrid();
     updateExamStats();
+  } else if (mode === 'learn') {
+    // Learner update — freeplay playground + chord-sequence trainer.
+    // Interactive wiring lives in learner.js; silent here so repeated clicks stay cheap.
+    document.getElementById('modeLearn').classList.add('active');
+    app.classList.add('mode-learn');
   }
 }
 document.getElementById('modeStudent').addEventListener('click', () => setMode('student'));
 document.getElementById('modeTeacher').addEventListener('click', () => setMode('teacher'));
 document.getElementById('modeExam').addEventListener('click', () => setMode('exam'));
+document.getElementById('modeLearn').addEventListener('click', () => setMode('learn'));
 // Exports mode opens the shared Exports library modal (shared.js wires the rest)
 document.getElementById('modeExports').addEventListener('click', () => BBExports.openModal());
 

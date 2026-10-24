@@ -35,6 +35,9 @@
         <button class="mode-btn" data-mode="exports" id="modeExports">
           <i class="fa-solid fa-file-export"></i> Exports
         </button>
+        <button class="mode-btn" data-mode="learn" id="modeLearn">
+          <i class="fa-solid fa-book-open"></i> Learn
+        </button>
       </div>
       <div class="bb-account-chip" id="accountChip" title="Teacher account — Samin Yeasar">
         <span class="bb-chip-avatar">SY</span>
@@ -231,6 +234,66 @@
     </div>
   </div>
 
+  <!-- Learn view (Learner update) -->
+  <div class="view-learn" id="viewLearn">
+
+    <!-- Freeplay playground -->
+    <section class="learn-card" id="learnPlaygroundCard">
+      <div class="learn-card-head">
+        <div>
+          <div class="learn-eyebrow">BrailleBridge &middot; Learner</div>
+          <h2 class="learn-title">Freeplay Playground</h2>
+          <p class="learn-sub">Type on the BrailleBridge or your keyboard &mdash; every character is spoken aloud. Finish a word with <span class="learn-key">SPACE</span> and the whole word is spoken.</p>
+        </div>
+        <div class="learn-lang-toggle" id="learnerLangToggle">
+          <button class="learn-lang-btn active" data-lang="en">English</button>
+          <button class="learn-lang-btn" data-lang="bn">&#x09AC;&#x09BE;&#x0982;&#x09B2;&#x09BE;</button>
+        </div>
+      </div>
+      <div class="learn-connect-row" id="learnerConnectRow">
+        <div class="learn-port-row" id="learnerPortRow" style="display:none;">
+          <span class="learn-port-label">Port</span>
+          <select class="baud-select" id="learnerPortSelect"></select>
+        </div>
+        <button class="btn btn-connect learn-connect-btn" id="learnerConnect">
+          <i class="fa-solid fa-bolt"></i> Connect BrailleBridge
+        </button>
+        <span class="learn-chip" id="voiceChip"><i class="fa-solid fa-volume-off"></i> Speech unavailable in this browser</span>
+        <span class="learn-chip" id="deviceLangChip" style="display:none;"></span>
+      </div>
+      <input type="text" id="learnerInput" class="learn-input" autocomplete="off" spellcheck="false" placeholder="Type any letter &mdash; it will be spoken aloud">
+      <div class="learn-words" id="learnerWords">
+        <span class="learn-words-empty">Spoken words appear here</span>
+      </div>
+      <div class="learn-actions">
+        <button class="btn-clear" id="learnerRepeatBtn"><i class="fa-solid fa-rotate-left"></i> Repeat last word</button>
+        <button class="btn-clear" id="learnerExportBtn" title="Save the word history as a .txt progress log"><i class="fa-solid fa-floppy-disk"></i> Export progress</button>
+        <button class="btn-clear" id="learnerClearBtn"><i class="fa-solid fa-xmark"></i> Clear</button>
+      </div>
+    </section>
+
+    <!-- Trainer tool -->
+    <section class="learn-card">
+      <div class="learn-card-head">
+        <div>
+          <div class="learn-eyebrow">BrailleBridge &middot; For trainers</div>
+          <h2 class="learn-title">See What Codes You Need</h2>
+          <p class="learn-sub">Type any word or sentence &mdash; get the exact chord sequence a student must press, in order.</p>
+        </div>
+        <div class="learn-lang-toggle" id="decoderLangToggle">
+          <button class="learn-lang-btn active" data-lang="en">English</button>
+          <button class="learn-lang-btn" data-lang="bn">&#x09AC;&#x09BE;&#x0982;&#x09B2;&#x09BE;</button>
+        </div>
+      </div>
+      <div class="decode-row">
+        <input type="text" id="decoderInput" autocomplete="off" spellcheck="false" placeholder="e.g. Hello world">
+        <button class="btn btn-connect" id="decoderGenerate"><i class="fa-solid fa-wand-magic-sparkles"></i> Show codes</button>
+      </div>
+      <div class="decode-sequence" id="decoderSequence"></div>
+    </section>
+
+  </div>
+
 </div>
 
 <!-- Preview modal (readable prose log) -->
@@ -332,5 +395,6 @@
 
 <script src="shared.js"></script>
 <script src="script.js"></script>
+<script src="learner.js"></script>
 </body>
 </html>
