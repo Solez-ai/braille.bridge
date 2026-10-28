@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BrailleBridge — Official Exhibit Cheat Sheet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,400&family=Noto+Serif+Bengali:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ========================================================
+       PRINT & SCREEN FOUNDATIONS (A4 EXACT DUPLEX, NO OVERFLOW)
+       ======================================================== */
+    :root {
+      --ink-primary: #0A0C14;
+      --ink-secondary: #3D404A;
+      --ink-muted: #6B6F7B;
+      --gold-accent: #9A5B00;
+      --gold-tint: #FDF8ED;
+      --gold-border: #D4AF37;
+      --paper-bg: #FFFFFF;
+      --surface-subtle: #F8F9FA;
+      --cell-border: #CCD2DC;
+      --dot-empty: #E2E5EA;
+      --dot-active: #0A0C14;
+      --dot-active-gold: #9A5B00;
+      --border-radius: 6px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    html, body {
+      width: 100%;
+      background: #E2E4E8;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--ink-primary);
+      font-size: 9pt;
+      line-height: 1.35;
+    }
+
+    body {
+      padding: 16px 0;
+    }
+
+    /* Screen toolbar */
+    .screen-toolbar {
+      width: 210mm;
+      max-width: calc(100% - 20px);
+      margin: 0 auto 14px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #FFFFFF;
+      padding: 10px 18px;
+      border-radius: 8px;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+    }
+    .screen-toolbar h1 {
+      font-size: 13pt;
+      font-weight: 800;
+      color: var(--ink-primary);
+    }
+    .screen-toolbar p {
+      font-size: 8.5pt;
+      color: var(--ink-secondary);
+    }
+    .print-btn {
+      background: #0A0C14;
+      color: #FFFFFF;
+      border: none;
+      padding: 8px 18px;
+      font-size: 9pt;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s ease;
+    }
+    .print-btn:hover {
+      background: var(--gold-accent);
+    }
+
+    /* A4 PAGE CONTAINER — STRICT SIZING & BOUNDS */
+    .sheet-page {
+      width: 210mm;
+      max-width: 210mm;
+      height: 297mm;
+      max-height: 297mm;
+      margin: 0 auto 20px auto;
+      background: var(--paper-bg);
+      position: relative;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      padding: 8mm 9mm 7mm 9mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 0mm;
+    }
+
+    @media print {
+      body {
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .screen-toolbar {
+        display: none !important;
+      }
+      .sheet-page {
+        margin: 0 !important;
+        width: 210mm !important;
+        max-width: 210mm !important;
+        height: 297mm !important;
+        max-height: 297mm !important;
+        box-shadow: none !important;
+        page-break-after: always;
+        break-after: page;
+        padding: 7mm 8mm 6mm 8mm !important;
+      }
+      .sheet-page:last-child {
+        page-break-after: avoid;
+        break-after: avoid;
+      }
+    }
+
+    /* ========================================================
+       SHARED HEADER & BRANDING
+       ======================================================== */
+    .sheet-header {
+      border-bottom: 2px solid var(--ink-primary);
+      padding-bottom: 4px;
+      margin-bottom: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .brand-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 21pt;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      color: var(--ink-primary);
+      line-height: 1;
+    }
+
+    .brand-badge {
+      display: inline-block;
+      font-size: 6.8pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      background: var(--ink-primary);
+      color: #FFFFFF;
+      padding: 2.5px 7px;
+      border-radius: 4px;
+      vertical-align: middle;
+    }
+
+    .brand-tagline {
+      font-size: 8.2pt;
+      color: var(--ink-secondary);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .header-meta {
+      text-align: right;
+      font-size: 7.2pt;
+      color: var(--ink-muted);
+      line-height: 1.3;
+    }
+    .header-meta strong {
+      color: var(--gold-accent);
+      font-weight: 700;
+    }
+
+    /* CALLOUT BANNER */
+    .callout-strip {
+      background: var(--gold-tint);
+      border-left: 3.5px solid var(--gold-accent);
+      padding: 4px 8px;
+      border-radius: 0 var(--border-radius) var(--border-radius) 0;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .callout-strip p {
+      font-size: 8pt;
+      color: #593300;
+      font-weight: 600;
+    }
+    .callout-strip strong {
+      font-weight: 800;
+      color: #381E00;
+    }
+    .callout-badge {
+      font-size: 6.5pt;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: #F4E2BD;
+      color: #5C3A00;
+      padding: 2px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+
+    /* HARDWARE DIAGRAM COMPACT */
+    .hardware-panel {
+      border: 1px solid var(--cell-border);
+      border-radius: var(--border-radius);
+      padding: 4px 10px;
+      margin-bottom: 5px;
+      background: var(--surface-subtle);
+      display: grid;
+      grid-template-columns: 140px 1fr 140px;
+      gap: 8px;
+      align-items: center;
+    }
+    .hw-finger-box {
+      font-size: 7pt;
+      line-height: 1.25;
+    }
+    .hw-finger-title {
+      font-weight: 800;
+      color: var(--ink-primary);
+      text-transform: uppercase;
+      font-size: 6.6pt;
+      letter-spacing: 0.5px;
+      margin-bottom: 1px;
+    }
+    .hw-finger-list {
+      color: var(--ink-secondary);
+    }
+    .hw-finger-list span {
+      display: inline-block;
+      font-weight: 700;
+      color: var(--ink-primary);
+      width: 36px;
+    }
+    .hw-center-schematic {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-left: 1px dashed var(--cell-border);
+      border-right: 1px dashed var(--cell-border);
+      padding: 1px 6px;
+    }
+    .schematic-keys {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 2px;
+    }
+    .schematic-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .schematic-btn {
+      width: 19px;
+      height: 16px;
+      border-radius: 3px;
+      background: #FFFFFF;
+      border: 1.5px solid var(--ink-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 6.8pt;
+      font-weight: 800;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+    .schematic-thumbs {
+      display: flex;
+      gap: 8px;
+    }
+    .schematic-thumb-btn {
+      padding: 1px 7px;
+      height: 15px;
+      border-radius: 3px;
+      background: #FFFFFF;
+      border: 1.5px solid var(--gold-accent);
+      color: var(--gold-accent);
+      font-size: 6.2pt;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hw-center-caption {
+      font-size: 5.8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+      color: var(--ink-muted);
+      margin-top: 1px;
+    }
+
+    /* SECTION TITLE */
+    .section-title {
+      font-size: 8.6pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--ink-primary);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1.5px solid var(--cell-border);
+      padding-bottom: 2px;
+    }
+    .section-title .section-hint {
+      font-size: 7pt;
+      font-weight: 600;
+      color: var(--ink-muted);
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    /* ========================================================
+       PAGE 1: ALPHABET GRID (STRICT 4 COLUMNS, GUARANTEED FIT)
+       ======================================================== */
+    .alpha-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-rows: repeat(7, 1fr);
+      gap: 4.5px;
+      flex-grow: 1;
+      margin-bottom: 4px;
+    }
+
+    .alpha-card {
+      border: 1.5px solid var(--cell-border);
+      border-radius: 6px;
+      padding: 3.5px 7px;
+      background: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 0; /* CRITICAL: prevents flex children from pushing grid width */
+      overflow: hidden;
+    }
+    .alpha-card.utility-card {
+      background: #F9FAFB;
+      border-color: #BCC2CC;
+    }
+
+    .char-group {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      min-width: 0;
+      flex-shrink: 0;
+    }
+    /* EXTRA LARGE, BOLD CHARACTERS */
+    .char-lower {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 25pt;
+      font-weight: 800;
+      color: var(--ink-primary);
+      line-height: 1;
+      display: inline-block;
+    }
+    .char-upper {
+      font-size: 10.5pt;
+      font-weight: 700;
+      color: var(--ink-muted);
+      line-height: 1;
+    }
+    .char-bangla {
+      font-family: 'Noto Serif Bengali', serif;
+      font-size: 14pt;
+      font-weight: 700;
+      color: var(--gold-accent);
+      margin-left: 1px;
+      line-height: 1;
+    }
+
+    /* CHORD BADGE — CLEAN, HIGH CONTRAST, COMPACT NO-WRAP */
+    .chord-pill-box {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      min-width: 0;
+      flex-shrink: 0;
+      text-align: right;
+    }
+    .chord-badge-title {
+      font-size: 5.8pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--ink-muted);
+      line-height: 1;
+      margin-bottom: 1.5px;
+    }
+    .chord-badge-keys {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.8pt;
+      font-weight: 800;
+      color: var(--ink-primary);
+      background: #F1F3F6;
+      border: 1px solid #D0D5DE;
+      padding: 1.5px 5.5px;
+      border-radius: 4px;
+      white-space: nowrap;
+      line-height: 1.15;
+      letter-spacing: -0.3px;
+    }
+    .chord-badge-keys.utility-keys {
+      background: var(--gold-tint);
+      border-color: #E2CA8E;
+      color: var(--gold-accent);
+      font-size: 8pt;
+      padding: 2px 5px;
+    }
+
+    /* ========================================================
+       PAGE 2: NUMBERS, SYMBOLS, MATH, CONTROLS (EXPANDED TO FILL A4)
+       ======================================================== */
+    .page2-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      flex-grow: 1;
+      justify-content: space-between;
+      margin-top: 4px;
+      margin-bottom: 4px;
+    }
+
+    .dense-grid-5 {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .symbol-card {
+      border: 1.5px solid var(--cell-border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      background: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .symbol-char-box {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    /* LARGE NUMBERS & SYMBOLS */
+    .symbol-char {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 25pt;
+      font-weight: 800;
+      color: var(--ink-primary);
+      line-height: 1;
+    }
+    .symbol-label {
+      font-size: 7.2pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      letter-spacing: 0.4px;
+      margin-top: 3px;
+    }
+
+    .chord-visual-p2 {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-shrink: 0;
+    }
+    .chord-num-list-p2 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11pt;
+      font-weight: 800;
+      color: var(--ink-secondary);
+      text-align: right;
+      min-width: 32px;
+    }
+
+    .cell-dots {
+      width: 17px;
+      height: 27px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr 1fr;
+      gap: 2.5px;
+      padding: 2px;
+      background: #F1F3F6;
+      border-radius: 4px;
+      border: 1px solid #D5DAE2;
+    }
+    .cell-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--dot-empty);
+      margin: auto;
+    }
+    .cell-dot.on {
+      background: var(--dot-active);
+    }
+    .cell-dot.on.gold {
+      background: var(--dot-active-gold);
+    }
+
+    .dual-columns {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    /* CONTROLS & GESTURES MATRIX (LARGER & MORE SPACIOUS) */
+    .controls-panel {
+      border: 2px solid var(--ink-primary);
+      border-radius: 8px;
+      padding: 11px 15px;
+      background: #FFFFFF;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .controls-title {
+      font-size: 9.2pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--ink-primary);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1.5px solid var(--cell-border);
+      padding-bottom: 4px;
+    }
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 9px 16px;
+    }
+    .ctrl-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .ctrl-icon-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8pt;
+      font-weight: 800;
+      background: #EFF2F5;
+      border: 1.5px solid #CCD2DB;
+      color: var(--ink-primary);
+      padding: 3.5px 8.5px;
+      border-radius: 4px;
+      white-space: nowrap;
+      line-height: 1.2;
+    }
+    .ctrl-icon-pill.gold {
+      background: var(--gold-tint);
+      border-color: #E2CA8E;
+      color: var(--gold-accent);
+    }
+    .ctrl-desc {
+      font-size: 8.2pt;
+      line-height: 1.4;
+      color: var(--ink-secondary);
+    }
+    .ctrl-desc strong {
+      color: var(--ink-primary);
+      font-weight: 800;
+    }
+
+    /* BANGLA KAR (MATRA) (EXPANDED) */
+    .bangla-kar-panel {
+      border: 1.5px solid #E5E7EB;
+      border-radius: 8px;
+      background: #FAF8F5;
+      padding: 10px 14px;
+    }
+    .kar-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 6px;
+    }
+    .kar-card {
+      border: 1.5px solid #E6DCCD;
+      border-radius: 6px;
+      padding: 6px 10px;
+      background: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 0;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .kar-glyph {
+      font-family: 'Noto Serif Bengali', serif;
+      font-size: 21pt;
+      font-weight: 700;
+      color: var(--gold-accent);
+      line-height: 1;
+    }
+    .kar-name {
+      font-size: 7.2pt;
+      color: var(--ink-muted);
+      font-weight: 700;
+    }
+
+    /* ========================================================
+       FOOTER & DECORATIVE BRAILLE DOT PATTERNS
+       ======================================================== */
+    .sheet-footer {
+      border-top: 1.5px solid var(--cell-border);
+      padding-top: 4px;
+      margin-top: 3px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+    }
+    .footer-left {
+      font-size: 7pt;
+      color: var(--ink-muted);
+      line-height: 1.3;
+    }
+    .footer-left strong {
+      color: var(--ink-primary);
+    }
+    .footer-right {
+      text-align: right;
+      font-size: 7pt;
+      color: var(--ink-muted);
+      line-height: 1.3;
+    }
+    .footer-right a {
+      color: var(--gold-accent);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    /* DECORATIVE TACTILE BRAILLE STRIP */
+    .braille-decorative-strip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 3px 0 1px 0;
+      border-top: 1px dashed #D5DAE2;
+      margin-top: 2px;
+    }
+    .braille-pattern-text {
+      font-size: 11.5pt;
+      letter-spacing: 2.5px;
+      color: #9CA3AF;
+      user-select: none;
+      line-height: 1;
+    }
+    .braille-pattern-caption {
+      font-size: 6pt;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      font-weight: 700;
+      color: #8C92A0;
+    }
+
+    .page-indicator {
+      display: inline-block;
+      font-size: 6.8pt;
+      font-weight: 800;
+      color: var(--ink-primary);
+      border: 1px solid var(--cell-border);
+      padding: 1px 6px;
+      border-radius: 10px;
+      background: #FFFFFF;
+      margin-left: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SCREEN TOP BAR (Hidden during printing) -->
+  <div class="screen-toolbar">
+    <div>
+      <h1>BrailleBridge Exhibit Cheat Sheet (Zero Overflow • Perfect Fit)</h1>
+      <p>Formatted for standard A4 Duplex Print (Page 1 = Front, Page 2 = Back). Click Print or press Ctrl+P.</p>
+    </div>
+    <button class="print-btn" onclick="window.print()">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-12 0v4h12v-4M8 14h.01"/>
+      </svg>
+      Print / Save as PDF
+    </button>
+  </div>
+
+  <!-- ========================================================
+       PAGE 1 (FRONT): BRANDING + HARDWARE ORIENTATION + A-Z
+       ======================================================== -->
+  <div class="sheet-page" id="page-1">
+    
+    <div>
+      <!-- HEADER -->
+      <header class="sheet-header">
+        <div>
+          <div class="brand-group">
+            <span class="brand-title">BrailleBridge</span>
+            <span class="brand-badge">Hardware v4 • Exhibit Reference</span>
+          </div>
+          <div class="brand-tagline">Bilingual Digital Braille Writing & Classroom Examination System</div>
+        </div>
+        <div class="header-meta">
+          <strong>Page 1 of 2: Alphabet & Chording</strong><br>
+          Author: <strong>Samin Yeasar</strong> • Solez-ai
+        </div>
+      </header>
+
+      <!-- CALLOUT STRIP: CAPITALS RULE -->
+      <div class="callout-strip">
+        <p>
+          <strong>CAPITAL LETTERS:</strong> Hold the dedicated <strong style="color:var(--gold-accent)">[Shift]</strong> key while pressing any letter chord (e.g., <strong>Shift + Dot 1</strong> produces capital <strong>'A'</strong>).
+        </p>
+        <span class="callout-badge">Hold Shift + Chord</span>
+      </div>
+
+      <!-- HARDWARE ANATOMY & KEY MAPPING -->
+      <div class="hardware-panel">
+        <div class="hw-finger-box">
+          <div class="hw-finger-title">Left Hand (Dots 1-3)</div>
+          <div class="hw-finger-list">
+            <div><span>Dot 1:</span> Index (Top Left)</div>
+            <div><span>Dot 2:</span> Middle (Mid Left)</div>
+            <div><span>Dot 3:</span> Ring (Bot Left)</div>
+            <div><span>Space:</span> Left Thumb</div>
+          </div>
+        </div>
+
+        <div class="hw-center-schematic">
+          <div class="schematic-keys">
+            <div class="schematic-col">
+              <div class="schematic-btn">1</div>
+              <div class="schematic-btn">2</div>
+              <div class="schematic-btn">3</div>
+            </div>
+            <div class="schematic-col">
+              <div class="schematic-btn">4</div>
+              <div class="schematic-btn">5</div>
+              <div class="schematic-btn">6</div>
+            </div>
+          </div>
+          <div class="schematic-thumbs">
+            <div class="schematic-thumb-btn">SPACE</div>
+            <div class="schematic-thumb-btn">SHIFT</div>
+          </div>
+          <div class="hw-center-caption">Physical 8-Key Layout</div>
+        </div>
+
+        <div class="hw-finger-box" style="text-align: right;">
+          <div class="hw-finger-title">Right Hand (Dots 4-6)</div>
+          <div class="hw-finger-list">
+            <div>Index (Top Right) <span>:Dot 4</span></div>
+            <div>Middle (Mid Right) <span>:Dot 5</span></div>
+            <div>Ring (Bot Right) <span>:Dot 6</span></div>
+            <div>Right Thumb <span>:Shift</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION TITLE -->
+      <div class="section-title">
+        <span>English A–Z Alphabet & Bharati Bangla Quick Matrix</span>
+        <span class="section-hint">Press dots together & release</span>
+      </div>
+    </div>
+
+    <!-- 28 BALANCED CARDS (A - Z + SPACE & BACKSPACE) -->
+    <div class="alpha-grid">
+      
+      <!-- A -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">a</span>
+          <span class="char-upper">/A</span>
+          <span class="char-bangla">অ</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1</span>
+        </div>
+      </div>
+
+      <!-- B -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">b</span>
+          <span class="char-upper">/B</span>
+          <span class="char-bangla">ব</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 2</span>
+        </div>
+      </div>
+
+      <!-- C -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">c</span>
+          <span class="char-upper">/C</span>
+          <span class="char-bangla">চ</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 4</span>
+        </div>
+      </div>
+
+      <!-- D -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">d</span>
+          <span class="char-upper">/D</span>
+          <span class="char-bangla">দ</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 4, 5</span>
+        </div>
+      </div>
+
+      <!-- E -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">e</span>
+          <span class="char-upper">/E</span>
+          <span class="char-bangla">এ</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 5</span>
+        </div>
+      </div>
+
+      <!-- F -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">f</span>
+          <span class="char-upper">/F</span>
+          <span class="char-bangla">—</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 2, 4</span>
+        </div>
+      </div>
+
+      <!-- G -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">g</span>
+          <span class="char-upper">/G</span>
+          <span class="char-bangla">গ</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 2, 4, 5</span>
+        </div>
+      </div>
+
+      <!-- H -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">h</span>
+          <span class="char-upper">/H</span>
+          <span class="char-bangla">হ</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 2, 5</span>
+        </div>
+      </div>
+
+      <!-- I -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">i</span>
+          <span class="char-upper">/I</span>
+          <span class="char-bangla">্</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">4</span>
+        </div>
+      </div>
+
+      <!-- J -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">j</span>
+          <span class="char-upper">/J</span>
+          <span class="char-bangla">জ</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">2, 4, 5</span>
+        </div>
+      </div>
+
+      <!-- K -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">k</span>
+          <span class="char-upper">/K</span>
+          <span class="char-bangla">ক</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 3</span>
+        </div>
+      </div>
+
+      <!-- L -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">l</span>
+          <span class="char-upper">/L</span>
+          <span class="char-bangla">ল</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 2, 3</span>
+        </div>
+      </div>
+
+      <!-- M -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">m</span>
+          <span class="char-upper">/M</span>
+          <span class="char-bangla">ম</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 3, 4</span>
+        </div>
+      </div>
+
+      <!-- N -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">n</span>
+          <span class="char-upper">/N</span>
+          <span class="char-bangla">ন</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 3, 4, 5</span>
+        </div>
+      </div>
+
+      <!-- O -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">o</span>
+          <span class="char-upper">/O</span>
+          <span class="char-bangla">ও</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 3, 5</span>
+        </div>
+      </div>
+
+      <!-- P -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">p</span>
+          <span class="char-upper">/P</span>
+          <span class="char-bangla">প</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 2, 3, 4</span>
+        </div>
+      </div>
+
+      <!-- Q -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">q</span>
+          <span class="char-upper">/Q</span>
+          <span class="char-bangla">ক্ষ</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 2, 3, 4, 5</span>
+        </div>
+      </div>
+
+      <!-- R -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">r</span>
+          <span class="char-upper">/R</span>
+          <span class="char-bangla">র</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 2, 3, 5</span>
+        </div>
+      </div>
+
+      <!-- S -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">s</span>
+          <span class="char-upper">/S</span>
+          <span class="char-bangla">ঐ</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">3, 4</span>
+        </div>
+      </div>
+
+      <!-- T -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">t</span>
+          <span class="char-upper">/T</span>
+          <span class="char-bangla">আ</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">3, 4, 5</span>
+        </div>
+      </div>
+
+      <!-- U -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">u</span>
+          <span class="char-upper">/U</span>
+          <span class="char-bangla">উ</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 3, 6</span>
+        </div>
+      </div>
+
+      <!-- V -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">v</span>
+          <span class="char-upper">/V</span>
+          <span class="char-bangla">ৱ</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 2, 3, 6</span>
+        </div>
+      </div>
+
+      <!-- W -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">w</span>
+          <span class="char-upper">/W</span>
+          <span class="char-bangla">—</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">2, 4, 5, 6</span>
+        </div>
+      </div>
+
+      <!-- X -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">x</span>
+          <span class="char-upper">/X</span>
+          <span class="char-bangla">য</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 3, 4, 6</span>
+        </div>
+      </div>
+
+      <!-- Y -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">y</span>
+          <span class="char-upper">/Y</span>
+          <span class="char-bangla">য</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 3, 4, 5, 6</span>
+        </div>
+      </div>
+
+      <!-- Z -->
+      <div class="alpha-card">
+        <div class="char-group">
+          <span class="char-lower">z</span>
+          <span class="char-upper">/Z</span>
+          <span class="char-bangla">ড়</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">DOTS</span>
+          <span class="chord-badge-keys">1, 3, 5, 6</span>
+        </div>
+      </div>
+
+      <!-- CARD 27: SPACE -->
+      <div class="alpha-card utility-card">
+        <div class="char-group">
+          <span class="char-lower" style="font-size:16pt;">␣</span>
+          <span class="char-upper" style="font-size:9pt;">SPACE</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">BUTTON</span>
+          <span class="chord-badge-keys utility-keys">Left Thumb</span>
+        </div>
+      </div>
+
+      <!-- CARD 28: BACKSPACE -->
+      <div class="alpha-card utility-card">
+        <div class="char-group">
+          <span class="char-lower" style="font-size:16pt;">⌫</span>
+          <span class="char-upper" style="font-size:9pt;">BKSP</span>
+        </div>
+        <div class="chord-pill-box">
+          <span class="chord-badge-title">GESTURE</span>
+          <span class="chord-badge-keys utility-keys">Tap Shift</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- PAGE 1 FOOTER -->
+    <div>
+      <div class="braille-decorative-strip">
+        <span class="braille-pattern-text">⠃⠗⠁⠊⠇⠇⠑⠀⠃⠗⠊⠙⠛⠑</span>
+        <span class="braille-pattern-caption">• B R A I L L E B R I D G E •</span>
+        <span class="braille-pattern-text">⠃⠗⠁⠊⠇⠇⠑⠀⠃⠗⠊⠙⠛⠑</span>
+      </div>
+      <footer class="sheet-footer">
+        <div class="footer-left">
+          <strong>BrailleBridge</strong>: Open-Source Assistive Hardware • Licensed under GNU GPLv3<br>
+          Works seamlessly with Screen Readers (TalkBack / VoiceOver / NVDA) & Teacher Web Serial Monitor.
+        </div>
+        <div class="footer-right">
+          Flip over for <strong>Numbers, Math, Punctuation & Controls</strong>
+          <span class="page-indicator">Page 1 / 2</span>
+        </div>
+      </footer>
+    </div>
+
+  </div>
+
+  <!-- ========================================================
+       PAGE 2 (BACK): NUMBERS, MATH, PUNCTUATION & CONTROLS
+       ======================================================== -->
+  <div class="sheet-page" id="page-2">
+    
+    <div>
+      <!-- HEADER -->
+      <header class="sheet-header">
+        <div>
+          <div class="brand-group">
+            <span class="brand-title">BrailleBridge</span>
+            <span class="brand-badge">Shift Layer & System Commands</span>
+          </div>
+          <div class="brand-tagline">Numbers, Punctuation, Mathematical Operators & Gestural Controls</div>
+        </div>
+        <div class="header-meta">
+          <strong>Page 2 of 2: Back Reference</strong><br>
+          Bilingual Mode: <strong>English + Bharati Bangla</strong>
+        </div>
+      </header>
+
+      <!-- CALLOUT STRIP: SHIFT LAYER RULE -->
+      <div class="callout-strip">
+        <p>
+          <strong>HOW THE SHIFT LAYER WORKS:</strong> Hold down the physical <strong style="color:var(--gold-accent)">[Shift]</strong> key while keying any number or symbol chord below, then release together.
+        </p>
+        <span class="callout-badge">Shift Modifier</span>
+      </div>
+    </div>
+
+    <div class="page2-container">
+
+      <!-- SECTION: NUMBERS 1 TO 0 -->
+      <div>
+        <div class="section-title">
+          <span>Numbers (Digits 1 – 0)</span>
+          <span class="section-hint">Hold [Shift] + Chords A–J</span>
+        </div>
+        <div class="dense-grid-5">
+          
+          <!-- 1 -->
+          <div class="symbol-card">
+            <div class="symbol-char-box">
+              <span class="symbol-char">1</span>
+              <span class="symbol-label">Shift + a</span>
+            </div>
+            <div class="chord-visual-p2">
+              <span class="chord-num-list-p2">1</span>
+              <div class="cell-dots">
+                <div class="cell-dot on gold"></div><div class="cell-dot"></div>
+                <div class="cell-dot"></div><div class="cell-dot"></div>
+                <div class="cell-dot"></div><div class="cell-dot"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2 -->
+          <div class="symbol-card">
+            <div class="symbol-char-box">
+              <span class="symbol-char">2</span>
+              <span class="symbol-label">Shift + b</span>
+            </div>
+            <div class="chord-visual-p2">
+              <span class="chord-num-list-p2">1, 2</span>
+              <div class="cell-dots">
+                <div class="cell-dot on gold"></div><div class="cell-dot"></div>
+                <div class="cell-dot on gold"></div><div class="cell-dot"></div>
+                <div class="cell-dot"></div><div class="cell-dot"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3 -->
+          <div class="symbol-card">
+            <div class="symbol-char-box">
+              <span class="symbol-char">3</span>
+              <span class="symbol-label">Shift + c</span>
+            </div>
+            <div class="chord-visual-p2">
+              <span class="chord-num-list-p2">1, 4</span>
+              <div class="cell-dots">
+                <div class="cell-dot on gold"></div><div class="cell-dot on gold"></div>
+                <div class="cell-dot"></div><div class="cell-dot"></div>
+                <div class="cell-dot"></div><div class="cell-dot"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 -->
+          <div class="symbol-card">
+            <div class="symbol-char-box">
+              <span class="symbol-char">4</span>
+              <span class="symbol-label">Shift + d</span>
+            </div>
+            <div class="chord-visual-p2">
+              <span class="chord-num-list-p2">1, 4, 5</span>
+              <div class="cell-dots">
+                <div class="cell-dot on gold"></div><div class="cell-dot on gold"></div>
+                <div class="cell-dot"></div><div class="cell-dot on gold"></div>
+                <div class="cell-dot"></div><div class="cell-dot"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5 -->
+          <div class="symbol-card">
+            <div class="symbol-char-box">
+              <span class="symbol-char">5</span>
+              <span class="symbol-label">Shift + e</span>
+            </div>
+            <div class="chord-visual-p2">
+              <span class="chord-num-list-p2">1, 5</span>
+              <div class="cell-dots">
+                <div class="cell-dot on gold"></div><div class="cell-dot"></div>
+                <div class="cell-dot"></div><div class="cell-dot on gold"></div>
+                <div class="cell-dot"></div><div class="cell-dot"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6 -->
+          <div class="symbol-card">
+            <div class="symbol-char-box">
+              <span class="symbol-char">6</span>
+              <span class="symbol-label">Shift + f</span>
+            </div>
+            <div class="chord-visual-p2">
+              <span class="chord-num-list-p2">1, 2, 4</span>
+              <div class="cell-dots">
+                <div class="cell-dot on gold"></div><div class="cell-dot on gold"></div>
+                <div class="cell-dot on gold"></div><div class="cell-dot"></div>
+                <div class="cell-dot"></div><div class="cell-dot"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 7 -->
+          <div class="symbol-card">
+            <div class="symbol-char-box">
+              <span class="symbol-char">7</span>
+              <span class="symbol-label">Shift + g</span>
+            </div>
+            <div class="chord-visual-p2">
+              <span class="chord-num-list-p2">1, 2, 4, 5</span>
+              <div class="cell-dots">
+                <div class="cell-dot on gold"></div><div class="cell-dot on gold"></div>
+                <div class="cell-dot on gold"></div><div class="cell-dot on gold"></div>
+                <div class="cell-dot"></div><div class="cell-dot"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 8 -->
+          <div class="symbol-card">
+            <div class="symbol-char-box">
+              <span class="symbol-char">8</span>
+              <span class="symbol-label">Shift + h</span>
+            </div>
+            <div class="chord-visual-p2">
+              <span class="chord-num-list-p2">1, 2, 5</span>
+              <div class="cell-dots">
+                <div class="cell-dot on gold"></div><div class="cell-dot"></div>
+                <div class="cell-dot on gold"></div><div class="cell-dot on gold"></div>
+                <div class="cell-dot"></div><div class="cell-dot"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 9 -->
+          <div class="symbol-card">
+            <div class="symbol-char-box">
+              <span class="symbol-char">9</span>
+              <span class="symbol-label">Shift + i</span>
+            </div>
+            <div class="chord-visual-p2">
+              <span class="chord-num-list-p2">4</span>
+              <div class="cell-dots">
+                <div class="cell-dot"></div><div class="cell-dot on gold"></div>
+                <div class="cell-dot"></div><div class="cell-dot"></div>
+                <div class="cell-dot"></div><div class="cell-dot"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 0 -->
+          <div class="symbol-card">
+            <div class="symbol-char-box">
+              <span class="symbol-char">0</span>
+              <span class="symbol-label">Shift + j</span>
+            </div>
+            <div class="chord-visual-p2">
+              <span class="chord-num-list-p2">2, 4, 5</span>
+              <div class="cell-dots">
+                <div class="cell-dot"></div><div class="cell-dot on gold"></div>
+                <div class="cell-dot on gold"></div><div class="cell-dot on gold"></div>
+                <div class="cell-dot"></div><div class="cell-dot"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SECTION: DUAL COLUMN - MATH & PUNCTUATION -->
+      <div class="dual-columns">
+        
+        <!-- MATHEMATICAL OPERATORS -->
+        <div>
+          <div class="section-title">
+            <span>Math Operators</span>
+            <span class="section-hint">Hold [Shift]</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            
+            <div class="symbol-card">
+              <div class="symbol-char-box">
+                <span class="symbol-char">+</span>
+                <span class="symbol-label">Plus</span>
+              </div>
+              <div class="chord-visual-p2">
+                <span class="chord-num-list-p2">2, 3, 5</span>
+                <div class="cell-dots">
+                  <div class="cell-dot"></div><div class="cell-dot"></div>
+                  <div class="cell-dot on gold"></div><div class="cell-dot on gold"></div>
+                  <div class="cell-dot on gold"></div><div class="cell-dot"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="symbol-card">
+              <div class="symbol-char-box">
+                <span class="symbol-char">-</span>
+                <span class="symbol-label">Minus / Hyphen</span>
+              </div>
+              <div class="chord-visual-p2">
+                <span class="chord-num-list-p2">3, 6</span>
+                <div class="cell-dots">
+                  <div class="cell-dot"></div><div class="cell-dot"></div>
+                  <div class="cell-dot"></div><div class="cell-dot"></div>
+                  <div class="cell-dot on gold"></div><div class="cell-dot on gold"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="symbol-card">
+              <div class="symbol-char-box">
+                <span class="symbol-char">×</span>
+                <span class="symbol-label">Multiply</span>
+              </div>
+              <div class="chord-visual-p2">
+                <span class="chord-num-list-p2">2, 3, 6</span>
+                <div class="cell-dots">
+                  <div class="cell-dot"></div><div class="cell-dot"></div>
+                  <div class="cell-dot on gold"></div><div class="cell-dot"></div>
+                  <div class="cell-dot on gold"></div><div class="cell-dot on gold"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="symbol-card">
+              <div class="symbol-char-box">
+                <span class="symbol-char">÷</span>
+                <span class="symbol-label">Divide</span>
+              </div>
+              <div class="chord-visual-p2">
+                <span class="chord-num-list-p2">3, 4</span>
+                <div class="cell-dots">
+                  <div class="cell-dot"></div><div class="cell-dot on gold"></div>
+                  <div class="cell-dot"></div><div class="cell-dot"></div>
+                  <div class="cell-dot on gold"></div><div class="cell-dot"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="symbol-card">
+              <div class="symbol-char-box">
+                <span class="symbol-char">=</span>
+                <span class="symbol-label">Equals</span>
+              </div>
+              <div class="chord-visual-p2">
+                <span class="chord-num-list-p2">2, 3, 5, 6</span>
+                <div class="cell-dots">
+                  <div class="cell-dot"></div><div class="cell-dot"></div>
+                  <div class="cell-dot on gold"></div><div class="cell-dot on gold"></div>
+                  <div class="cell-dot on gold"></div><div class="cell-dot on gold"></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- PUNCTUATION MARKS -->
+        <div>
+          <div class="section-title">
+            <span>Punctuation Marks</span>
+            <span class="section-hint">Hold [Shift]</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            
+            <div class="symbol-card">
+              <div class="symbol-char-box">
+                <span class="symbol-char">,</span>
+                <span class="symbol-label">Comma</span>
+              </div>
+              <div class="chord-visual-p2">
+                <span class="chord-num-list-p2">2</span>
+                <div class="cell-dots">
+                  <div class="cell-dot"></div><div class="cell-dot"></div>
+                  <div class="cell-dot on gold"></div><div class="cell-dot"></div>
+                  <div class="cell-dot"></div><div class="cell-dot"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="symbol-card">
+              <div class="symbol-char-box">
+                <span class="symbol-char">;</span>
+                <span class="symbol-label">Semicolon</span>
+              </div>
+              <div class="chord-visual-p2">
+                <span class="chord-num-list-p2">2, 3</span>
+                <div class="cell-dots">
+                  <div class="cell-dot"></div><div class="cell-dot"></div>
+                  <div class="cell-dot on gold"></div><div class="cell-dot"></div>
+                  <div class="cell-dot on gold"></div><div class="cell-dot"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="symbol-card">
+              <div class="symbol-char-box">
+                <span class="symbol-char">:</span>
+                <span class="symbol-label">Colon</span>
+              </div>
+              <div class="chord-visual-p2">
+                <span class="chord-num-list-p2">2, 5</span>
+                <div class="cell-dots">
+                  <div class="cell-dot"></div><div class="cell-dot"></div>
+                  <div class="cell-dot on gold"></div><div class="cell-dot"></div>
+                  <div class="cell-dot"></div><div class="cell-dot on gold"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="symbol-card">
+              <div class="symbol-char-box">
+                <span class="symbol-char">.</span>
+                <span class="symbol-label">Period / Full Stop</span>
+              </div>
+              <div class="chord-visual-p2">
+                <span class="chord-num-list-p2">2, 5, 6</span>
+                <div class="cell-dots">
+                  <div class="cell-dot"></div><div class="cell-dot"></div>
+                  <div class="cell-dot on gold"></div><div class="cell-dot"></div>
+                  <div class="cell-dot"></div><div class="cell-dot on gold"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SPACE INFO CARD -->
+            <div class="symbol-card" style="background:#F9FAFB;">
+              <div class="symbol-char-box">
+                <span class="symbol-char" style="font-size:15pt;">[␣]</span>
+                <span class="symbol-label">Space Bar</span>
+              </div>
+              <div class="chord-visual-p2">
+                <span class="chord-num-list-p2" style="font-size:8pt;">Left Thumb</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SECTION: CORE CONTROLS & GESTURES -->
+      <div class="controls-panel">
+        <div class="controls-title">
+          <span>System Gestures & Control Commands</span>
+          <span style="font-size:7pt; color:var(--ink-muted); text-transform:none;">Firmware State Machine Automations</span>
+        </div>
+        <div class="controls-grid">
+          
+          <div class="ctrl-item">
+            <span class="ctrl-icon-pill gold">TAP SHIFT</span>
+            <div class="ctrl-desc">
+              <strong>Backspace / Delete:</strong> Tap the Shift key alone (press and quickly release without composing any dots) to delete the previous character.
+            </div>
+          </div>
+
+          <div class="ctrl-item">
+            <span class="ctrl-icon-pill">HOLD 4+5+6</span>
+            <div class="ctrl-desc">
+              <strong>Language Toggle:</strong> Hold dots <strong>4 + 5 + 6</strong> together for <strong>500 ms</strong> to switch instantly between English and Bangla modes.
+            </div>
+          </div>
+
+          <div class="ctrl-item">
+            <span class="ctrl-icon-pill">SPACE KEY</span>
+            <div class="ctrl-desc">
+              <strong>Space Insertion:</strong> Press dedicated space thumb switch. Built-in edge-detection prevents unintended runaway repetition.
+            </div>
+          </div>
+
+          <div class="ctrl-item">
+            <span class="ctrl-icon-pill gold">SHIFT + VOWEL</span>
+            <div class="ctrl-desc">
+              <strong>Bangla Kar / Matra:</strong> In Bangla mode, holding Shift while striking any vowel chord produces its dependent vowel sign (e.g. া, ি, ী, ু).
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SECTION: BHARATI BANGLA KAR (MATRA) QUICK GUIDE -->
+      <div class="bangla-kar-panel">
+        <div class="section-title" style="border:none; margin-bottom:2px;">
+          <span style="color:var(--gold-accent);">Bangla Dependent Vowel Signs (কার / মাত্রা) Matrix</span>
+          <span class="section-hint">Active in Bangla Mode with [Shift]</span>
+        </div>
+        <div class="kar-grid">
+          
+          <div class="kar-card">
+            <span class="kar-glyph">া</span>
+            <div style="text-align:right;">
+              <div style="font-size:7.2pt; font-weight:800;">Shift + t</div>
+              <div class="kar-name">আ-কার (3,4,5)</div>
+            </div>
+          </div>
+
+          <div class="kar-card">
+            <span class="kar-glyph">ি</span>
+            <div style="text-align:right;">
+              <div style="font-size:7.2pt; font-weight:800;">Shift + ই</div>
+              <div class="kar-name">হ্রস্ব ই-কার (2,4)</div>
+            </div>
+          </div>
+
+          <div class="kar-card">
+            <span class="kar-glyph">ী</span>
+            <div style="text-align:right;">
+              <div style="font-size:7.2pt; font-weight:800;">Shift + ঈ</div>
+              <div class="kar-name">দীর্ঘ ঈ-কার (3,5)</div>
+            </div>
+          </div>
+
+          <div class="kar-card">
+            <span class="kar-glyph">ু</span>
+            <div style="text-align:right;">
+              <div style="font-size:7.2pt; font-weight:800;">Shift + u</div>
+              <div class="kar-name">হ্রস্ব উ-কার (1,3,6)</div>
+            </div>
+          </div>
+
+          <div class="kar-card">
+            <span class="kar-glyph">ূ</span>
+            <div style="text-align:right;">
+              <div style="font-size:7.2pt; font-weight:800;">Shift + ঊ</div>
+              <div class="kar-name">দীর্ঘ ঊ-কার (1,2,5,6)</div>
+            </div>
+          </div>
+
+          <div class="kar-card">
+            <span class="kar-glyph">ে</span>
+            <div style="text-align:right;">
+              <div style="font-size:7.2pt; font-weight:800;">Shift + e</div>
+              <div class="kar-name">এ-কার (1,5)</div>
+            </div>
+          </div>
+
+          <div class="kar-card">
+            <span class="kar-glyph">ৈ</span>
+            <div style="text-align:right;">
+              <div style="font-size:7.2pt; font-weight:800;">Shift + s</div>
+              <div class="kar-name">ঐ-কার (3,4)</div>
+            </div>
+          </div>
+
+          <div class="kar-card">
+            <span class="kar-glyph">ো</span>
+            <div style="text-align:right;">
+              <div style="font-size:7.2pt; font-weight:800;">Shift + o</div>
+              <div class="kar-name">ও-কার (1,3,5)</div>
+            </div>
+          </div>
+
+          <div class="kar-card">
+            <span class="kar-glyph">ৌ</span>
+            <div style="text-align:right;">
+              <div style="font-size:7.2pt; font-weight:800;">Shift + ঔ</div>
+              <div class="kar-name">ঔ-কার (2,4,6)</div>
+            </div>
+          </div>
+
+          <div class="kar-card">
+            <span class="kar-glyph">্</span>
+            <div style="text-align:right;">
+              <div style="font-size:7.2pt; font-weight:800;">Chord: 4</div>
+              <div class="kar-name">হসন্ত / Virama</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- PAGE 2 FOOTER -->
+    <div>
+      <div class="braille-decorative-strip">
+        <span class="braille-pattern-text">⠼⠁⠃⠉⠙⠑⠋⠛⠓⠊⠚⠀⠸⠮</span>
+        <span class="braille-pattern-caption">• NUMBERS 1-0 & SYMBOLS •</span>
+        <span class="braille-pattern-text">⠼⠁⠃⠉⠙⠑⠋⠛⠓⠊⠚⠀⠸⠮</span>
+      </div>
+      <footer class="sheet-footer">
+        <div class="footer-left">
+          <strong>BrailleBridge Dual Coordinated Output</strong>: Bluetooth HID (Student Screen Reader) + Web Serial (Teacher PC).<br>
+          Designed for independent exam participation with zero Braille knowledge required by the teacher.
+        </div>
+        <div class="footer-right">
+          Project Repository: <a href="https://github.com/Solez-ai" target="_blank">github.com/Solez-ai</a><br>
+          Science & Technology Exhibit <span class="page-indicator">Page 2 / 2</span>
+        </div>
+      </footer>
+    </div>
+
+  </div>
+
+</body>
+</html>

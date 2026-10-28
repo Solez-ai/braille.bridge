@@ -206,25 +206,62 @@ function clearDisplay() {
 
 document.addEventListener('keydown', (e) => {
   // Learn mode owns the keyboard (its input field drives speech via learner.js);
-  // the on-screen dot/Enter/L/S shortcuts below would fight it.
   if (document.getElementById('app').classList.contains('mode-learn')) return;
-  const n = parseInt(e.key);
-  if (n >= 1 && n <= 6) { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return; e.preventDefault(); dotBtns[n-1].classList.toggle('active'); updateChordDisplay(); return; }
-  if (e.key === ' ' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') { e.preventDefault(); appendChar(' '); return; }
-  if (e.key === 'Enter' && !e.shiftKey && e.target.tagName !== 'INPUT') {
-    const chord = getActiveChord(); if (chord > 0) {
-      let ch = null;
-      if (shiftActive) { ch = lookupNumber(chord) || lookupShiftSymbol(chord); if (!ch && !isBangla) { const b = lookupChord(chord, false); if (b && b >= 'a' && b <= 'z') ch = b.toUpperCase(); } if (!ch && isBangla) { ch = lookupBanglaShift(chord) || lookupChord(chord, true); } shiftActive = false; updateIndicators(); }
-      else ch = lookupChord(chord, isBangla);
-      if (ch) appendChar(ch); resetDots();
-    } return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+
+  // Backspace from Bluetooth keyboard:
+  if (e.key === 'Backspace') {
+    e.preventDefault();
+    handleBackspace();
+    if (!isConnected) updateConnectionUI(true, 'keyboard');
+    return;
   }
-  if ((e.key === 'l' || e.key === 'L') && !e.ctrlKey && !e.metaKey) { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return; isBangla = !isBangla; updateIndicators(); return; }
-  if ((e.key === 's' || e.key === 'S') && !e.ctrlKey && !e.metaKey) { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return; shiftActive = !shiftActive; updateIndicators(); return; }
-  if (e.key === 'Backspace' && e.target.tagName !== 'INPUT') {
-    if (liveText.querySelector('.placeholder')) return;
-    for (let i = liveText.children.length - 1; i >= 0; i--) { if (!liveText.children[i].classList.contains('cursor-blink')) { liveText.children[i].remove(); break; } }
-    if (historyChars.length > 0) { historyChars.pop(); if (historyScroll.lastChild) historyScroll.lastChild.remove(); }
+
+  // Space from Bluetooth keyboard:
+  if (e.key === ' ') {
+    e.preventDefault();
+    handleIncomingChar(' ');
+    if (!isConnected) updateConnectionUI(true, 'keyboard');
+    return;
+  }
+
+  // Number keys 1-6 for on-screen Braille dots (when Alt is held or cell is active):
+  const n = parseInt(e.key);
+  if (n >= 1 && n <= 6 && (e.altKey || dotBtns.some(b => b.classList.contains('active')))) {
+    e.preventDefault();
+    dotBtns[n-1].classList.toggle('active');
+    updateChordDisplay();
+    return;
+  }
+
+  // Enter to commit on-screen chord:
+  if (e.key === 'Enter' && !e.shiftKey) {
+    const chord = getActiveChord();
+    if (chord > 0) {
+      let ch = null;
+      if (shiftActive) {
+        ch = lookupNumber(chord) || lookupShiftSymbol(chord);
+        if (!ch && !isBangla) { const b = lookupChord(chord, false); if (b && b >= 'a' && b <= 'z') ch = b.toUpperCase(); }
+        if (!ch && isBangla) { ch = lookupBanglaShift(chord) || lookupChord(chord, true); }
+        shiftActive = false; updateIndicators();
+      } else {
+        ch = lookupChord(chord, isBangla);
+      }
+      if (ch) handleIncomingChar(ch);
+      resetDots();
+    }
+    return;
+  }
+
+  // Quick shortcuts from PC keyboard:
+  if ((e.key === 'l' || e.key === 'L') && e.altKey) { isBangla = !isBangla; updateIndicators(); return; }
+  if ((e.key === 's' || e.key === 'S') && e.altKey) { shiftActive = !shiftActive; updateIndicators(); return; }
+
+  // Any incoming letter/character typed from Bluetooth keyboard:
+  if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+    e.preventDefault();
+    handleIncomingChar(e.key);
+    if (!isConnected) updateConnectionUI(true, 'keyboard');
   }
 });
 
@@ -355,6 +392,7 @@ function populatePortSelects() {
   }
   if (keep1 && [...sel.options].some(o => o.value === keep1)) sel.value = keep1;
   if (keep2 && [...sel2.options].some(o => o.value === keep2)) sel2.value = keep2;
+  updateSerialBtnLabel();
 }
 
 let relayToastTimer = null;
@@ -388,23 +426,70 @@ window.addEventListener('pywebviewready', () => {
   }
 });
 
-/* SERIAL (Student View) */
+/* SERIAL & BLUETOOTH (Student View) */
 let port = null, reader = null;
+let isBleConnected = false;
+let isBleKeyboardConnected = false;
+let bleDevice = null;
+let bleTxChar = null;
+
 const btnConnect = document.getElementById('btnConnect');
 const btnIcon = document.getElementById('btnIcon');
 const btnText = document.getElementById('btnText');
+const btnBluetooth = document.getElementById('btnBluetooth');
 const serialInfo = document.getElementById('serialInfo');
 const baudSelect = document.getElementById('baudSelect');
 
+function updateSerialBtnLabel() {
+  if (isConnected && (port || relayStudentPort)) {
+    btnText.textContent = 'Disconnect Serial';
+    return;
+  }
+  if (RELAY) {
+    const sel = document.getElementById('relayPortSelect');
+    btnText.textContent = (sel && sel.value) ? `Connect to ${sel.value}` : 'Connect Serial';
+  } else {
+    btnText.textContent = 'Connect Serial';
+  }
+}
+
+const relayPortSel = document.getElementById('relayPortSelect');
+if (relayPortSel) {
+  relayPortSel.addEventListener('change', updateSerialBtnLabel);
+}
+
 document.getElementById('btnClear').addEventListener('click', clearDisplay);
-// In relay mode the Web Serial `port` stays null, so the toggle must also
-// check relayStudentPort — otherwise Disconnect silently re-opens instead.
-btnConnect.addEventListener('click', async () => { if (port || relayStudentPort) { await disconnectSerial(); return; } await connectSerial(); });
+
+btnConnect.addEventListener('click', async () => {
+  if (port || relayStudentPort) {
+    await disconnectSerial();
+    return;
+  }
+  // If connected via Bluetooth, disconnect Bluetooth first
+  if (isBleConnected || isBleKeyboardConnected) {
+    await disconnectBluetooth();
+  }
+  await connectSerial();
+});
+
+if (btnBluetooth) {
+  btnBluetooth.addEventListener('click', async () => {
+    if (isBleConnected || isBleKeyboardConnected) {
+      await disconnectBluetooth();
+      return;
+    }
+    // If connected via serial, disconnect serial first
+    if (port || relayStudentPort) {
+      await disconnectSerial();
+    }
+    await connectBluetooth();
+  });
+}
 
 async function connectSerial() {
   if (RELAY) return connectSerialRelay();
   try {
-    serialInfo.innerHTML = '<i class="fa-solid fa-magnifying-glass" style="margin-right:4px;"></i> Select <span class="highlight">COM6</span> from the browser dialog&hellip;';
+    serialInfo.innerHTML = '<i class="fa-solid fa-magnifying-glass" style="margin-right:4px;"></i> Select your <span class="highlight">ESP32 COM Port</span> from the browser dialog&hellip;';
     port = await navigator.serial.requestPort();
     const baudRate = parseInt(baudSelect.value);
     serialInfo.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i> Opening <span class="highlight">${baudRate}</span> baud&hellip;`;
@@ -414,8 +499,8 @@ async function connectSerial() {
       catch (err) { lastError = err; if (attempt < 2) { serialInfo.innerHTML = `<i class="fa-solid fa-rotate fa-spin" style="margin-right:4px;"></i> Retrying (attempt ${attempt+2}/3)&hellip;`; await new Promise(r => setTimeout(r, 800)); } }
     }
     if (!openSuccess) throw lastError || new Error('Failed to open port after retries');
-    updateSerialUI(true);
-    serialInfo.innerHTML = `<i class="fa-regular fa-circle-check text-green" style="margin-right:4px;"></i> Connected to <span class="highlight">ESP32</span><br>Baud: <span class="highlight">${baudRate}</span> | Reading live&hellip;`;
+    updateConnectionUI(true, 'serial', 'Connected (USB Serial)');
+    serialInfo.innerHTML = `<i class="fa-regular fa-circle-check text-green" style="margin-right:4px;"></i> Connected to <span class="highlight">ESP32</span> (Serial)<br>Baud: <span class="highlight">${baudRate}</span> | Reading live&hellip;`;
     readLoop();
   } catch (err) {
     if (err.name === 'NotFoundError') serialInfo.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:var(--accent-red);margin-right:4px;"></i> No port selected. Click <b>Connect</b> to try again.';
@@ -440,7 +525,7 @@ async function connectSerialRelay() {
   }
   relayStudentPort = portName;
   relayFeeds.set(portName, makeSerialFeed(handleLineForStudentView, handleCharsForStudentView));
-  updateSerialUI(true);
+  updateConnectionUI(true, 'serial', `Connected (${portName})`);
   serialInfo.innerHTML = `<i class="fa-regular fa-circle-check text-green" style="margin-right:4px;"></i> Connected to <span class="highlight">${portName}</span> (relay)<br>Baud: <span class="highlight">${baudRate}</span> | Reading live&hellip;`;
 }
 
@@ -451,28 +536,158 @@ async function disconnectSerial() {
       relayFeeds.delete(relayStudentPort);
       relayStudentPort = null;
     }
-    updateSerialUI(false);
-    serialInfo.innerHTML = '<i class="fa-solid fa-plug" style="margin-right:4px;"></i> Disconnected.';
+    updateConnectionUI(false);
     return;
   }
   if (reader) { await reader.cancel(); reader = null; }
   if (port) { try { await port.close(); } catch(e) {} port = null; }
-  updateSerialUI(false);
-  serialInfo.innerHTML = '<i class="fa-solid fa-plug" style="margin-right:4px;"></i> Disconnected.';
+  updateConnectionUI(false);
 }
 
-function updateSerialUI(connected) {
+/* BLUETOOTH (BLE Nordic UART & Bluetooth Keyboard) */
+async function connectBluetooth() {
+  const NUS_SERVICE = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+  const NUS_TX = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+
+  // 1. If Web Bluetooth API is supported in browser:
+  if (navigator.bluetooth && typeof navigator.bluetooth.requestDevice === 'function') {
+    try {
+      serialInfo.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i> Scanning for <span class="highlight">BrailleBridge</span> over Bluetooth&hellip;';
+      bleDevice = await navigator.bluetooth.requestDevice({
+        filters: [{ name: 'BrailleBridge' }, { namePrefix: 'Braille' }],
+        optionalServices: [NUS_SERVICE]
+      });
+
+      bleDevice.addEventListener('gattserverdisconnected', () => {
+        disconnectBluetooth();
+        showToast('Bluetooth device disconnected.');
+      });
+
+      serialInfo.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i> Connecting to Bluetooth GATT Service&hellip;';
+      const server = await bleDevice.gatt.connect();
+      const service = await server.getPrimaryService(NUS_SERVICE);
+      bleTxChar = await service.getCharacteristic(NUS_TX);
+
+      await bleTxChar.startNotifications();
+      bleTxChar.addEventListener('characteristicvaluechanged', (event) => {
+        const text = new TextDecoder('utf-8').decode(event.target.value);
+        if (text.startsWith('SYSTEM:BKSP')) {
+          handleBackspace();
+          return;
+        }
+        if (text.startsWith('LANG:')) {
+          if (text.includes('LANG:bn')) isBangla = true;
+          else if (text.includes('LANG:en')) isBangla = false;
+          updateIndicators();
+          return;
+        }
+        for (const ch of text) {
+          if (ch === '\r' || ch === '\n') continue;
+          handleIncomingChar(ch);
+        }
+      });
+
+      updateConnectionUI(true, 'ble');
+      showToast('Connected to BrailleBridge via Bluetooth BLE!');
+      return;
+    } catch (err) {
+      console.warn('Web Bluetooth not connected / cancelled:', err);
+      if (err.name === 'NotFoundError') {
+        updateConnectionUI(false);
+        serialInfo.innerHTML = '<i class="fa-solid fa-circle-info" style="margin-right:4px;"></i> Bluetooth connection cancelled.';
+        return;
+      }
+    }
+  }
+
+  // 2. Bluetooth Keyboard Mode (works in desktop pywebview & paired HID keyboards):
+  isBleKeyboardConnected = true;
+  updateConnectionUI(true, 'keyboard');
+  showToast('Connected via Bluetooth Keyboard! Start typing on your BrailleBridge.');
+}
+
+async function disconnectBluetooth() {
+  if (bleDevice && bleDevice.gatt && bleDevice.gatt.connected) {
+    try { bleDevice.gatt.disconnect(); } catch (e) {}
+  }
+  bleDevice = null;
+  bleTxChar = null;
+  isBleConnected = false;
+  isBleKeyboardConnected = false;
+  updateConnectionUI(false);
+}
+
+function updateConnectionUI(connected, type = 'serial', label = '') {
   isConnected = connected;
-  btnConnect.classList.toggle('connected', connected);
-  btnIcon.className = connected ? 'fa-solid fa-plug' : 'fa-solid fa-bolt';
-  btnText.textContent = connected ? 'Disconnect' : 'Connect to COM6';
-  statusDot.className = 'status-dot ' + (connected ? 'connected' : 'disconnected');
-  statusLabel.textContent = connected ? 'Connected' : 'Disconnected';
-  baudSelect.disabled = connected;
+
+  if (!connected) {
+    isBleConnected = false;
+    isBleKeyboardConnected = false;
+    btnConnect.classList.remove('connected');
+    btnIcon.className = 'fa-solid fa-bolt';
+    updateSerialBtnLabel();
+
+    if (btnBluetooth) {
+      btnBluetooth.classList.remove('connected');
+      const bIcon = document.getElementById('btnBleIcon');
+      const bText = document.getElementById('btnBleText');
+      if (bIcon) bIcon.className = 'fa-brands fa-bluetooth';
+      if (bText) bText.textContent = 'Connect Bluetooth';
+    }
+
+    statusDot.className = 'status-dot disconnected';
+    statusLabel.textContent = 'Disconnected';
+    baudSelect.disabled = false;
+    const sendBtn = document.getElementById('btnSendToTeacher');
+    if (sendBtn) sendBtn.style.display = 'none';
+    setMirrorOffline();
+    serialInfo.innerHTML = '<i class="fa-solid fa-plug" style="margin-right:4px;"></i> Disconnected.<br>Connect via <span class="highlight">USB Serial</span> or <span class="highlight">Bluetooth</span>.';
+    return;
+  }
+
+  // Connected state
+  baudSelect.disabled = true;
   const sendBtn = document.getElementById('btnSendToTeacher');
-  if (sendBtn) sendBtn.style.display = connected ? 'flex' : 'none';
-  // Keep any mirrored teacher student in sync with the live connection state
-  if (connected) setMirrorOnline(); else setMirrorOffline();
+  if (sendBtn) sendBtn.style.display = 'flex';
+  setMirrorOnline();
+
+  if (type === 'ble') {
+    isBleConnected = true;
+    statusDot.className = 'status-dot connected';
+    statusLabel.textContent = 'Connected (Bluetooth)';
+    if (btnBluetooth) {
+      btnBluetooth.classList.add('connected');
+      const bIcon = document.getElementById('btnBleIcon');
+      const bText = document.getElementById('btnBleText');
+      if (bIcon) bIcon.className = 'fa-solid fa-plug';
+      if (bText) bText.textContent = 'Disconnect BLE';
+    }
+    serialInfo.innerHTML = `<i class="fa-brands fa-bluetooth text-blue" style="margin-right:4px;"></i> Connected to <span class="highlight">BrailleBridge</span> over Bluetooth Low Energy<br>Reading live stream&hellip;`;
+  } else if (type === 'keyboard') {
+    isBleKeyboardConnected = true;
+    statusDot.className = 'status-dot connected';
+    statusLabel.textContent = 'Connected (Bluetooth)';
+    if (btnBluetooth) {
+      btnBluetooth.classList.add('connected');
+      const bIcon = document.getElementById('btnBleIcon');
+      const bText = document.getElementById('btnBleText');
+      if (bIcon) bIcon.className = 'fa-solid fa-plug';
+      if (bText) bText.textContent = 'Disconnect BT';
+    }
+    serialInfo.innerHTML = `<i class="fa-brands fa-bluetooth text-blue" style="margin-right:4px;"></i> Connected to <span class="highlight">BrailleBridge</span> via Bluetooth Keyboard<br>Ready & typing live!`;
+  } else {
+    // Serial
+    btnConnect.classList.add('connected');
+    btnIcon.className = 'fa-solid fa-plug';
+    btnText.textContent = 'Disconnect';
+    statusDot.className = 'status-dot connected';
+    statusLabel.textContent = label || 'Connected';
+  }
+}
+
+// Backward compatibility alias
+function updateSerialUI(connected) {
+  updateConnectionUI(connected, 'serial');
 }
 
 /* SEND TO TEACHER (mirror the student-view connection into the teacher roster — one connection, two views) */

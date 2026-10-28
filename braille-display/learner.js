@@ -183,9 +183,10 @@
 
   /* Speech */
   var voices = [];
+  var onlineBanglaAudio = new Audio();
   function refreshVoices() { if ('speechSynthesis' in window) voices = window.speechSynthesis.getVoices() || []; updateVoiceChip(); }
   function pickVoice(lang) {
-    var prefs = lang === 'bn' ? ['bn'] : ['en'];
+    var prefs = lang === 'bn' ? ['bn-bd', 'bn_bd', 'bn-in', 'bn_in', 'bn'] : ['en-us', 'en_us', 'en-gb', 'en_gb', 'en'];
     for (var i = 0; i < prefs.length; i++) {
       for (var j = 0; j < voices.length; j++) {
         if (String(voices[j].lang || '').toLowerCase().indexOf(prefs[i]) === 0) return voices[j];
@@ -196,22 +197,55 @@
   function updateVoiceChip() {
     if (!('speechSynthesis' in window)) return;
     var bn = pickVoice('bn'), en = pickVoice('en');
-    if (!en && !bn) { voiceChip.innerHTML = '<i class="fa-solid fa-volume-off"></i> No speech voices on this device'; return; }
-    if (bn) voiceChip.innerHTML = '<i class="fa-solid fa-volume-high"></i> English + বাংলা voices';
-    else voiceChip.innerHTML = '<i class="fa-solid fa-volume-high"></i> English voice (no Bangla voice installed)';
+    if (bn) {
+      voiceChip.innerHTML = '<i class="fa-solid fa-volume-high"></i> English + বাংলা (Windows Voice)';
+      voiceChip.title = 'Offline Windows Bengali voice installed (' + bn.name + ')';
+    } else {
+      voiceChip.innerHTML = '<i class="fa-solid fa-volume-high"></i> English + বাংলা (Online Voice)';
+      voiceChip.title = 'Online Bengali voice active. Install Windows Bangla speech in Settings for offline use.';
+    }
   }
   if ('speechSynthesis' in window) {
     window.speechSynthesis.onvoiceschanged = refreshVoices;
     refreshVoices();
   }
+
+  function utterBanglaOnline(text) {
+    if (!text) return;
+    try {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      var clean = String(text).trim();
+      if (!clean) return;
+      var url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=bn&client=tw-ob&q=' + encodeURIComponent(clean);
+      onlineBanglaAudio.pause();
+      onlineBanglaAudio.currentTime = 0;
+      onlineBanglaAudio.src = url;
+      onlineBanglaAudio.play().catch(function (e) {
+        if ('speechSynthesis' in window) {
+          var u = new SpeechSynthesisUtterance(clean);
+          u.lang = 'bn-BD';
+          window.speechSynthesis.speak(u);
+        }
+      });
+    } catch (err) {
+      console.warn('Bangla speech error:', err);
+    }
+  }
+
   function utter(text, lang) {
+    if (!text) return;
+    var v = pickVoice(lang);
+    if (lang === 'bn' && !v) {
+      utterBanglaOnline(text);
+      return;
+    }
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(text);
-    var v = pickVoice(lang);
     if (v) { u.voice = v; u.lang = v.lang; } else u.lang = lang === 'bn' ? 'bn-BD' : 'en-US';
     window.speechSynthesis.speak(u);
   }
+  window.BBUtter = utter;
   function langOfChar(ch) { return /[\u0980-\u09FF]/.test(ch) ? 'bn' : learnerLang; }
 
   /* Playground */

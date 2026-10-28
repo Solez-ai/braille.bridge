@@ -78,7 +78,11 @@
           </select>
           <button class="btn btn-connect" id="btnConnect">
             <i class="fa-solid fa-bolt" id="btnIcon"></i>
-            <span id="btnText">Connect to COM6</span>
+            <span id="btnText">Connect Serial</span>
+          </button>
+          <button class="btn btn-bluetooth" id="btnBluetooth" title="Connect to BrailleBridge via Bluetooth (BLE / Keyboard)">
+            <i class="fa-brands fa-bluetooth" id="btnBleIcon"></i>
+            <span id="btnBleText">Connect Bluetooth</span>
           </button>
           <button class="btn btn-send" id="btnSendToTeacher" style="display:none;" title="Mirror this device into the Teacher roster">
             <i class="fa-solid fa-paper-plane"></i> Send to Teacher
@@ -86,7 +90,7 @@
           <div class="serial-info" id="serialInfo">
             <i class="fa-solid fa-circle-info" style="opacity:0.5;margin-right:4px;"></i>
             Waiting to connect&hellip;<br>
-            Select <span class="highlight">COM6</span> (ESP32 Dev Module)
+            Connect via <span class="highlight">USB Serial</span> or <span class="highlight">Bluetooth</span>
           </div>
         </div>
       </div>

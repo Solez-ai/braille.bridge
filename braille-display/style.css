@@ -255,6 +255,11 @@ body {
 .btn-connect.connected { background: var(--accent-red); color: #fff; }
 .btn-connect.connected:hover { background: #c74a4a; }
 
+.btn-bluetooth { background: #2563EB; color: #FFFFFF; }
+.btn-bluetooth:hover { background: #1D4ED8; }
+.btn-bluetooth.connected { background: var(--accent-red); color: #FFFFFF; }
+.btn-bluetooth.connected:hover { background: #c74a4a; }
+
 .btn-secondary {
   background: var(--bg-surface); color: var(--text-secondary);
   border: 1px solid rgba(255, 255, 255, 0.08);
