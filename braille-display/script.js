@@ -382,12 +382,31 @@ function populatePortSelects() {
   const keep1 = sel.value, keep2 = sel2.value;
   sel.innerHTML = ''; sel2.innerHTML = '';
   if (!currentPorts.length) {
-    const o = document.createElement('option'); o.value = ''; o.textContent = '(no ports detected)'; sel.appendChild(o);
-    const o2 = document.createElement('option'); o2.value = ''; o2.textContent = '(no ports detected)'; sel2.appendChild(o2);
+    const o = document.createElement('option'); o.value = ''; o.textContent = '(no devices detected)'; sel.appendChild(o);
+    const o2 = document.createElement('option'); o2.value = ''; o2.textContent = '(no devices detected)'; sel2.appendChild(o2);
   } else {
-    for (const p of currentPorts) {
-      const o = document.createElement('option'); o.value = p.name; o.textContent = `${p.name} — ${p.description}`; sel.appendChild(o);
-      const o2 = document.createElement('option'); o2.value = p.name; o2.textContent = p.name; sel2.appendChild(o2);
+    const blePorts = currentPorts.filter(p => p.name && p.name.startsWith('BLE:'));
+    const usbPorts = currentPorts.filter(p => p.name && !p.name.startsWith('BLE:'));
+
+    if (blePorts.length > 0) {
+      const gBle = document.createElement('optgroup'); gBle.label = '🔵 Bluetooth Devices';
+      const gBle2 = document.createElement('optgroup'); gBle2.label = '🔵 Bluetooth Devices';
+      for (const p of blePorts) {
+        const desc = p.description || p.name;
+        const o = document.createElement('option'); o.value = p.name; o.textContent = `🔵 ${desc}`; gBle.appendChild(o);
+        const o2 = document.createElement('option'); o2.value = p.name; o2.textContent = `🔵 ${desc}`; gBle2.appendChild(o2);
+      }
+      sel.appendChild(gBle); sel2.appendChild(gBle2);
+    }
+
+    if (usbPorts.length > 0) {
+      const gUsb = document.createElement('optgroup'); gUsb.label = '🔌 USB Serial Ports';
+      const gUsb2 = document.createElement('optgroup'); gUsb2.label = '🔌 USB Serial Ports';
+      for (const p of usbPorts) {
+        const o = document.createElement('option'); o.value = p.name; o.textContent = `🔌 ${p.name} — ${p.description || 'USB'}`; gUsb.appendChild(o);
+        const o2 = document.createElement('option'); o2.value = p.name; o2.textContent = `🔌 ${p.name}`; gUsb2.appendChild(o2);
+      }
+      sel.appendChild(gUsb); sel2.appendChild(gUsb2);
     }
   }
   if (keep1 && [...sel.options].some(o => o.value === keep1)) sel.value = keep1;
@@ -442,12 +461,18 @@ const baudSelect = document.getElementById('baudSelect');
 
 function updateSerialBtnLabel() {
   if (isConnected && (port || relayStudentPort)) {
-    btnText.textContent = 'Disconnect Serial';
+    btnText.textContent = 'Disconnect';
     return;
   }
   if (RELAY) {
     const sel = document.getElementById('relayPortSelect');
-    btnText.textContent = (sel && sel.value) ? `Connect to ${sel.value}` : 'Connect Serial';
+    if (sel && sel.value) {
+      const isBle = sel.value.startsWith('BLE:');
+      btnText.textContent = isBle ? 'Connect Bluetooth' : `Connect to ${sel.value}`;
+      if (btnIcon) btnIcon.className = isBle ? 'fa-brands fa-bluetooth' : 'fa-solid fa-bolt';
+    } else {
+      btnText.textContent = 'Connect Device';
+    }
   } else {
     btnText.textContent = 'Connect Serial';
   }
@@ -456,6 +481,28 @@ function updateSerialBtnLabel() {
 const relayPortSel = document.getElementById('relayPortSelect');
 if (relayPortSel) {
   relayPortSel.addEventListener('change', updateSerialBtnLabel);
+}
+
+const btnScanBle = document.getElementById('btnScanBle');
+if (btnScanBle) {
+  btnScanBle.addEventListener('click', async () => {
+    const icon = btnScanBle.querySelector('i');
+    if (icon) icon.className = 'fa-solid fa-spinner fa-spin';
+    showToast('Scanning for Bluetooth BrailleBridge devices...');
+    try {
+      if (relayApi && relayApi.scan_bluetooth) {
+        await relayApi.scan_bluetooth();
+        const ports = await relayApi.list_ports();
+        currentPorts = ports || [];
+        populatePortSelects();
+        showToast(`Scan complete. Found ${currentPorts.length} device(s).`);
+      }
+    } catch(e) {
+      showToast('Bluetooth scan error: ' + e.message);
+    } finally {
+      if (icon) icon.className = 'fa-brands fa-bluetooth';
+    }
+  });
 }
 
 document.getElementById('btnClear').addEventListener('click', clearDisplay);
@@ -513,20 +560,26 @@ async function connectSerialRelay() {
   const sel = document.getElementById('relayPortSelect');
   const portName = sel ? sel.value : '';
   if (!portName) {
-    serialInfo.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:var(--accent-red);margin-right:4px;"></i> No COM port selected. Pick one above, then connect.';
+    serialInfo.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:var(--accent-red);margin-right:4px;"></i> No device selected. Pick one above, then connect.';
     return;
   }
+  const isBle = portName.startsWith('BLE:');
   const baudRate = parseInt(baudSelect.value);
   serialInfo.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="margin-right:4px;"></i> Opening <span class="highlight">${portName}</span> via desktop relay&hellip;`;
   const ok = await relayApi.open_port(portName, baudRate);
   if (!ok) {
-    serialInfo.innerHTML = getTroubleshootingHTML('The relay could not open ' + portName);
+    serialInfo.innerHTML = getTroubleshootingHTML('The relay could not open ' + portName + (isBle ? '. Is Bluetooth enabled on PC and BrailleBridge turned on?' : ''));
     return;
   }
   relayStudentPort = portName;
   relayFeeds.set(portName, makeSerialFeed(handleLineForStudentView, handleCharsForStudentView));
-  updateConnectionUI(true, 'serial', `Connected (${portName})`);
-  serialInfo.innerHTML = `<i class="fa-regular fa-circle-check text-green" style="margin-right:4px;"></i> Connected to <span class="highlight">${portName}</span> (relay)<br>Baud: <span class="highlight">${baudRate}</span> | Reading live&hellip;`;
+  if (isBle) {
+    updateConnectionUI(true, 'ble', `Connected (Bluetooth)`);
+    serialInfo.innerHTML = `<i class="fa-brands fa-bluetooth text-blue" style="margin-right:4px;"></i> Connected to <span class="highlight">${portName}</span> over Bluetooth LE<br>Reading live stream&hellip;`;
+  } else {
+    updateConnectionUI(true, 'serial', `Connected (${portName})`);
+    serialInfo.innerHTML = `<i class="fa-regular fa-circle-check text-green" style="margin-right:4px;"></i> Connected to <span class="highlight">${portName}</span> (relay)<br>Baud: <span class="highlight">${baudRate}</span> | Reading live&hellip;`;
+  }
 }
 
 async function disconnectSerial() {
@@ -908,9 +961,12 @@ document.getElementById('btnCancelAdd').addEventListener('click', () => {
 });
 document.getElementById('btnConfirmAdd').addEventListener('click', () => {
   const name = document.getElementById('studentNameInput').value.trim();
-  const connType = document.getElementById('studentConnInput').value;
+  let connType = document.getElementById('studentConnInput').value;
   const baud = parseInt(document.getElementById('studentBaudInput').value);
   const portName = RELAY ? document.getElementById('studentPortInput').value : '';
+  if (portName && portName.startsWith('BLE:')) {
+    connType = 'bluetooth';
+  }
   if (!name) { document.getElementById('studentNameInput').focus(); document.getElementById('studentNameInput').style.borderColor = 'var(--accent-red)'; setTimeout(() => document.getElementById('studentNameInput').style.borderColor = '', 1500); return; }
   addStudent(name, connType, baud, portName);
   if (RELAY && portName) { relayAssignments[name] = portName; relayApi.set_assignment(name, portName); }
@@ -1113,17 +1169,19 @@ async function connectStudentSerialRelay(student) {
   if (!student.portName) {
     if (relayAssignments[student.name]) student.portName = relayAssignments[student.name];
     else {
-      showToast(`Assign a COM port to "${student.name}" in the Add Student form first.`);
+      showToast(`Assign a device/port to "${student.name}" in the Add Student form first.`);
       return;
     }
   }
+  const isBle = student.portName.startsWith('BLE:');
   const ok = await relayApi.open_port(student.portName, student.baud);
   if (!ok) {
-    showToast(`The relay could not open ${student.portName}. Is it in use elsewhere?`);
+    showToast(`Could not connect to ${student.portName}. ` + (isBle ? 'Is Bluetooth on & device nearby?' : 'Is it in use?'));
     renderRoster(); renderFeedGrid();
     return;
   }
   student.connected = true;
+  if (isBle) student.connType = 'bluetooth';
   relayStudentFeeds.set(student.portName, makeSerialFeed(
     l => handleLineForTeacherStudent(student, l),
     c => handleCharsForTeacherStudent(student, c)));
@@ -1263,13 +1321,14 @@ function renderRoster() {
       badge.title = 'Mirrored from Student View — data comes from the live connection';
       item.appendChild(badge);
     } else {
+      const isBle = s.connType === 'bluetooth' || (s.portName && s.portName.startsWith('BLE:'));
       const connectBtn = document.createElement('button');
       connectBtn.className = `btn btn-icon ${s.connected ? 'btn-danger' : 'btn-secondary'}`;
       connectBtn.style.cssText = 'width:auto;padding:4px 10px;font-size:10px;gap:4px;';
       connectBtn.innerHTML = s.connected
         ? '<i class="fa-solid fa-plug" style="color:var(--accent-red);"></i>'
-        : '<i class="fa-solid fa-bolt"></i>';
-      connectBtn.title = s.connected ? 'Disconnect' : 'Connect serial port';
+        : (isBle ? '<i class="fa-brands fa-bluetooth"></i>' : '<i class="fa-solid fa-bolt"></i>');
+      connectBtn.title = s.connected ? 'Disconnect' : (isBle ? 'Connect Bluetooth' : 'Connect serial port');
       connectBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
         if (s.connected) await disconnectStudentSerial(s);

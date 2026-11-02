@@ -165,6 +165,13 @@ void onNusControl(const String& value) {
 bool isBangla = false;
 bool shiftActive = false;
 
+// Standard Braille Capital Sign (Dot 6):
+// Press Dot 6 alone before a letter to capitalize it (CAPS_ONCE).
+// Press Dot 6 twice consecutively to enable CAPS_LOCK.
+// Press Dot 6 again while in CAPS_LOCK to return to lowercase (CAPS_OFF).
+enum CapsMode { CAPS_OFF, CAPS_ONCE, CAPS_LOCK };
+CapsMode capsMode = CAPS_OFF;
+
 // Switches bounce for several ms on press and release. Every pin goes through
 // a stability filter: a state change only becomes "real" after the raw pin
 // has read the same value for DEBOUNCE_MS. Without this, a bouncing release
@@ -303,6 +310,7 @@ void loop() {
   if (sp) {
     if (!spaceWasDown && !anyDot) {
       if (sh) shiftTapUsed = true;
+      if (capsMode == CAPS_ONCE) capsMode = CAPS_OFF;
       sendChar(" ");
       spaceWasDown = true;
       return;  // one loop pass per press; state is edge-tracked
@@ -402,6 +410,24 @@ void sendChar(const char* c) {
 }
 
 void processChord(int chord) {
+  // --- Standard Braille Capital Sign (Dot 6 = 0b100000) ---
+  // In genuine Braille, Dot 6 is the capital prefix. Press Dot 6 once, then
+  // the next letter chord typed will be in uppercase. Press Dot 6 twice for
+  // Caps Lock.
+  if (chord == 0b100000 && !shiftActive) {
+    if (capsMode == CAPS_OFF) {
+      capsMode = CAPS_ONCE;
+      streamOut("SYSTEM:CAP_ONCE", true);
+    } else if (capsMode == CAPS_ONCE) {
+      capsMode = CAPS_LOCK;
+      streamOut("SYSTEM:CAP_LOCK", true);
+    } else {
+      capsMode = CAPS_OFF;
+      streamOut("SYSTEM:CAP_OFF", true);
+    }
+    return;
+  }
+
   if (shiftActive) {
     // Numbers (a-j chords → 1-0)
     for (int i = 0; i < 10; i++) {
@@ -419,7 +445,7 @@ void processChord(int chord) {
       }
     }
 
-    // English uppercase
+    // English uppercase (for non-number letters held with Shift)
     if (!isBangla) {
       const char* ch = lookupChord(chord, false);
       if (ch != nullptr && ch[0] >= 'a' && ch[0] <= 'z') {
@@ -454,6 +480,21 @@ void processChord(int chord) {
   // Unshifted chord
   const char* result = lookupChord(chord, isBangla);
   if (result != nullptr) {
+    // Apply Capital Sign if active in English mode
+    if (!isBangla && capsMode != CAPS_OFF && result[0] >= 'a' && result[0] <= 'z') {
+      char upper[2] = { (char)(result[0] - 32), '\0' };
+      sendChar(upper);
+      if (capsMode == CAPS_ONCE) {
+        capsMode = CAPS_OFF;
+      }
+      return;
+    }
+
     sendChar(result);
+
+    // If a non-letter was typed while CAPS_ONCE was pending, clear the one-shot
+    if (capsMode == CAPS_ONCE) {
+      capsMode = CAPS_OFF;
+    }
   }
 }

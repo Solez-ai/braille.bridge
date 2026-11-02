@@ -152,7 +152,18 @@ object BrailleDict {
         return null
     }
 
-    fun resolveChord(chord: Int, isBangla: Boolean, shiftActive: Boolean): String? {
+    enum class CapsMode {
+        OFF,
+        ONCE,
+        LOCK
+    }
+
+    fun resolveChord(
+        chord: Int,
+        isBangla: Boolean,
+        shiftActive: Boolean,
+        capsMode: CapsMode = CapsMode.OFF
+    ): String? {
         if (chord == 0) return null
         if (shiftActive) {
             // Priority: numbers -> math/punct -> uppercase EN -> kar BN -> fallback normal BN char -> else ignore
@@ -175,7 +186,12 @@ object BrailleDict {
             }
             return null
         } else {
-            return lookupChord(chord, isBangla)
+            val res = lookupChord(chord, isBangla)
+            if (!isBangla && capsMode != CapsMode.OFF && res != null && res.length == 1 && res[0] in 'a'..'z') {
+                return res.uppercase()
+            }
+            return res
         }
     }
 }
+

@@ -32,6 +32,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import com.example.audio.TTSManager
+import com.example.protocol.DecodedStep
+import com.example.protocol.LearnerEngine
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
@@ -40,8 +43,10 @@ enum class AppMode {
     STUDENT,
     TEACHER,
     EXAM,
-    EXPORTS
+    EXPORTS,
+    LEARN
 }
+
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -60,6 +65,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val currentMode = MutableStateFlow(AppMode.STUDENT)
     val isDarkTheme = MutableStateFlow(settingsStore.getTheme() == "dark")
 
+    // Audio & Speech Feedback
+    val ttsManager = TTSManager(application)
+    val isAudioFeedbackEnabled = MutableStateFlow(true)
+    val capsMode = MutableStateFlow(BrailleDict.CapsMode.OFF)
+
     // Student View State
     val studentPressedDots = MutableStateFlow<Set<Int>>(emptySet())
     val studentChord = MutableStateFlow(0)
@@ -72,6 +82,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val studentTranslateTarget = MutableStateFlow("en") // defaults to "en"
     val studentTranslateError = MutableStateFlow<String?>(null)
     private var translateJob: Job? = null
+
+    // Learner View State
+    val learnerLangIsBangla = MutableStateFlow(false)
+    val learnerInputText = MutableStateFlow("")
+    val learnerSpokenWords = MutableStateFlow<List<String>>(emptyList())
+    val learnerDecoderInput = MutableStateFlow("")
+    val learnerDecoderIsBangla = MutableStateFlow(false)
+    val learnerDecodedSteps = MutableStateFlow<List<DecodedStep>>(emptyList())
+
 
     // Teacher View State
     val students = MutableStateFlow<List<StudentModel>>(emptyList())
@@ -213,10 +232,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val trimmed = line.trim()
         if (trimmed == "SYSTEM:BKSP") {
             handleBackspace(address)
+        } else if (trimmed == "SYSTEM:CAP_ONCE") {
+            capsMode.value = BrailleDict.CapsMode.ONCE
+        } else if (trimmed == "SYSTEM:CAP_LOCK") {
+            capsMode.value = BrailleDict.CapsMode.LOCK
+        } else if (trimmed == "SYSTEM:CAP_OFF") {
+            capsMode.value = BrailleDict.CapsMode.OFF
         } else if (trimmed == "LANG:en") {
             isBangla.value = false
+            learnerLangIsBangla.value = false
         } else if (trimmed == "LANG:bn") {
             isBangla.value = true
+            learnerLangIsBangla.value = true
         } else if (trimmed == "Invalid" || trimmed == "SHIFT" || trimmed.startsWith("SYSTEM:")) {
             // Drop control line
         } else {
@@ -247,6 +274,44 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
+        // Animate 6-dot cell visualizer for incoming character
+        if (address == activeStudentDeviceAddress.value || activeStudentDeviceAddress.value == null) {
+            val lastC = chars.lastOrNull()?.toString()
+            if (lastC != null && lastC != " ") {
+                val chord = BrailleDict.charToChord[lastC] ?: 0
+                if (chord > 0) {
+                    studentChord.value = chord
+                    studentPressedDots.value = LearnerEngine.chordDotsList(chord).toSet()
+                }
+            }
+        }
+
+        // Learner Mode typing mirror
+        if (currentMode.value == AppMode.LEARN) {
+            for (c in chars) {
+                if (c == ' ') {
+                    addLearnerSpace()
+                } else {
+                    appendLearnerChar(c.toString())
+                }
+            }
+        }
+
+        // Student View Audio Feedback
+        if (isAudioFeedbackEnabled.value && (address == activeStudentDeviceAddress.value || activeStudentDeviceAddress.value == null)) {
+            for (c in chars) {
+                if (c == ' ') {
+                    val fullText = studentChars.value.joinToString("") { it.char }
+                    val lastWord = fullText.trimEnd().split(Regex("\\s+")).lastOrNull() ?: ""
+                    if (lastWord.isNotEmpty()) {
+                        ttsManager.speakWord(lastWord, isBangla.value)
+                    }
+                } else {
+                    ttsManager.speakChar(c.toString(), isBangla.value)
+                }
+            }
+        }
+
         // Push batch to student view if matching or active
         if (address == activeStudentDeviceAddress.value || activeStudentDeviceAddress.value == null) {
             appendStudentChars(timedList)
@@ -254,6 +319,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             updateTotalChars()
         }
     }
+
 
     fun handleBackspace(address: String? = null) {
         // Remove last character from student view
@@ -332,10 +398,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun commitChord() {
         val chord = studentChord.value
         if (chord > 0) {
-            val resolved = BrailleDict.resolveChord(chord, isBangla.value, shiftActive.value)
+            // Dot 6 alone (0b100000 = 32) without Shift in English mode toggles capital indicator
+            if (chord == 0b100000 && !shiftActive.value && !isBangla.value) {
+                capsMode.value = when (capsMode.value) {
+                    BrailleDict.CapsMode.OFF -> BrailleDict.CapsMode.ONCE
+                    BrailleDict.CapsMode.ONCE -> BrailleDict.CapsMode.LOCK
+                    BrailleDict.CapsMode.LOCK -> BrailleDict.CapsMode.OFF
+                }
+                studentPressedDots.value = emptySet()
+                studentChord.value = 0
+                return
+            }
+
+            val resolved = BrailleDict.resolveChord(chord, isBangla.value, shiftActive.value, capsMode.value)
+            if (capsMode.value == BrailleDict.CapsMode.ONCE) {
+                capsMode.value = BrailleDict.CapsMode.OFF
+            }
+
             if (resolved != null) {
                 for (ch in resolved) {
                     appendStudentChar(TimedChar(ch.toString(), System.currentTimeMillis()))
+                    if (isAudioFeedbackEnabled.value) {
+                        ttsManager.speakChar(ch.toString(), isBangla.value)
+                    }
+                    if (currentMode.value == AppMode.LEARN) {
+                        appendLearnerChar(ch.toString())
+                    }
                 }
                 // Feed to mirrored student in teacher roster if exists
                 val mirror = students.value.find { it.isMirror }
@@ -353,11 +441,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun addSpace() {
         appendStudentChar(TimedChar(" ", System.currentTimeMillis()))
+        if (isAudioFeedbackEnabled.value) {
+            val fullText = studentChars.value.joinToString("") { it.char }
+            val lastWord = fullText.trimEnd().split(Regex("\\s+")).lastOrNull() ?: ""
+            if (lastWord.isNotEmpty()) {
+                ttsManager.speakWord(lastWord, isBangla.value)
+            }
+        }
+        if (currentMode.value == AppMode.LEARN) {
+            addLearnerSpace()
+        }
         val mirror = students.value.find { it.isMirror }
         mirror?.let {
             it.chars.add(TimedChar(" ", System.currentTimeMillis()))
         }
     }
+
+    fun toggleAudioFeedback() {
+        isAudioFeedbackEnabled.value = !isAudioFeedbackEnabled.value
+    }
+
 
     fun toggleLanguage() {
         val next = !isBangla.value
@@ -621,4 +724,128 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             isStudentDeviceConnected.value = false
         }
     }
+
+    // ── Learner Mode Handlers ────────────────────────────────────────────────
+    fun setLearnerLang(isBn: Boolean) {
+        learnerLangIsBangla.value = isBn
+        isBangla.value = isBn
+    }
+
+    fun appendLearnerChar(ch: String) {
+        learnerInputText.value = learnerInputText.value + ch
+        if (isAudioFeedbackEnabled.value) {
+            ttsManager.speakChar(ch, learnerLangIsBangla.value)
+        }
+    }
+
+    fun addLearnerSpace() {
+        val cur = learnerInputText.value
+        val lastWord = cur.trimEnd().split(Regex("\\s+")).lastOrNull() ?: ""
+        if (lastWord.isNotEmpty()) {
+            val list = learnerSpokenWords.value.toMutableList()
+            list.add(lastWord)
+            learnerSpokenWords.value = list
+            if (isAudioFeedbackEnabled.value) {
+                ttsManager.speakWord(lastWord, learnerLangIsBangla.value)
+            }
+        }
+        learnerInputText.value = "$cur "
+    }
+
+    fun handleLearnerBackspace() {
+        val cur = learnerInputText.value
+        if (cur.isNotEmpty()) {
+            learnerInputText.value = cur.dropLast(1)
+        }
+    }
+
+    fun repeatLastLearnerWord() {
+        val last = learnerSpokenWords.value.lastOrNull() ?: ""
+        if (last.isNotEmpty()) {
+            ttsManager.speakWord(last, learnerLangIsBangla.value)
+        }
+    }
+
+    fun clearLearnerPlayground() {
+        learnerInputText.value = ""
+        learnerSpokenWords.value = emptyList()
+    }
+
+    fun exportLearnerProgress(context: Context) {
+        val words = learnerSpokenWords.value
+        if (words.isEmpty() && learnerInputText.value.isBlank()) {
+            Toast.makeText(context, "No learner words to export", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val jsonArray = JSONArray()
+        val titleObj = JSONObject().apply {
+            put("type", "title")
+            put("text", "Learner Practice Session")
+            put("time", System.currentTimeMillis())
+            put("level", 0)
+        }
+        jsonArray.put(titleObj)
+
+        val langObj = JSONObject().apply {
+            put("type", "heading")
+            put("text", "Language: " + if (learnerLangIsBangla.value) "Bangla" else "English")
+            put("time", System.currentTimeMillis())
+            put("level", 2)
+        }
+        jsonArray.put(langObj)
+
+        for (w in words) {
+            val b = JSONObject().apply {
+                put("type", "bullet")
+                put("text", w)
+                put("time", System.currentTimeMillis())
+                put("level", 0)
+            }
+            jsonArray.put(b)
+        }
+
+        val export = ExportEntity(
+            id = "ex_" + UUID.randomUUID().toString().take(8),
+            title = "Learner Practice (${words.size} words)",
+            mode = "Learner Mode",
+            source = "learner",
+            charsCount = learnerInputText.value.length,
+            blocksJson = jsonArray.toString(),
+            created = System.currentTimeMillis(),
+            studentName = "Learner Freeplay",
+            connInfo = "Interactive Audio Playground"
+        )
+
+        viewModelScope.launch {
+            exportDao.insertExport(export)
+            Toast.makeText(context, "Learner progress saved to Exports", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun setLearnerDecoderInput(text: String) {
+        learnerDecoderInput.value = text
+        generateLearnerCodes(text, learnerDecoderIsBangla.value)
+    }
+
+    fun setLearnerDecoderLang(isBn: Boolean) {
+        learnerDecoderIsBangla.value = isBn
+        generateLearnerCodes(learnerDecoderInput.value, isBn)
+    }
+
+    fun generateLearnerCodes(text: String? = null, isBn: Boolean? = null) {
+        val t = text ?: learnerDecoderInput.value
+        val bn = isBn ?: learnerDecoderIsBangla.value
+        if (t.isEmpty()) {
+            learnerDecodedSteps.value = emptyList()
+            return
+        }
+        learnerDecodedSteps.value = LearnerEngine.decodeText(t, bn)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        ttsManager.shutdown()
+    }
 }
+

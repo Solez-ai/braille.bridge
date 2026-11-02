@@ -1,2 +1,4 @@
 pywebview>=5.0
 pyserial>=3.5
+bleak>=0.21.0
+

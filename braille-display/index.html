@@ -67,8 +67,11 @@
         <div class="card-title"><i class="fa-solid fa-plug"></i> Connection</div>
         <div class="serial-controls">
           <div class="relay-port-row" id="relayPortRow" style="display:none;">
-            <span class="relay-port-label">Port</span>
+            <span class="relay-port-label">Device</span>
             <select class="baud-select" id="relayPortSelect" style="flex:1;"></select>
+            <button class="btn btn-icon btn-secondary" id="btnScanBle" title="Scan for Bluetooth BrailleBridge devices" style="padding:6px 10px;">
+              <i class="fa-brands fa-bluetooth"></i>
+            </button>
           </div>
           <select class="baud-select" id="baudSelect">
             <option value="9600">9600 baud</option>
@@ -157,8 +160,8 @@
           <div class="form-row">
             <label class="form-label" for="studentConnInput">Connection Type</label>
             <select class="form-select" id="studentConnInput">
+              <option value="bluetooth">Bluetooth (Primary)</option>
               <option value="usb">USB Serial</option>
-              <option value="bluetooth">Bluetooth</option>
             </select>
           </div>
           <div class="form-row">
@@ -171,7 +174,7 @@
             </select>
           </div>
           <div class="form-row" id="studentPortRow" style="display:none;">
-            <label class="form-label" for="studentPortInput">COM Port <span style="text-transform:none;font-weight:400;opacity:0.6;">(desktop relay)</span></label>
+            <label class="form-label" for="studentPortInput">Device / Port <span style="text-transform:none;font-weight:400;opacity:0.6;">(Bluetooth & Serial)</span></label>
             <select class="form-select" id="studentPortInput"></select>
           </div>
           <div class="form-actions">

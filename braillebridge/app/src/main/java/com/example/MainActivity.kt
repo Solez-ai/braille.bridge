@@ -23,7 +23,9 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.School
+
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,7 +61,9 @@ import com.example.ui.components.PreviewModal
 import com.example.ui.components.SendModal
 import com.example.ui.exam.ExamScreen
 import com.example.ui.exports.ExportsScreen
+import com.example.ui.learn.LearnScreen
 import com.example.ui.student.StudentScreen
+
 import com.example.ui.teacher.TeacherScreen
 import com.example.ui.theme.AccentGreen
 import com.example.ui.theme.BrailleBridgeTheme
@@ -192,6 +196,18 @@ class MainActivity : ComponentActivity() {
                                 },
                                 label = { Text("Exports", fontSize = 11.sp) }
                             )
+
+                            NavigationBarItem(
+                                selected = currentMode == AppMode.LEARN,
+                                onClick = { viewModel.currentMode.value = AppMode.LEARN },
+                                icon = {
+                                    Icon(
+                                        imageVector = Icons.Default.MenuBook,
+                                        contentDescription = "Learner Mode"
+                                    )
+                                },
+                                label = { Text("Learn", fontSize = 11.sp) }
+                            )
                         }
                     }
                 ) { innerPadding ->
@@ -201,9 +217,11 @@ class MainActivity : ComponentActivity() {
                             AppMode.TEACHER -> TeacherScreen(viewModel = viewModel)
                             AppMode.EXAM -> ExamScreen(viewModel = viewModel)
                             AppMode.EXPORTS -> ExportsScreen(viewModel = viewModel)
+                            AppMode.LEARN -> LearnScreen(viewModel = viewModel)
                         }
                     }
                 }
+
 
                 // Global Modals
                 if (showAccount) {
@@ -281,6 +299,21 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (viewModel.currentMode.value == AppMode.LEARN) {
+            when (keyCode) {
+                KeyEvent.KEYCODE_SPACE -> { viewModel.addLearnerSpace(); return true }
+                KeyEvent.KEYCODE_DEL -> { viewModel.handleLearnerBackspace(); return true }
+                KeyEvent.KEYCODE_ESCAPE -> { viewModel.clearLearnerPlayground(); return true }
+                else -> {
+                    val unicode = event?.unicodeChar ?: 0
+                    if (unicode > 31 && unicode != 127) {
+                        viewModel.appendLearnerChar(unicode.toChar().toString())
+                        return true
+                    }
+                }
+            }
+        }
+
         // Support physical keyboard shortcuts: 1-6 for dots, Space, Enter commit, Esc clear, L language, S shift
         when (keyCode) {
             KeyEvent.KEYCODE_1 -> { viewModel.toggleDot(1); return true }
@@ -298,6 +331,7 @@ class MainActivity : ComponentActivity() {
         }
         return super.onKeyDown(keyCode, event)
     }
+
 }
 
 @Composable

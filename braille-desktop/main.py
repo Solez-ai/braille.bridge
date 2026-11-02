@@ -36,6 +36,9 @@ class BridgeApi:
     def list_ports(self):
         return self._relay.list_ports()
 
+    def scan_bluetooth(self):
+        return self._relay.scan_bluetooth()
+
     def open_port(self, port_name, baud=115200):
         return self._relay.open_port(port_name, int(baud))
 

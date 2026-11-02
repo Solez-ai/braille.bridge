@@ -1,7 +1,8 @@
 name: Build BrailleBridge APK
 
 # Builds the Android app in braillebridge/ and publishes the APK as a
-# workflow artifact. NEVER build this app locally — push and let CI do it.
+# workflow artifact and as a GitHub Release package.
+# NEVER build this app locally — push and let CI do it.
 on:
   push:
     branches: [ main ]
@@ -11,9 +12,12 @@ concurrency:
   group: build-apk-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   build:
-    name: Assemble debug APK
+    name: Assemble and Release APK
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -66,3 +70,34 @@ jobs:
           path: braillebridge/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: BrailleBridge Mobile v1.0.${{ github.run_number }}
+          body: |
+            ### BrailleBridge Mobile Android Release (v1.0.${{ github.run_number }})
+
+            Official Android release package for BrailleBridge — ESP32 Bluetooth Low Energy companion.
+
+            - **Commit**: `${{ github.sha }}`
+            - **Branch**: `${{ github.ref_name }}`
+            - **Build**: `${{ github.run_number }}`
+
+            #### Included features:
+            - Bluetooth Low Energy (NUS) foreground proxy service with auto-reconnect
+            - Student view with live 6-dot visualizer & Google Translate (all 128 languages)
+            - Audio feedback & Text-to-Speech (TTS) for English & Bangla
+            - Teacher multi-device dashboard with live per-student feeds & exam mode
+            - Learner mode with Freeplay Playground & Chord Sequence Trainer
+            - Auto-formatted document exports library (Room DB + .txt download)
+            - Samin Yeasar teacher profile & live session statistics
+
+            Download `app-debug.apk` below and install directly on your Android phone.
+          files: braillebridge/app/build/outputs/apk/debug/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

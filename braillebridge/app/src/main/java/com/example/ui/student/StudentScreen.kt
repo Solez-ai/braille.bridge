@@ -32,6 +32,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothConnected
 import androidx.compose.material.icons.filled.Clear
@@ -43,6 +45,7 @@ import androidx.compose.material.icons.filled.ScreenShare
 import androidx.compose.material.icons.filled.SpaceBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -98,10 +101,13 @@ fun StudentScreen(
     val translateError by viewModel.studentTranslateError.collectAsState()
     val isConnected by viewModel.isStudentDeviceConnected.collectAsState()
     val debugLog by viewModel.debugLog.collectAsState()
+    val isAudioEnabled by viewModel.isAudioFeedbackEnabled.collectAsState()
+    val capsMode by viewModel.capsMode.collectAsState()
 
     val currentText = remember(chars) { chars.joinToString("") { it.char } }
-    val resolvedChar = remember(chord, isBangla, shiftActive) {
-        BrailleDict.resolveChord(chord, isBangla, shiftActive)
+    val resolvedChar = remember(chord, isBangla, shiftActive, capsMode) {
+        if (chord == 0b100000 && !shiftActive && !isBangla) "⇪"
+        else BrailleDict.resolveChord(chord, isBangla, shiftActive, capsMode)
     }
 
     // Inner text-area scroll (auto-follows the caret) + diagnostics scroll
@@ -159,11 +165,31 @@ fun StudentScreen(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Language & Shift LEDs
+            // Audio feedback toggle + Language & Shift & Caps LEDs
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Audio Feedback toggle
+                Surface(
+                    color = if (isAudioEnabled) AccentGreen.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.clickable { viewModel.toggleAudioFeedback() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (isAudioEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                            contentDescription = "Toggle Speech Feedback",
+                            tint = if (isAudioEnabled) AccentGreen else TextMuted,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+
+                // Language LED
                 Surface(
                     color = if (isBangla) AccentGreen.copy(alpha = 0.2f) else AccentRed.copy(alpha = 0.2f),
                     shape = RoundedCornerShape(12.dp),
@@ -188,6 +214,36 @@ fun StudentScreen(
                     }
                 }
 
+                // Caps Indicator LED (visible or highlighted when active)
+                if (capsMode != BrailleDict.CapsMode.OFF) {
+                    Surface(
+                        color = Gold.copy(alpha = 0.25f),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.clickable {
+                            viewModel.capsMode.value = BrailleDict.CapsMode.OFF
+                        }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(Gold)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (capsMode == BrailleDict.CapsMode.LOCK) "CAPS" else "CAP",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Gold
+                            )
+                        }
+                    }
+                }
+
+                // Shift LED
                 Surface(
                     color = if (shiftActive) Gold.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(12.dp),
@@ -213,6 +269,7 @@ fun StudentScreen(
                 }
             }
         }
+
 
         Spacer(modifier = Modifier.height(12.dp))
 
