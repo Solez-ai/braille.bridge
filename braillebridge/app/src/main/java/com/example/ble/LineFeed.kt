@@ -4,6 +4,7 @@ class LineFeed(
     private val onLine: (String) -> Unit,
     private val onChars: (String) -> Unit
 ) {
+    companion object {
         // Device control lines — must NEVER appear as typed characters.
         // Matches the Python relay: CONTROL_PREFIXES = ('SYSTEM:', 'LANG:', 'Invalid', 'SHIFT')
         val CONTROL_PREFIXES = listOf("SYSTEM:", "LANG:", "Invalid", "SHIFT")
