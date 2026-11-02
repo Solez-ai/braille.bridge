@@ -40,7 +40,7 @@ object BrailleDict {
         BrailleEntry(0b001100, "s", "\u0990"),
         BrailleEntry(0b011100, "t", "\u0986"),
         BrailleEntry(0b100101, "u", "\u0989"),
-        BrailleEntry(0b100111, "v", "\u09CB"),
+        BrailleEntry(0b100111, "v", "\u09F1"),
         BrailleEntry(0b111010, "w", null),
         BrailleEntry(0b101101, "x", "\u09DF"),
         BrailleEntry(0b111101, "y", "\u09AF"),

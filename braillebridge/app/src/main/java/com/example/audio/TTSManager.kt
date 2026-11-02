@@ -1,10 +1,13 @@
 package com.example.audio
 
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.MediaPlayer
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.net.URLEncoder
 import java.util.Locale
 
 class TTSManager(context: Context) : TextToSpeech.OnInitListener {
@@ -26,6 +29,7 @@ class TTSManager(context: Context) : TextToSpeech.OnInitListener {
     }
 
     private var tts: TextToSpeech? = TextToSpeech(context.applicationContext, this)
+    private var mediaPlayer: MediaPlayer? = null
 
     private val _isTtsReady = MutableStateFlow(false)
     val isTtsReady = _isTtsReady.asStateFlow()
@@ -60,12 +64,66 @@ class TTSManager(context: Context) : TextToSpeech.OnInitListener {
         return SYMBOL_NAMES[ch] ?: ch
     }
 
-    fun speakChar(ch: String, isBangla: Boolean) {
-        if (!_isTtsReady.value || tts == null || ch.isBlank()) return
-        val targetLocale = if (isBangla) localeBn else localeEn
+    private fun speakBanglaOnline(text: String) {
+        val clean = text.trim()
+        if (clean.isEmpty()) return
         try {
-            tts?.language = targetLocale
-            val textToSpeak = if (isBangla) ch else speechTextFor(ch)
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+            mediaPlayer = null
+
+            val encoded = URLEncoder.encode(clean, "UTF-8")
+            val url = "https://translate.google.com/translate_tts?ie=UTF-8&tl=bn&client=tw-ob&q=$encoded"
+            val player = MediaPlayer().apply {
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
+                        .build()
+                )
+                setDataSource(url)
+                setOnPreparedListener { it.start() }
+                setOnCompletionListener {
+                    it.release()
+                    if (mediaPlayer === it) mediaPlayer = null
+                }
+                setOnErrorListener { mp, _, _ ->
+                    mp.release()
+                    if (mediaPlayer === mp) mediaPlayer = null
+                    true
+                }
+                prepareAsync()
+            }
+            mediaPlayer = player
+        } catch (e: Exception) {
+            Log.e(TAG, "Online Bangla TTS playback failed", e)
+        }
+    }
+
+    fun speakChar(ch: String, isBangla: Boolean) {
+        if (ch.isBlank()) return
+        val actualIsBangla = isBangla || ch.any { it in '\u0980'..'\u09FF' }
+        if (actualIsBangla) {
+            if (_isBanglaAvailable.value && tts != null) {
+                try {
+                    tts?.language = localeBn
+                    val res = tts?.speak(ch, TextToSpeech.QUEUE_FLUSH, null, "char_${System.currentTimeMillis()}")
+                    if (res == TextToSpeech.ERROR) {
+                        speakBanglaOnline(ch)
+                    }
+                } catch (e: Exception) {
+                    speakBanglaOnline(ch)
+                }
+            } else {
+                speakBanglaOnline(ch)
+            }
+            return
+        }
+
+        if (!_isTtsReady.value || tts == null) return
+        try {
+            tts?.language = localeEn
+            val textToSpeak = speechTextFor(ch)
             tts?.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "char_${System.currentTimeMillis()}")
         } catch (e: Exception) {
             Log.e(TAG, "speakChar failed", e)
@@ -74,10 +132,28 @@ class TTSManager(context: Context) : TextToSpeech.OnInitListener {
 
     fun speakWord(word: String, isBangla: Boolean) {
         val trimmed = word.trim()
-        if (!_isTtsReady.value || tts == null || trimmed.isEmpty()) return
-        val targetLocale = if (isBangla) localeBn else localeEn
+        if (trimmed.isEmpty()) return
+        val actualIsBangla = isBangla || trimmed.any { it in '\u0980'..'\u09FF' }
+        if (actualIsBangla) {
+            if (_isBanglaAvailable.value && tts != null) {
+                try {
+                    tts?.language = localeBn
+                    val res = tts?.speak(trimmed, TextToSpeech.QUEUE_FLUSH, null, "word_${System.currentTimeMillis()}")
+                    if (res == TextToSpeech.ERROR) {
+                        speakBanglaOnline(trimmed)
+                    }
+                } catch (e: Exception) {
+                    speakBanglaOnline(trimmed)
+                }
+            } else {
+                speakBanglaOnline(trimmed)
+            }
+            return
+        }
+
+        if (!_isTtsReady.value || tts == null) return
         try {
-            tts?.language = targetLocale
+            tts?.language = localeEn
             tts?.speak(trimmed, TextToSpeech.QUEUE_FLUSH, null, "word_${System.currentTimeMillis()}")
         } catch (e: Exception) {
             Log.e(TAG, "speakWord failed", e)
@@ -86,10 +162,28 @@ class TTSManager(context: Context) : TextToSpeech.OnInitListener {
 
     fun speakText(text: String, isBangla: Boolean) {
         val trimmed = text.trim()
-        if (!_isTtsReady.value || tts == null || trimmed.isEmpty()) return
-        val targetLocale = if (isBangla) localeBn else localeEn
+        if (trimmed.isEmpty()) return
+        val actualIsBangla = isBangla || trimmed.any { it in '\u0980'..'\u09FF' }
+        if (actualIsBangla) {
+            if (_isBanglaAvailable.value && tts != null) {
+                try {
+                    tts?.language = localeBn
+                    val res = tts?.speak(trimmed, TextToSpeech.QUEUE_FLUSH, null, "text_${System.currentTimeMillis()}")
+                    if (res == TextToSpeech.ERROR) {
+                        speakBanglaOnline(trimmed)
+                    }
+                } catch (e: Exception) {
+                    speakBanglaOnline(trimmed)
+                }
+            } else {
+                speakBanglaOnline(trimmed)
+            }
+            return
+        }
+
+        if (!_isTtsReady.value || tts == null) return
         try {
-            tts?.language = targetLocale
+            tts?.language = localeEn
             tts?.speak(trimmed, TextToSpeech.QUEUE_FLUSH, null, "text_${System.currentTimeMillis()}")
         } catch (e: Exception) {
             Log.e(TAG, "speakText failed", e)
@@ -98,6 +192,9 @@ class TTSManager(context: Context) : TextToSpeech.OnInitListener {
 
     fun shutdown() {
         try {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+            mediaPlayer = null
             tts?.stop()
             tts?.shutdown()
         } catch (e: Exception) {
@@ -107,3 +204,4 @@ class TTSManager(context: Context) : TextToSpeech.OnInitListener {
         _isTtsReady.value = false
     }
 }
+

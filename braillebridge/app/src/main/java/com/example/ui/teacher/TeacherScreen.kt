@@ -350,7 +350,7 @@ fun StudentFeedCard(
         MaterialTheme.colorScheme.primary
     }
 
-    val streamText = remember(student.chars.size) { student.chars.joinToString("") { it.char } }
+    val streamText = remember(student.chars.size, student.lastChord) { student.chars.joinToString("") { it.char } }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),

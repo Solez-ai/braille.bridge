@@ -304,6 +304,18 @@ fun ReviewScreen(
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Pre-compute numbered item indices (matching AutoFormatter.toText)
+                val numberedIndices = mutableMapOf<FormattedBlock, Int>()
+                var numCount = 0
+                for (b in currentBlocks) {
+                    if (b.type == "title" || b.type == "heading" || b.type == "para") {
+                        numCount = 0
+                    } else if (b.type == "numbered") {
+                        numCount++
+                        numberedIndices[b] = numCount
+                    }
+                }
+
                 items(currentBlocks) { block ->
                     if (isRawMode) {
                         // Monospace raw timestamped block
@@ -378,9 +390,10 @@ fun ReviewScreen(
                                 }
                             }
                             "numbered" -> {
+                                val itemNum = numberedIndices[block] ?: 1
                                 Row(modifier = Modifier.padding(start = 12.dp)) {
                                     Text(
-                                        text = "· ",
+                                        text = "$itemNum. ",
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary
                                     )

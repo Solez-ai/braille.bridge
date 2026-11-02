@@ -4,13 +4,14 @@ class LineFeed(
     private val onLine: (String) -> Unit,
     private val onChars: (String) -> Unit
 ) {
-    companion object {
         // Device control lines — must NEVER appear as typed characters.
-        // (Device sends them as "text + newline"; if the newline is missing
-        // or split off, they would otherwise fall through as chars.)
-        private val CONTROL_LINES = setOf(
-            "LANG:en", "LANG:bn", "SYSTEM:BKSP", "Invalid", "SHIFT"
-        )
+        // Matches the Python relay: CONTROL_PREFIXES = ('SYSTEM:', 'LANG:', 'Invalid', 'SHIFT')
+        val CONTROL_PREFIXES = listOf("SYSTEM:", "LANG:", "Invalid", "SHIFT")
+
+        fun isControlLine(text: String): Boolean {
+            val t = text.trim { it <= ' ' || it == '\r' }
+            return CONTROL_PREFIXES.any { t.startsWith(it) }
+        }
     }
 
     private var buffer = StringBuilder()
@@ -37,7 +38,7 @@ class LineFeed(
             // line — so backspace and language toggles still work and nothing
             // control-ish is ever shown as typed text.
             val trimmed = rest.trim { it <= ' ' || it == '\r' }
-            if (trimmed in CONTROL_LINES) {
+            if (isControlLine(trimmed)) {
                 onLine(trimmed)
                 return
             }

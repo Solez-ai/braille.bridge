@@ -171,13 +171,17 @@ class BleProxyService : Service() {
                 _scannedDevices.value = deviceMap.values.toList()
             }
 
-            // Auto-connect when a scan reveals a BrailleBridge and nothing is connected yet
-            if (isBrailleBridgeDevice(name) &&
-                connections.values.none { it.isConnected } &&
-                (connections[address]?.isConnected != true)) {
-                Log.d(TAG, "Auto-connecting discovered device: '$name' ($address)")
-                _events.tryEmit(BleEvent.Debug("📡 Scan found '$name' — auto-connecting"))
-                connectDevice(device)
+            // Auto-connect when a scan reveals an assigned student device, or when an unassigned BrailleBridge device appears
+            if (isBrailleBridgeDevice(name) && (connections[address]?.isConnected != true)) {
+                val assignments = settingsStore.getAssignments()
+                val isAssigned = assignments.containsValue(address)
+                val noActiveConnection = connections.values.none { it.isConnected }
+                if (isAssigned || noActiveConnection) {
+                    val assignedStudentName = assignments.entries.find { it.value == address }?.key
+                    Log.d(TAG, "Auto-connecting discovered device: '$name' ($address) for student: $assignedStudentName")
+                    _events.tryEmit(BleEvent.Debug("📡 Scan found '$name' — auto-connecting"))
+                    connectDevice(device, assignedStudentName)
+                }
             }
         }
 
@@ -319,6 +323,22 @@ class BleProxyService : Service() {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error checking bonded devices", e)
+        }
+
+        // 3. Assigned student devices from settings
+        try {
+            val assignments = settingsStore.getAssignments()
+            for ((studentName, devAddr) in assignments) {
+                if (!connections.containsKey(devAddr) || connections[devAddr]?.isConnected != true) {
+                    val dev = try { adapter.getRemoteDevice(devAddr) } catch (e: Exception) { null }
+                    if (dev != null) {
+                        Log.d(TAG, "Connecting assigned student device: '$studentName' ($devAddr)")
+                        connectDevice(dev, studentName)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking assigned student devices", e)
         }
     }
 
@@ -507,6 +527,18 @@ class BleProxyService : Service() {
 
         connections[address] = conn
         conn.connect()
+    }
+
+    @SuppressLint("MissingPermission")
+    fun connectDeviceByAddress(address: String, studentName: String? = null) {
+        val dev = try {
+            bluetoothAdapter?.getRemoteDevice(address)
+        } catch (e: Exception) {
+            null
+        }
+        if (dev != null) {
+            connectDevice(dev, studentName)
+        }
     }
 
     fun disconnectDevice(address: String) {

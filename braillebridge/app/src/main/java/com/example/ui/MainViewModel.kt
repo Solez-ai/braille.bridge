@@ -273,8 +273,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 it.lastChord = BrailleDict.charToChord[c.toString()] ?: 0
             }
         }
+        if (targetStudent != null) {
+            students.value = list.map { it.copy() }
+        }
 
-        // Animate 6-dot cell visualizer for incoming character
+        // Animate 6-dot cell visualizer for incoming character (auto-clears after 450ms)
         if (address == activeStudentDeviceAddress.value || activeStudentDeviceAddress.value == null) {
             val lastC = chars.lastOrNull()?.toString()
             if (lastC != null && lastC != " ") {
@@ -282,6 +285,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (chord > 0) {
                     studentChord.value = chord
                     studentPressedDots.value = LearnerEngine.chordDotsList(chord).toSet()
+                    viewModelScope.launch {
+                        delay(450)
+                        if (studentChord.value == chord) {
+                            studentChord.value = 0
+                            studentPressedDots.value = emptySet()
+                        }
+                    }
                 }
             }
         }
@@ -297,24 +307,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        // Student View Audio Feedback
-        if (isAudioFeedbackEnabled.value && (address == activeStudentDeviceAddress.value || activeStudentDeviceAddress.value == null)) {
-            for (c in chars) {
-                if (c == ' ') {
-                    val fullText = studentChars.value.joinToString("") { it.char }
-                    val lastWord = fullText.trimEnd().split(Regex("\\s+")).lastOrNull() ?: ""
-                    if (lastWord.isNotEmpty()) {
-                        ttsManager.speakWord(lastWord, isBangla.value)
-                    }
-                } else {
-                    ttsManager.speakChar(c.toString(), isBangla.value)
-                }
-            }
-        }
-
         // Push batch to student view if matching or active
         if (address == activeStudentDeviceAddress.value || activeStudentDeviceAddress.value == null) {
             appendStudentChars(timedList)
+            // Student View Audio Feedback (evaluated with newly appended characters)
+            if (isAudioFeedbackEnabled.value) {
+                for (c in chars) {
+                    if (c == ' ') {
+                        val fullText = studentChars.value.joinToString("") { it.char }
+                        val lastWord = fullText.trimEnd().split(Regex("\\s+")).lastOrNull() ?: ""
+                        if (lastWord.isNotEmpty()) {
+                            ttsManager.speakWord(lastWord, isBangla.value)
+                        }
+                    } else {
+                        ttsManager.speakChar(c.toString(), isBangla.value)
+                    }
+                }
+            }
         } else {
             updateTotalChars()
         }
@@ -440,6 +449,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun addSpace() {
+        if (capsMode.value == BrailleDict.CapsMode.ONCE) {
+            capsMode.value = BrailleDict.CapsMode.OFF
+        }
         appendStudentChar(TimedChar(" ", System.currentTimeMillis()))
         if (isAudioFeedbackEnabled.value) {
             val fullText = studentChars.value.joinToString("") { it.char }
@@ -526,12 +538,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             studentDao.insertStudent(entity)
             if (!deviceAddress.isNullOrEmpty()) {
                 settingsStore.setAssignment(name, deviceAddress)
-                // Connect if device scanned
+                // Connect to assigned device
                 val service = BleProxyService.instance
-                val device = scannedDevices.value.find { it.address == deviceAddress }?.device
-                if (service != null && device != null) {
-                    service.connectDevice(device, name)
-                }
+                service?.connectDeviceByAddress(deviceAddress, name)
             }
         }
     }
@@ -781,7 +790,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val jsonArray = JSONArray()
         val titleObj = JSONObject().apply {
             put("type", "title")
-            put("text", "Learner Practice Session")
+            put("text", "BrailleBridge — Learner Progress")
             put("time", System.currentTimeMillis())
             put("level", 0)
         }
@@ -789,7 +798,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         val langObj = JSONObject().apply {
             put("type", "heading")
-            put("text", "Language: " + if (learnerLangIsBangla.value) "Bangla" else "English")
+            put("text", "Language: " + (if (learnerLangIsBangla.value) "Bangla" else "English") + " · Words practiced: " + words.size)
             put("time", System.currentTimeMillis())
             put("level", 2)
         }
@@ -797,12 +806,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         for (w in words) {
             val b = JSONObject().apply {
-                put("type", "bullet")
+                put("type", "numbered")
                 put("text", w)
                 put("time", System.currentTimeMillis())
                 put("level", 0)
             }
             jsonArray.put(b)
+        }
+
+        if (words.isNotEmpty()) {
+            val freqHead = JSONObject().apply {
+                put("type", "heading")
+                put("text", "Word Frequency")
+                put("time", System.currentTimeMillis())
+                put("level", 3)
+            }
+            jsonArray.put(freqHead)
+
+            val counts = words.groupingBy { it }.eachCount()
+            val sorted = counts.entries.sortedByDescending { it.value }
+            for ((w, c) in sorted) {
+                val fb = JSONObject().apply {
+                    put("type", "bullet")
+                    put("text", "${c}× $w")
+                    put("time", System.currentTimeMillis())
+                    put("level", 0)
+                }
+                jsonArray.put(fb)
+            }
         }
 
         val export = ExportEntity(
@@ -820,6 +851,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             exportDao.insertExport(export)
             Toast.makeText(context, "Learner progress saved to Exports", Toast.LENGTH_SHORT).show()
+
+            // Also provide instant sharing / file export
+            try {
+                val blocks = parseBlocks(export.blocksJson)
+                val textContent = AutoFormatter.toText(blocks)
+                val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(android.content.Intent.EXTRA_SUBJECT, export.title)
+                    putExtra(android.content.Intent.EXTRA_TEXT, textContent)
+                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(android.content.Intent.createChooser(shareIntent, "Share Learner Progress Log").apply {
+                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                })
+            } catch (e: Exception) {
+                // Ignore if chooser cannot open
+            }
         }
     }
 
