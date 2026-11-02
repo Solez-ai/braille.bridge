@@ -166,23 +166,24 @@ object BrailleDict {
     ): String? {
         if (chord == 0) return null
         if (shiftActive) {
-            // Priority: numbers -> math/punct -> uppercase EN -> kar BN -> fallback normal BN char -> else ignore
-            val num = lookupNumber(chord)
-            if (num != null) return num
-
-            val sym = lookupShiftSymbol(chord)
-            if (sym != null) return sym
-
-            if (!isBangla) {
+            if (isBangla) {
+                val kar = lookupBanglaShift(chord)
+                if (kar != null) return kar
+                val num = lookupNumber(chord)
+                if (num != null) return num
+                val sym = lookupShiftSymbol(chord)
+                if (sym != null) return sym
+                val bn = lookupChord(chord, true)
+                if (bn != null) return bn
+            } else {
+                val num = lookupNumber(chord)
+                if (num != null) return num
+                val sym = lookupShiftSymbol(chord)
+                if (sym != null) return sym
                 val en = lookupChord(chord, false)
                 if (en != null && en.length == 1 && en[0] in 'a'..'z') {
                     return en.uppercase()
                 }
-            } else {
-                val kar = lookupBanglaShift(chord)
-                if (kar != null) return kar
-                val bn = lookupChord(chord, true)
-                if (bn != null) return bn
             }
             return null
         } else {
