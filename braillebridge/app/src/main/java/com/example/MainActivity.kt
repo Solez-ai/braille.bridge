@@ -71,6 +71,7 @@ import com.example.ui.teacher.TeacherScreen
 import com.example.ui.theme.AccentGreen
 import com.example.ui.theme.BrailleBridgeTheme
 import com.example.ui.theme.Gold
+import com.example.ui.theme.GoldLight
 
 class MainActivity : ComponentActivity() {
 
