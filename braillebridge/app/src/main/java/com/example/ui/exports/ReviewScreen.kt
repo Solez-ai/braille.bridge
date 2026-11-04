@@ -166,7 +166,7 @@ fun ReviewScreen(
                         // Raw toggle button
                         OutlinedButton(
                             onClick = { isRawMode = !isRawMode },
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(10.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Code,
@@ -191,7 +191,7 @@ fun ReviewScreen(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary
                             ),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(10.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Download,
@@ -232,7 +232,7 @@ fun ReviewScreen(
                                     performTranslation(selectedLanguage)
                                 }
                             },
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(10.dp),
                             enabled = !isTranslating
                         ) {
                             if (isTranslating) {

@@ -409,7 +409,7 @@ fun StudentScreen(
 
                                 OutlinedButton(
                                     onClick = { viewModel.translateStudentStream() },
-                                    shape = RoundedCornerShape(8.dp),
+                                    shape = RoundedCornerShape(10.dp),
                                     enabled = !isTranslating,
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                                 ) {
@@ -655,6 +655,7 @@ fun StudentScreen(
             OutlinedButton(
                 onClick = { viewModel.clearStudentStream() },
                 shape = RoundedCornerShape(10.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
                 modifier = Modifier
                     .weight(1f)
                     .height(48.dp)
@@ -675,6 +676,7 @@ fun StudentScreen(
                     containerColor = Color(0xFFB58D3D),
                     contentColor = Color.White
                 ),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
                 modifier = Modifier
                     .weight(1.4f)
                     .height(48.dp)

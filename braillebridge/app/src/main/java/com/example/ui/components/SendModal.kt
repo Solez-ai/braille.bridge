@@ -85,6 +85,7 @@ fun SendModal(
                     Spacer(modifier = Modifier.height(18.dp))
                     OutlinedButton(
                         onClick = onDismiss,
+                        shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Close")
@@ -108,6 +109,7 @@ fun SendModal(
                     ) {
                         OutlinedButton(
                             onClick = onDismiss,
+                            shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("Cancel")
@@ -117,6 +119,7 @@ fun SendModal(
                                 onConfirmMirror()
                                 onDismiss()
                             },
+                            shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary
                             ),

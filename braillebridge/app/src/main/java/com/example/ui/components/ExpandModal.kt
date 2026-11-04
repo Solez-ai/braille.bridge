@@ -143,6 +143,7 @@ fun ExpandModal(
                 ) {
                     Button(
                         onClick = onPreviewHandOff,
+                        shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
                         ),
@@ -158,6 +159,7 @@ fun ExpandModal(
                     }
                     OutlinedButton(
                         onClick = onClear,
+                        shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(
@@ -235,7 +237,10 @@ fun ExpandModal(
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    OutlinedButton(onClick = onDismiss) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
                         Text("Close", fontSize = 11.sp)
                     }
                 }

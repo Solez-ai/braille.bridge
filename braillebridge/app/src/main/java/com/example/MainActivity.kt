@@ -12,9 +12,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothConnected
@@ -120,7 +122,8 @@ class MainActivity : ComponentActivity() {
                                     maxLines = 1,
                                     softWrap = false,
                                     overflow = TextOverflow.Ellipsis,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(end = 8.dp)
                                 )
                             },
                             actions = {
@@ -128,6 +131,8 @@ class MainActivity : ComponentActivity() {
                                 TeacherAccountChip(
                                     onClick = { viewModel.showAccountDialog.value = true }
                                 )
+
+                                Spacer(modifier = Modifier.width(4.dp))
 
                                 // Dark / Light theme toggle
                                 IconButton(onClick = { viewModel.toggleTheme() }) {
@@ -153,7 +158,7 @@ class MainActivity : ComponentActivity() {
                         )
 
                         NavigationBar(
-                            containerColor = MaterialTheme.colorScheme.surface
+                            containerColor = if (isDarkTheme) MaterialTheme.colorScheme.surface else Color(0xFFF7F5F0)
                         ) {
                             NavigationBarItem(
                                 selected = currentMode == AppMode.STUDENT,

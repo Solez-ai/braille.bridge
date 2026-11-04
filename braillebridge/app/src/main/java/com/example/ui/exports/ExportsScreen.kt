@@ -118,7 +118,7 @@ fun ExportsScreen(
                 if (exports.isNotEmpty()) {
                     OutlinedButton(
                         onClick = { showClearAllConfirm = true },
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(10.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.ClearAll,
@@ -262,7 +262,7 @@ fun ExportsScreen(
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = MaterialTheme.colorScheme.primary
                                     ),
-                                    shape = RoundedCornerShape(8.dp),
+                                    shape = RoundedCornerShape(10.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Icon(
@@ -284,7 +284,7 @@ fun ExportsScreen(
                                         }
                                         context.startActivity(Intent.createChooser(shareIntent, "Share Document"))
                                     },
-                                    shape = RoundedCornerShape(8.dp),
+                                    shape = RoundedCornerShape(10.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Icon(
@@ -315,13 +315,17 @@ fun ExportsScreen(
                         viewModel.deleteExport(exp)
                         exportToDelete = null
                     },
+                    shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = AccentRed)
                 ) {
                     Text("Delete")
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { exportToDelete = null }) {
+                OutlinedButton(
+                    onClick = { exportToDelete = null },
+                    shape = RoundedCornerShape(10.dp)
+                ) {
                     Text("Cancel")
                 }
             }
@@ -340,13 +344,17 @@ fun ExportsScreen(
                         viewModel.clearAllExports()
                         showClearAllConfirm = false
                     },
+                    shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = AccentRed)
                 ) {
                     Text("Clear All")
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showClearAllConfirm = false }) {
+                OutlinedButton(
+                    onClick = { showClearAllConfirm = false },
+                    shape = RoundedCornerShape(10.dp)
+                ) {
                     Text("Cancel")
                 }
             }

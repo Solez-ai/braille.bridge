@@ -225,6 +225,7 @@ fun AddStudentDialog(
                 ) {
                     OutlinedButton(
                         onClick = onDismiss,
+                        shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.weight(1f)
                     ) {
                         Text("Cancel")
@@ -237,6 +238,7 @@ fun AddStudentDialog(
                             }
                         },
                         enabled = name.isNotBlank(),
+                        shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
                         ),

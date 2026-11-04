@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -103,13 +104,17 @@ fun TeacherAccountChip(
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 11.sp,
                     lineHeight = 13.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = "Teacher",
                     color = MaterialTheme.colorScheme.primary,
                     fontSize = 9.sp,
-                    lineHeight = 11.sp
+                    lineHeight = 11.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
             Spacer(modifier = Modifier.width(3.dp))
@@ -288,12 +293,14 @@ fun AccountDialog(
                                 ).show()
                                 onDismiss()
                             },
+                            shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("Sign out")
                         }
                         Button(
                             onClick = onDismiss,
+                            shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary

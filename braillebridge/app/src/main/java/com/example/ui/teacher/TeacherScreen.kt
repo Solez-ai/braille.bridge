@@ -57,6 +57,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.StudentModel
@@ -106,12 +107,16 @@ fun TeacherScreen(
                             fontSize = 11.sp,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "${students.size} Students · $totalChars Total Chars",
                             fontSize = 12.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -195,7 +200,7 @@ fun TeacherScreen(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Add", fontSize = 12.sp)
+                        Text("Add", fontSize = 12.sp, maxLines = 1)
                     }
                 }
             }
@@ -300,13 +305,17 @@ fun TeacherScreen(
                         viewModel.removeStudent(student)
                         studentToDelete = null
                     },
+                    shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = AccentRed)
                 ) {
                     Text("Remove")
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { studentToDelete = null }) {
+                OutlinedButton(
+                    onClick = { studentToDelete = null },
+                    shape = RoundedCornerShape(10.dp)
+                ) {
                     Text("Cancel")
                 }
             }
@@ -325,13 +334,17 @@ fun TeacherScreen(
                         viewModel.clearAllFeeds()
                         showClearAllConfirm = false
                     },
+                    shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = AccentRed)
                 ) {
                     Text("Clear All")
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showClearAllConfirm = false }) {
+                OutlinedButton(
+                    onClick = { showClearAllConfirm = false },
+                    shape = RoundedCornerShape(10.dp)
+                ) {
                     Text("Cancel")
                 }
             }
@@ -574,30 +587,34 @@ fun StudentFeedCard(
                     OutlinedButton(
                         onClick = onPreview,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(6.dp)
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+                        shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text("Preview", fontSize = 10.sp)
+                        Text("Preview", fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     OutlinedButton(
                         onClick = onTest,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(6.dp)
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+                        shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text("Test", fontSize = 10.sp)
+                        Text("Test", fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     OutlinedButton(
                         onClick = onExport,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(6.dp)
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+                        shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text("Export", fontSize = 10.sp)
+                        Text("Export", fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     OutlinedButton(
                         onClick = onClear,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(6.dp)
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+                        shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text("Clear", fontSize = 10.sp)
+                        Text("Clear", fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }

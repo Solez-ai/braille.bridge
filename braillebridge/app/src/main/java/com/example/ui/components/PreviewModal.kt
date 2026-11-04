@@ -102,6 +102,7 @@ fun PreviewModal(
                 ) {
                     Button(
                         onClick = onSaveToExports,
+                        shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
@@ -117,6 +118,7 @@ fun PreviewModal(
                     }
                     OutlinedButton(
                         onClick = onExport,
+                        shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(
@@ -194,7 +196,7 @@ fun PreviewModal(
                     )
                     OutlinedButton(
                         onClick = onDismiss,
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(10.dp)
                     ) {
                         Text("Close", fontSize = 11.sp)
                     }

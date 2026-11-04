@@ -137,7 +137,7 @@ fun BleScanDialog(
                             }
                             OutlinedButton(
                                 onClick = onDisconnect,
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(10.dp)
                             ) {
                                 Text("Disconnect", fontSize = 11.sp)
                             }
@@ -247,7 +247,7 @@ fun BleScanDialog(
                                     } else {
                                         Button(
                                             onClick = { onConnect(dev) },
-                                            shape = RoundedCornerShape(8.dp),
+                                            shape = RoundedCornerShape(10.dp),
                                             colors = ButtonDefaults.buttonColors(
                                                 containerColor = MaterialTheme.colorScheme.primary
                                             )
