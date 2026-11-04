@@ -66,19 +66,19 @@ fun TeacherAccountChip(
 ) {
     Surface(
         modifier = modifier
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(20.dp))
             .clickable(onClick = onClick),
         color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(24.dp)
+        shape = RoundedCornerShape(20.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Gold avatar SY
             Box(
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(26.dp)
                     .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
@@ -90,30 +90,34 @@ fun TeacherAccountChip(
                 Text(
                     text = "SY",
                     color = Color.White,
-                    fontSize = 11.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
             Spacer(modifier = Modifier.width(6.dp))
-            Column {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(0.dp)
+            ) {
                 Text(
                     text = "Samin Yeasar",
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
+                    lineHeight = 13.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = "Teacher",
                     color = MaterialTheme.colorScheme.primary,
-                    fontSize = 10.sp
+                    fontSize = 9.sp,
+                    lineHeight = 11.sp
                 )
             }
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(3.dp))
             Icon(
                 imageVector = Icons.Default.KeyboardArrowDown,
                 contentDescription = "Account Menu",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(14.dp)
             )
         }
     }

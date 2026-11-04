@@ -32,6 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -43,9 +44,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -112,7 +115,10 @@ class MainActivity : ComponentActivity() {
                                     text = "BrailleBridge",
                                     fontFamily = FontFamily.Serif,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 19.sp,
+                                    fontSize = 18.sp,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                             },
@@ -121,15 +127,6 @@ class MainActivity : ComponentActivity() {
                                 TeacherAccountChip(
                                     onClick = { viewModel.showAccountDialog.value = true }
                                 )
-
-                                // BLE quick connect button
-                                IconButton(onClick = { viewModel.showBleScanDialog.value = true }) {
-                                    Icon(
-                                        imageVector = if (connectedCount > 0) Icons.Default.BluetoothConnected else Icons.Default.Bluetooth,
-                                        contentDescription = "Bluetooth Status",
-                                        tint = if (connectedCount > 0) AccentGreen else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
 
                                 // Dark / Light theme toggle
                                 IconButton(onClick = { viewModel.toggleTheme() }) {
@@ -146,12 +143,21 @@ class MainActivity : ComponentActivity() {
                         )
                     },
                     bottomBar = {
+                        val navItemColors = NavigationBarItemDefaults.colors(
+                            indicatorColor = if (isDarkTheme) Color(0xFF3D321E) else Color(0xFFF3E8D2),
+                            selectedIconColor = if (isDarkTheme) GoldLight else Color(0xFF7A5918),
+                            selectedTextColor = if (isDarkTheme) GoldLight else Color(0xFF7A5918),
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
                         NavigationBar(
                             containerColor = MaterialTheme.colorScheme.surface
                         ) {
                             NavigationBarItem(
                                 selected = currentMode == AppMode.STUDENT,
                                 onClick = { viewModel.currentMode.value = AppMode.STUDENT },
+                                colors = navItemColors,
                                 icon = {
                                     Icon(
                                         imageVector = Icons.Default.School,
@@ -164,6 +170,7 @@ class MainActivity : ComponentActivity() {
                             NavigationBarItem(
                                 selected = currentMode == AppMode.TEACHER,
                                 onClick = { viewModel.currentMode.value = AppMode.TEACHER },
+                                colors = navItemColors,
                                 icon = {
                                     Icon(
                                         imageVector = Icons.Default.Group,
@@ -176,6 +183,7 @@ class MainActivity : ComponentActivity() {
                             NavigationBarItem(
                                 selected = currentMode == AppMode.EXAM,
                                 onClick = { viewModel.currentMode.value = AppMode.EXAM },
+                                colors = navItemColors,
                                 icon = {
                                     Icon(
                                         imageVector = Icons.Default.Lock,
@@ -188,6 +196,7 @@ class MainActivity : ComponentActivity() {
                             NavigationBarItem(
                                 selected = currentMode == AppMode.EXPORTS,
                                 onClick = { viewModel.currentMode.value = AppMode.EXPORTS },
+                                colors = navItemColors,
                                 icon = {
                                     Icon(
                                         imageVector = Icons.Default.Description,
@@ -200,6 +209,7 @@ class MainActivity : ComponentActivity() {
                             NavigationBarItem(
                                 selected = currentMode == AppMode.LEARN,
                                 onClick = { viewModel.currentMode.value = AppMode.LEARN },
+                                colors = navItemColors,
                                 icon = {
                                     Icon(
                                         imageVector = Icons.Default.MenuBook,

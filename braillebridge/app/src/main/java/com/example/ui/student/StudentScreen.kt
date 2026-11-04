@@ -1,18 +1,21 @@
 package com.example.ui.student
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -47,6 +50,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -122,9 +126,13 @@ fun StudentScreen(
         if (showDiagnostics) debugScrollState.animateScrollTo(debugScrollState.maxValue)
     }
 
+    val screenScrollState = rememberScrollState()
+    var isOutputExpanded by remember { mutableStateOf(true) }
+
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(screenScrollState)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -138,23 +146,24 @@ fun StudentScreen(
                 color = if (isConnected) AccentGreen.copy(alpha = 0.15f)
                 else MaterialTheme.colorScheme.surfaceVariant,
                 shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color(0xFFD6D1C7)),
                 modifier = Modifier
                     .weight(1f, fill = false)
                     .clickable { viewModel.showBleScanDialog.value = true }
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = if (isConnected) Icons.Default.BluetoothConnected else Icons.Default.Bluetooth,
                         contentDescription = null,
                         tint = if (isConnected) AccentGreen else MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = if (isConnected) "BrailleBridge Connected" else "Connect BLE Device",
+                        text = if (isConnected) "Connected" else "Connect BLE",
                         style = MaterialTheme.typography.labelMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -174,10 +183,11 @@ fun StudentScreen(
                 Surface(
                     color = if (isAudioEnabled) AccentGreen.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color(0xFFD6D1C7)),
                     modifier = Modifier.clickable { viewModel.toggleAudioFeedback() }
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -193,10 +203,11 @@ fun StudentScreen(
                 Surface(
                     color = if (isBangla) AccentGreen.copy(alpha = 0.2f) else AccentRed.copy(alpha = 0.2f),
                     shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color(0xFFD6D1C7)),
                     modifier = Modifier.clickable { viewModel.toggleLanguage() }
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
@@ -205,7 +216,7 @@ fun StudentScreen(
                                 .clip(CircleShape)
                                 .background(if (isBangla) AccentGreen else AccentRed)
                         )
-                        Spacer(modifier = Modifier.width(5.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = if (isBangla) "বাংলা" else "EN",
                             style = MaterialTheme.typography.labelMedium,
@@ -219,12 +230,13 @@ fun StudentScreen(
                     Surface(
                         color = Gold.copy(alpha = 0.25f),
                         shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Gold),
                         modifier = Modifier.clickable {
                             viewModel.capsMode.value = BrailleDict.CapsMode.OFF
                         }
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
@@ -247,10 +259,11 @@ fun StudentScreen(
                 Surface(
                     color = if (shiftActive) Gold.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color(0xFFD6D1C7)),
                     modifier = Modifier.clickable { viewModel.toggleShift() }
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
@@ -259,7 +272,7 @@ fun StudentScreen(
                                 .clip(CircleShape)
                                 .background(if (shiftActive) Gold else TextMuted)
                         )
-                        Spacer(modifier = Modifier.width(5.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "Shift",
                             style = MaterialTheme.typography.labelMedium,
@@ -270,18 +283,16 @@ fun StudentScreen(
             }
         }
 
-
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ── Live Output card — adaptive: fills all leftover vertical space ────
+        // ── Live Output card — expandable without fixed height clipping ──────
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
-                .defaultMinSize(minHeight = 200.dp),
+                .animateContentSize(),
             shape = RoundedCornerShape(14.dp),
             color = MaterialTheme.colorScheme.surface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            border = BorderStroke(1.dp, Color(0xFFD0CCC4))
         ) {
             Column(modifier = Modifier.padding(14.dp)) {
                 Row(
@@ -302,38 +313,46 @@ fun StudentScreen(
                             overflow = TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        // Pipeline diagnostics toggle — shows exactly where the
-                        // BLE chain stops if characters never appear.
                         IconButton(
-                            onClick = { showDiagnostics = !showDiagnostics },
+                            onClick = { isOutputExpanded = !isOutputExpanded },
                             modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
-                                imageVector = if (showDiagnostics) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                contentDescription = if (showDiagnostics) "Hide diagnostics" else "Show connection diagnostics",
-                                tint = if (debugLog.any { it.contains("❌") }) MaterialTheme.colorScheme.error
-                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                imageVector = if (isOutputExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = if (isOutputExpanded) "Collapse output" else "Expand output",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
                     }
                 }
 
-                AnimatedVisibility(visible = showDiagnostics) {
+                if (isOutputExpanded) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+
+                    // The text area itself — wraps, scrolls, auto-follows caret
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(150.dp)
-                            .padding(top = 6.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                            .heightIn(min = 90.dp, max = 220.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                     ) {
-                        if (debugLog.isEmpty()) {
-                            Box(modifier = Modifier.fillMaxSize()) {
+                        if (currentText.isEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(90.dp)
+                                    .padding(12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Text(
-                                    text = "No events yet — connect BrailleBridge to see the pipeline.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.align(Alignment.Center),
+                                    text = "No output yet. Start typing...",
+                                    style = MaterialTheme.typography.bodyMedium,
                                     textAlign = TextAlign.Center,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -341,156 +360,111 @@ fun StudentScreen(
                         } else {
                             Column(
                                 modifier = Modifier
-                                    .fillMaxSize()
-                                    .verticalScroll(debugScrollState)
-                                    .padding(8.dp)
+                                    .fillMaxWidth()
+                                    .verticalScroll(textScrollState)
+                                    .padding(12.dp)
                             ) {
-                                debugLog.forEach { entry ->
-                                    Text(
-                                        text = entry,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = when {
-                                            entry.contains("❌") -> MaterialTheme.colorScheme.error
-                                            entry.contains("✅") -> AccentGreen
-                                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                val caretColor = MaterialTheme.colorScheme.primary
+                                val caretAlpha by rememberInfiniteTransition(label = "caret").animateFloat(
+                                    initialValue = 0.15f,
+                                    targetValue = 1f,
+                                    animationSpec = infiniteRepeatable(
+                                        animation = tween(500, easing = FastOutSlowInEasing),
+                                        repeatMode = RepeatMode.Reverse
+                                    ),
+                                    label = "caret_alpha"
+                                )
+                                Text(
+                                    text = buildAnnotatedString {
+                                        append(currentText)
+                                        withStyle(SpanStyle(background = caretColor.copy(alpha = caretAlpha))) {
+                                            append("▏")
                                         }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // The text area itself — wraps, scrolls, auto-follows caret
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                ) {
-                    if (currentText.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            Text(
-                                text = "Waiting for input — type chords on the BrailleBridge or tap the dots below…",
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier
-                                    .align(Alignment.Center)
-                                    .padding(16.dp),
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    } else {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .verticalScroll(textScrollState)
-                                .padding(14.dp)
-                        ) {
-                            val caretColor = MaterialTheme.colorScheme.primary
-                            val caretAlpha by rememberInfiniteTransition(label = "caret").animateFloat(
-                                initialValue = 0.15f,
-                                targetValue = 1f,
-                                animationSpec = infiniteRepeatable(
-                                    animation = tween(500, easing = FastOutSlowInEasing),
-                                    repeatMode = RepeatMode.Reverse
-                                ),
-                                label = "caret_alpha"
-                            )
-                            Text(
-                                text = buildAnnotatedString {
-                                    append(currentText)
-                                    withStyle(SpanStyle(background = caretColor.copy(alpha = caretAlpha))) {
-                                        append("▏")
-                                    }
-                                },
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontFamily = FontFamily.Serif
-                                ),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                }
-
-                // Google Translate bar (only when there is content)
-                AnimatedVisibility(visible = currentText.isNotBlank()) {
-                    Column(modifier = Modifier.padding(top = 10.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            LanguageDropdown(
-                                selectedCode = translateTarget,
-                                onLanguageSelected = { newCode ->
-                                    viewModel.setStudentTranslateTarget(newCode)
-                                },
-                                enabled = !isTranslating
-                            )
-
-                            OutlinedButton(
-                                onClick = { viewModel.translateStudentStream() },
-                                shape = RoundedCornerShape(8.dp),
-                                enabled = !isTranslating,
-                                modifier = Modifier.defaultMinSize(minHeight = 48.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.GTranslate,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(text = "Translate", style = MaterialTheme.typography.labelLarge)
-                            }
-                        }
-
-                        translateResult?.let { tr ->
-                            if (tr.feedback.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = tr.feedback,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(horizontal = 2.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-                                shape = RoundedCornerShape(8.dp),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                            ) {
-                                Text(
-                                    text = tr.text,
-                                    modifier = Modifier.padding(10.dp),
-                                    style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Serif),
+                                    },
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontFamily = FontFamily.Serif
+                                    ),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
+                    }
 
-                        translateError?.let { err ->
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Surface(
+                    // Google Translate bar (only when there is content)
+                    AnimatedVisibility(visible = currentText.isNotBlank()) {
+                        Column(modifier = Modifier.padding(top = 10.dp)) {
+                            Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
-                                shape = RoundedCornerShape(8.dp),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.4f))
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = err,
-                                    modifier = Modifier.padding(8.dp),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.error
+                                LanguageDropdown(
+                                    selectedCode = translateTarget,
+                                    onLanguageSelected = { newCode ->
+                                        viewModel.setStudentTranslateTarget(newCode)
+                                    },
+                                    enabled = !isTranslating
                                 )
+
+                                OutlinedButton(
+                                    onClick = { viewModel.translateStudentStream() },
+                                    shape = RoundedCornerShape(8.dp),
+                                    enabled = !isTranslating,
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.GTranslate,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(text = "Translate", style = MaterialTheme.typography.labelLarge)
+                                }
+                            }
+
+                            translateResult?.let { tr ->
+                                if (tr.feedback.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = tr.feedback,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(horizontal = 2.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                                ) {
+                                    Text(
+                                        text = tr.text,
+                                        modifier = Modifier.padding(10.dp),
+                                        style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Serif),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+
+                            translateError?.let { err ->
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.4f))
+                                ) {
+                                    Text(
+                                        text = err,
+                                        modifier = Modifier.padding(8.dp),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
                             }
                         }
                     }
@@ -504,7 +478,8 @@ fun StudentScreen(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(10.dp),
-            color = MaterialTheme.colorScheme.surface
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, Color(0xFFD0CCC4))
         ) {
             Column(modifier = Modifier.padding(10.dp)) {
                 Text(
@@ -554,7 +529,7 @@ fun StudentScreen(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            border = BorderStroke(1.dp, Color(0xFFD0CCC4))
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -566,22 +541,25 @@ fun StudentScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "0b${chord.toString(2).padStart(6, '0')}",
+                        text = if (pressedDots.isEmpty()) "Pattern: None" else "Pattern: Dots ${pressedDots.sorted().joinToString(",")}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Text(
-                        text = if (pressedDots.isEmpty()) "No dots" else "Dots ${pressedDots.sorted().joinToString(",")}",
-                        style = MaterialTheme.typography.labelSmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "→ ${resolvedChar ?: "—"}",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = if (resolvedChar != null) MaterialTheme.colorScheme.primary else TextMuted
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "→ ",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = if (resolvedChar != null) MaterialTheme.colorScheme.primary else TextMuted
+                        )
+                        Text(
+                            text = resolvedChar ?: "—",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (resolvedChar != null) MaterialTheme.colorScheme.primary else TextMuted
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -614,50 +592,53 @@ fun StudentScreen(
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
                         ),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier
                             .weight(1f)
-                            .heightIn(min = 48.dp)
+                            .height(44.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.KeyboardReturn,
                             contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Commit", style = MaterialTheme.typography.labelLarge, maxLines = 1)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Commit", maxLines = 1, fontSize = 13.sp, overflow = TextOverflow.Ellipsis)
                     }
 
                     OutlinedButton(
                         onClick = { viewModel.addSpace() },
                         shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
                         modifier = Modifier
                             .weight(1f)
-                            .heightIn(min = 48.dp)
+                            .height(44.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.SpaceBar,
                             contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Space", style = MaterialTheme.typography.labelLarge, maxLines = 1)
+                        Text("Space", maxLines = 1, fontSize = 13.sp, overflow = TextOverflow.Ellipsis)
                     }
 
                     OutlinedButton(
                         onClick = { viewModel.handleBackspace() },
                         shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
                         modifier = Modifier
                             .weight(1f)
-                            .heightIn(min = 48.dp)
+                            .height(44.dp)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Backspace,
                             contentDescription = "Backspace",
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Bksp", style = MaterialTheme.typography.labelLarge, maxLines = 1)
+                        Text("Backspace", maxLines = 1, fontSize = 13.sp, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }
@@ -675,7 +656,7 @@ fun StudentScreen(
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
                     .weight(1f)
-                    .heightIn(min = 48.dp)
+                    .height(48.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Clear,
@@ -690,23 +671,24 @@ fun StudentScreen(
                 onClick = { viewModel.sendModalOpen.value = true },
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
+                    containerColor = Color(0xFFB58D3D),
+                    contentColor = Color.White
                 ),
                 modifier = Modifier
                     .weight(1.4f)
-                    .heightIn(min = 48.dp)
+                    .height(48.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.ScreenShare,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = Color.White,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     "Send to Teacher",
                     style = MaterialTheme.typography.labelLarge,
+                    color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

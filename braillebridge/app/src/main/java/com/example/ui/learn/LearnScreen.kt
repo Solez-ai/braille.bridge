@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,8 +15,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -101,6 +105,7 @@ fun LearnScreen(
     val banglaAvailable by viewModel.ttsManager.isBanglaAvailable.collectAsState()
 
     val scrollState = rememberScrollState()
+    var selectedLearnTab by remember { mutableStateOf(0) }
 
     Column(
         modifier = modifier
@@ -109,23 +114,69 @@ fun LearnScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // ─────────────────────────────────────────────────────────────────────
-        // 1. FREEPLAY PLAYGROUND CARD
-        // ─────────────────────────────────────────────────────────────────────
+        // Dedicated sub-tab selector to avoid vertically stacking and peeking cards
         Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                // Header with Title & Language Toggle
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
+            Row(
+                modifier = Modifier.padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Surface(
+                    color = if (selectedLearnTab == 0) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { selectedLearnTab = 0 }
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Freeplay Playground",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                        color = if (selectedLearnTab == 0) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+                Surface(
+                    color = if (selectedLearnTab == 1) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { selectedLearnTab = 1 }
+                ) {
+                    Text(
+                        text = "Chord Trainer",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                        color = if (selectedLearnTab == 1) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+            }
+        }
+
+        if (selectedLearnTab == 0) {
+            // ─────────────────────────────────────────────────────────────────────
+            // 1. FREEPLAY PLAYGROUND CARD
+            // ─────────────────────────────────────────────────────────────────────
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    // Header with Overline & Language Toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
                             text = "BRAILLEBRIDGE · LEARNER",
                             fontSize = 11.sp,
@@ -133,127 +184,143 @@ fun LearnScreen(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Freeplay Playground",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Serif,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Type on the BrailleBridge or your keyboard — every character is spoken aloud. Finish a word with SPACE and the whole word is spoken.",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
 
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    // Language Toggle Pills
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(20.dp)
-                    ) {
-                        Row(modifier = Modifier.padding(3.dp)) {
-                            Surface(
-                                color = if (!isBangla) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                shape = RoundedCornerShape(16.dp),
-                                modifier = Modifier.clickable { viewModel.setLearnerLang(false) }
-                            ) {
-                                Text(
-                                    text = "English",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = if (!isBangla) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                            Surface(
-                                color = if (isBangla) AccentGreen else Color.Transparent,
-                                shape = RoundedCornerShape(16.dp),
-                                modifier = Modifier.clickable { viewModel.setLearnerLang(true) }
-                            ) {
-                                Text(
-                                    text = "বাংলা",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = if (isBangla) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
+                        // Language Toggle Pills
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(20.dp),
+                            border = BorderStroke(1.dp, Color(0xFFD0CCC4))
+                        ) {
+                            Row(modifier = Modifier.padding(3.dp)) {
+                                Surface(
+                                    color = if (!isBangla) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                    shape = RoundedCornerShape(16.dp),
+                                    modifier = Modifier.clickable { viewModel.setLearnerLang(false) }
+                                ) {
+                                    Text(
+                                        text = "English",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = if (!isBangla) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                                Surface(
+                                    color = if (isBangla) AccentGreen else Color.Transparent,
+                                    shape = RoundedCornerShape(16.dp),
+                                    modifier = Modifier.clickable { viewModel.setLearnerLang(true) }
+                                ) {
+                                    Text(
+                                        text = "বাংলা",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = if (isBangla) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                // Connect & Voice Status Chips
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        color = if (isConnected) AccentGreen.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.clickable { viewModel.showBleScanDialog.value = true }
+                    Text(
+                        text = "Freeplay Playground",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Serif,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Type on the BrailleBridge or your keyboard — every character is spoken aloud. Finish a word with SPACE and the whole word is spoken.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Connect & Voice Status Chips
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        Surface(
+                            color = if (isConnected) AccentGreen.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Color(0xFFD6D1C7)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clickable { viewModel.showBleScanDialog.value = true }
                         ) {
-                            Icon(
-                                imageVector = if (isConnected) Icons.Default.BluetoothConnected else Icons.Default.Bluetooth,
-                                contentDescription = null,
-                                tint = if (isConnected) AccentGreen else MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (isConnected) "Connected" else "Connect BrailleBridge",
-                                fontSize = 11.sp,
-                                color = if (isConnected) AccentGreen else MaterialTheme.colorScheme.onSurface
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = if (isConnected) Icons.Default.BluetoothConnected else Icons.Default.Bluetooth,
+                                    contentDescription = null,
+                                    tint = if (isConnected) AccentGreen else MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (isConnected) "Connected" else "Connect BrailleBridge",
+                                    fontSize = 11.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    color = if (isConnected) AccentGreen else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        // Voice status chip
+                        val voiceText = when {
+                            !ttsReady -> "Speech initializing…"
+                            isBangla && !banglaAvailable -> "Bangla TTS unavailable"
+                            isBangla -> "Bangla Voice Ready"
+                            else -> "English Voice Ready"
+                        }
+                        val voiceColor = when {
+                            !ttsReady -> TextMuted
+                            isBangla && !banglaAvailable -> AccentRed
+                            else -> AccentGreen
+                        }
+                        Surface(
+                            color = voiceColor.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, voiceColor.copy(alpha = 0.35f)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = if (isAudioEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                                    contentDescription = null,
+                                    tint = voiceColor,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = voiceText,
+                                    fontSize = 11.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    color = voiceColor
+                                )
+                            }
                         }
                     }
-
-                    // Voice status chip
-                    val voiceText = when {
-                        !ttsReady -> "Speech initializing…"
-                        isBangla && !banglaAvailable -> "Bangla TTS not found on device"
-                        isBangla -> "Bangla Voice Ready"
-                        else -> "English Voice Ready"
-                    }
-                    val voiceColor = when {
-                        !ttsReady -> TextMuted
-                        isBangla && !banglaAvailable -> AccentRed
-                        else -> AccentGreen
-                    }
-                    Surface(
-                        color = voiceColor.copy(alpha = 0.12f),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = if (isAudioEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
-                                contentDescription = null,
-                                tint = voiceColor,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = voiceText,
-                                fontSize = 11.sp,
-                                color = voiceColor
-                            )
-                        }
-                    }
-                }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -356,49 +423,64 @@ fun LearnScreen(
                     OutlinedButton(
                         onClick = { viewModel.repeatLastLearnerWord() },
                         enabled = spokenWords.isNotEmpty(),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.weight(1f)
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                        border = BorderStroke(
+                            1.dp,
+                            if (spokenWords.isNotEmpty()) Color(0xFFD0CCC4) else Color(0xFFE8E5DF)
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.RotateLeft,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(15.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Repeat word", fontSize = 11.sp, maxLines = 1)
+                        Text("Repeat", fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
 
                     OutlinedButton(
                         onClick = { viewModel.exportLearnerProgress(context) },
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.weight(1.1f)
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                        border = BorderStroke(1.dp, Color(0xFFD0CCC4)),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Download,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(15.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Export progress", fontSize = 11.sp, maxLines = 1)
+                        Text("Export", fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
 
                     OutlinedButton(
                         onClick = { viewModel.clearLearnerPlayground() },
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.weight(0.8f)
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                        border = BorderStroke(1.dp, Color(0xFFD0CCC4)),
+                        modifier = Modifier
+                            .weight(0.9f)
+                            .height(44.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Clear,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(15.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Clear", fontSize = 11.sp, maxLines = 1)
+                        Text("Clear", fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }
         }
-
+    } else {
         // ─────────────────────────────────────────────────────────────────────
         // 2. SEE WHAT CODES YOU NEED (TRAINER TOOL) CARD
         // ─────────────────────────────────────────────────────────────────────
@@ -406,45 +488,28 @@ fun LearnScreen(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                // Header with Title & Language Toggle
+                // Header with Overline & Language Toggle
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "BRAILLEBRIDGE · FOR TRAINERS",
-                            fontSize = 11.sp,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "See What Codes You Need",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Serif,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Type any word or sentence — get the exact chord sequence a student must press, in order.",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "BRAILLEBRIDGE · FOR TRAINERS",
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
 
                     // Decoder Language Toggle
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(20.dp)
+                        shape = RoundedCornerShape(20.dp),
+                        border = BorderStroke(1.dp, Color(0xFFD0CCC4))
                     ) {
                         Row(modifier = Modifier.padding(3.dp)) {
                             Surface(
@@ -476,6 +541,24 @@ fun LearnScreen(
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "See What Codes You Need",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Serif,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Type any word or sentence — get the exact chord sequence a student must press, in order.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth()
+                )
 
                 Spacer(modifier = Modifier.height(14.dp))
 
@@ -605,6 +688,7 @@ fun LearnScreen(
             }
         }
     }
+}
 }
 
 @Composable
