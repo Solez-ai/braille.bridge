@@ -1,19 +1,20 @@
 """BrailleBridge desktop relay — owns the ESP32 Bluetooth Low Energy (BLE)
-and USB Serial connections and streams their data into the embedded web UI.
+and USB Serial connections and streams their data into the native Python UI.
 
 Bluetooth is the PRIMARY transport: the relay scans for multiple BrailleBridge
-devices advertising the Nordic UART Service (NUS) and can connect to multiple
-student devices simultaneously. Serial COM ports are fully supported as a
-secondary/hardware transport.
+devices advertising the Nordic UART Service (NUS) as well as paired/connected
+Windows BLE devices, and can connect to multiple student devices simultaneously.
+Serial COM ports are fully supported as a secondary/hardware transport.
 
 Every character typed on any device is forwarded once; multiple consumers
-(student view, teacher mode, exam mode) can subscribe without fighting over
+(student view, teacher mode, learner mode) can subscribe without fighting over
 the physical connection.
 """
 import asyncio
 import codecs
 import json
 import os
+import re
 import threading
 import time
 from datetime import datetime
@@ -23,14 +24,25 @@ from serial.tools import list_ports
 
 try:
     from bleak import BleakScanner, BleakClient
+    from bleak.exc import BleakBluetoothNotAvailableError
     BLEAK_AVAILABLE = True
 except ImportError:
     BLEAK_AVAILABLE = False
+    BleakBluetoothNotAvailableError = Exception
+
+try:
+    from winrt.windows.devices.bluetooth import BluetoothLEDevice, BluetoothConnectionStatus
+    from winrt.windows.devices.enumeration import DeviceInformation
+    WINRT_BLE_AVAILABLE = True
+except ImportError:
+    WINRT_BLE_AVAILABLE = False
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOGS_DIR = os.path.join(BASE_DIR, 'logs')
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 ASSIGN_FILE = os.path.join(DATA_DIR, 'assignments.json')
+STUDENT_LOGS_FILE = os.path.join(DATA_DIR, 'student_logs.json')
+ROSTER_FILE = os.path.join(DATA_DIR, 'roster.json')
 
 SCAN_INTERVAL = 3.0   # seconds between device re-scan / reconnect attempts
 READ_SIZE = 256
@@ -44,21 +56,241 @@ BOOT_PREFIXES = ('ets ', 'rst:0x', 'boot:0x', 'configSPIWP', 'clk_drv:',
 
 # Nordic UART Service (NUS) UUIDs used by BrailleBridge firmware
 NUS_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
-NUS_TX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"  # ESP32 → Host (notify)
-NUS_RX_UUID      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"  # Host → ESP32 (write)
+NUS_TX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"  # ESP32 -> Host (notify)
+NUS_RX_UUID      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"  # Host -> ESP32 (write)
+
+
+class SmartFormatter:
+    """Organizes raw character streams into words, sentences, and conditionally
+    formatted document blocks (Title, Section Heading, Question, Answer, Math,
+    Callout, Bullet/Numbered List, and Prose Paragraphs)."""
+
+    @staticmethod
+    def extract_text_and_time(chars):
+        """Convert raw char stream (strings, (ts, ch) tuples, or {'char', 'time'} dicts)
+        into clean logical lines without breaking on single-char packet newlines."""
+        if not chars:
+            return [], None
+
+        first_time = None
+        raw_items = []
+        for entry in chars:
+            if isinstance(entry, tuple) and len(entry) >= 2:
+                ts, ch = entry[0], entry[1]
+            elif isinstance(entry, dict):
+                ch = entry.get('char', '')
+                ts = entry.get('time')
+            else:
+                ch = str(entry)
+                ts = None
+
+            if ts is not None and first_time is None:
+                first_time = ts
+            if ch is None:
+                continue
+            raw_items.append((ts, str(ch)))
+
+        # Reconstruct continuous text: treat single \n between single letters as empty/space
+        # unless there is an explicit double newline \n\n.
+        buf = []
+        n = len(raw_items)
+        i = 0
+        while i < n:
+            ts, ch = raw_items[i]
+            if ch == '\r':
+                i += 1
+                continue
+            if ch == '\n':
+                # Check if consecutive newlines -> paragraph break
+                if i + 1 < n and raw_items[i + 1][1] in ('\n', '\r'):
+                    buf.append('\n')
+                    while i + 1 < n and raw_items[i + 1][1] in ('\n', '\r'):
+                        i += 1
+                else:
+                    # Single newline from println() firmware: ignore if surrounded by single chars,
+                    # otherwise treat as space if preceded by multi-char line
+                    prev_ch = buf[-1] if buf else ''
+                    if prev_ch and prev_ch not in (' ', '\n'):
+                        # Look behind: if the user never typed spaces at all, don't insert spaces between every letter;
+                        # only preserve explicit '\n' if the stream contains multi-char chunks.
+                        pass
+                i += 1
+                continue
+            buf.append(ch)
+            i += 1
+
+        full_text = ''.join(buf).replace('\u00a0', ' ')
+        lines = [ln.strip() for ln in full_text.split('\n') if ln.strip()]
+        return lines, first_time
+
+    @staticmethod
+    def fix_punctuation(text: str) -> str:
+        t = text.replace('\u00a0', ' ')
+        t = re.sub(r' +([.,;:!?।])', r'\1', t)
+        t = re.sub(r'([.,;:!?।])(?=[^\s\d.,;:!?।])', r'\1 ', t)
+        t = re.sub(r'\.{4,}', '...', t)
+        t = re.sub(r' {2,}', ' ', t)
+        return t.strip()
+
+    @staticmethod
+    def heading_level(text: str) -> int:
+        t = text.strip()
+        if re.match(r'^(chapter|অধ্যায়|unit|part)\b', t, re.I):
+            return 1
+        if re.match(r'^(section|অনুচ্ছেদ|topic)\b', t, re.I):
+            return 2
+        if re.match(r'^(lesson|পাঠ)\b', t, re.I):
+            return 3
+        if re.match(r'^(exercise|অনুশীলন)\b', t, re.I):
+            return 4
+        return 0
+
+    @staticmethod
+    def classify_sentence(s: str) -> str:
+        t = s.strip()
+        if not t:
+            return 'para'
+        if re.match(r'^(q:|question\b|প্রশ্ন\b)', t, re.I) or t.endswith('?'):
+            return 'question'
+        if re.match(r'^(a:|ans:|answer\b|উত্তর\b)', t, re.I):
+            return 'answer'
+        if re.search(r'\d+\s*[+\-×÷=]\s*\d+', t) or (
+            any(op in t for op in ('+', '×', '÷', '=')) and re.search(r'\d', t)
+        ):
+            return 'math'
+        if re.match(r'^(note:|important:|remember:|warning:|বিঃদ্রঃ)', t, re.I) or t.endswith('!'):
+            return 'callout'
+        return 'para'
+
+    @classmethod
+    def format_blocks(cls, chars):
+        """Turn raw character stream into smartly organized, conditionally formatted blocks.
+        Returns list of dicts: {'type', 'text', 'time', 'level', 'badge'}."""
+        lines, first_time = cls.extract_text_and_time(chars)
+        if not lines:
+            return []
+
+        ts_ms = int(time.time() * 1000)
+        if isinstance(first_time, (int, float)):
+            ts_ms = int(first_time if first_time > 1e11 else first_time * 1000)
+        elif isinstance(first_time, datetime):
+            ts_ms = int(first_time.timestamp() * 1000)
+
+        blocks = []
+        for idx, raw_line in enumerate(lines):
+            line = cls.fix_punctuation(raw_line)
+            if not line:
+                continue
+
+            # 1. Check bullet or numbered list
+            if re.match(r'^[-*•·→]\s+', line):
+                clean = cls.fix_punctuation(re.sub(r'^[-*•·→]\s+', '', line))
+                blocks.append({'type': 'bullet', 'text': clean, 'time': ts_ms, 'level': 0, 'badge': 'LIST'})
+                continue
+            if re.match(r'^\d+[.)]\s+', line):
+                clean = cls.fix_punctuation(re.sub(r'^\d+[.)]\s+', '', line))
+                blocks.append({'type': 'numbered', 'text': clean, 'time': ts_ms, 'level': 0, 'badge': 'STEP'})
+                continue
+
+            # 2. Check heading
+            head = cls.heading_level(line)
+            if head > 0 and len(line.split()) <= 10:
+                badge = {1: 'CHAPTER', 2: 'SECTION', 3: 'LESSON', 4: 'EXERCISE'}.get(head, 'HEADING')
+                blocks.append({'type': 'heading', 'text': line, 'time': ts_ms, 'level': head, 'badge': badge})
+                continue
+
+            # 3. Split line into sentences so questions, math, callouts, and prose paragraphs
+            # are smartly organized!
+            sentences = re.split(r'(?<=[.!?।])\s+', line)
+            para_Accumulator = []
+
+            def flush_para():
+                if not para_Accumulator:
+                    return
+                # Group up to 3 sentences per paragraph for clean editorial readability
+                for chunk_idx in range(0, len(para_Accumulator), 3):
+                    chunk = para_Accumulator[chunk_idx:chunk_idx + 3]
+                    joined = ' '.join(chunk)
+                    blocks.append({'type': 'para', 'text': joined, 'time': ts_ms, 'level': 0, 'badge': ''})
+                para_Accumulator.clear()
+
+            for sent in sentences:
+                sent = sent.strip()
+                if not sent:
+                    continue
+                kind = cls.classify_sentence(sent)
+                if kind == 'question':
+                    flush_para()
+                    blocks.append({'type': 'question', 'text': sent, 'time': ts_ms, 'level': 0, 'badge': 'QUESTION'})
+                elif kind == 'answer':
+                    flush_para()
+                    blocks.append({'type': 'answer', 'text': sent, 'time': ts_ms, 'level': 0, 'badge': 'ANSWER'})
+                elif kind == 'math':
+                    flush_para()
+                    blocks.append({'type': 'math', 'text': sent, 'time': ts_ms, 'level': 0, 'badge': 'MATH'})
+                elif kind == 'callout':
+                    flush_para()
+                    blocks.append({'type': 'callout', 'text': sent, 'time': ts_ms, 'level': 0, 'badge': 'HIGHLIGHT'})
+                else:
+                    para_Accumulator.append(sent)
+
+            flush_para()
+
+        # Promote first short paragraph to document Title if there are multiple blocks
+        if len(blocks) >= 2 and blocks[0]['type'] == 'para':
+            first_txt = blocks[0]['text'].strip()
+            if 0 < len(first_txt) <= 55 and len(first_txt.split()) <= 6 and not re.search(r'[.,;:!?।]$', first_txt):
+                blocks[0]['type'] = 'title'
+                blocks[0]['badge'] = 'DOCUMENT TITLE'
+
+        return blocks
+
+    @classmethod
+    def to_plain_text(cls, blocks) -> str:
+        out = []
+        num = 0
+        for b in blocks:
+            btype = b.get('type', 'para')
+            txt = b.get('text', '')
+            if btype == 'title':
+                out.extend([txt.upper(), '=' * len(txt), ''])
+                num = 0
+            elif btype == 'heading':
+                out.extend(['', f'### {txt}', ''])
+                num = 0
+            elif btype == 'question':
+                out.extend([f'[Question] {txt}', ''])
+                num = 0
+            elif btype == 'answer':
+                out.extend([f'[Answer]   {txt}', ''])
+                num = 0
+            elif btype == 'math':
+                out.extend([f'[Math]     {txt}', ''])
+                num = 0
+            elif btype == 'callout':
+                out.extend([f'★ {txt}', ''])
+                num = 0
+            elif btype == 'bullet':
+                out.append(f'  • {txt}')
+            elif btype == 'numbered':
+                num += 1
+                out.append(f'  {num}. {txt}')
+            else:
+                out.extend([txt, ''])
+                num = 0
+        return re.sub(r'\n{3,}', '\n\n', '\n'.join(out)).strip() + '\n'
 
 
 class BleManager:
-    """Manages concurrent Bluetooth Low Energy connections using Bleak."""
+    """Manages concurrent Bluetooth Low Energy connections using Bleak + WinRT."""
 
     def __init__(self, relay):
         self.relay = relay
         self.discovered = {}   # address -> info dict
+        self.last_error = None
         self._lock = threading.Lock()
         self._loop = None
         self._thread = None
-        self._scanning = False
-        self._scanner = None
 
         if BLEAK_AVAILABLE:
             self._loop = asyncio.new_event_loop()
@@ -78,41 +310,124 @@ class BleManager:
         except Exception:
             return None
 
-    def scan_devices(self):
-        """Asynchronously discover BLE devices advertising BrailleBridge or NUS."""
+    async def _discover_winrt_paired_or_connected(self):
+        """Enumerate BLE devices already paired or connected in Windows Settings
+        (including devices where Windows HID took over and stopped BLE advertisements)."""
+        found = []
+        if not WINRT_BLE_AVAILABLE:
+            return found
+        try:
+            selectors = [
+                BluetoothLEDevice.get_device_selector_from_connection_status(
+                    BluetoothConnectionStatus.CONNECTED
+                ),
+                BluetoothLEDevice.get_device_selector_from_pairing_state(True),
+            ]
+            seen_addrs = set()
+            for sel in selectors:
+                devs = await DeviceInformation.find_all_async_aqs_filter(sel)
+                for d in devs:
+                    try:
+                        le = await BluetoothLEDevice.from_id_async(d.id)
+                        if not le or not le.bluetooth_address:
+                            continue
+                        addr = ':'.join(
+                            f'{(le.bluetooth_address >> (8 * i)) & 0xff:02X}'
+                            for i in reversed(range(6))
+                        )
+                        if addr in seen_addrs:
+                            continue
+                        seen_addrs.add(addr)
+                        name = (d.name or le.name or '').strip()
+                        low = name.lower()
+                        is_bb = ('braille' in low) or ('bridge' in low) or ('esp32' in low)
+                        if is_bb:
+                            status_lbl = (
+                                "Connected in Windows"
+                                if le.connection_status == BluetoothConnectionStatus.CONNECTED
+                                else "Paired in Windows"
+                            )
+                            display_name = name if name else f"BrailleBridge ({addr[-8:]})"
+                            info = {
+                                'name': f"BLE:{addr}",
+                                'label': f"{display_name} ({status_lbl})",
+                                'type': 'bluetooth',
+                                'address': addr,
+                                'description': f"{display_name} — {status_lbl} [{addr}]",
+                                'is_braille': True,
+                            }
+                            found.append(info)
+                            with self._lock:
+                                self.discovered[f"BLE:{addr}"] = info
+                    except Exception:
+                        continue
+        except Exception:
+            pass
+        return found
+
+    def scan_devices(self, include_all_named=False):
+        """Asynchronously discover BLE devices advertising BrailleBridge or NUS,
+        plus any paired/connected Windows BLE BrailleBridge devices."""
         if not BLEAK_AVAILABLE or not self._loop:
             return []
 
         async def _scan():
-            try:
-                devices = await BleakScanner.discover(timeout=2.0)
-                found = []
-                for d in devices:
-                    name = d.name or ''
-                    # Match name contains 'braille' or advertises NUS service
-                    uuids = [str(u).lower() for u in (d.metadata.get('uuids') or [])] if d.metadata else []
-                    is_braille = ('braille' in name.lower()) or (NUS_SERVICE_UUID.lower() in uuids)
+            found_map = {}
 
-                    # We include any device with a BrailleBridge identity or explicit name
-                    if is_braille or ('bridge' in name.lower()):
+            # 1. Check Windows paired & system-connected BLE devices first
+            win_devs = await self._discover_winrt_paired_or_connected()
+            for item in win_devs:
+                found_map[item['name']] = item
+
+            # 2. Active BLE Advertisement Scan via Bleak (compatible with Bleak 3.x & 0.2x)
+            try:
+                try:
+                    discovered_adv = await BleakScanner.discover(timeout=2.5, return_adv=True)
+                    pairs = list(discovered_adv.values())
+                except TypeError:
+                    raw_devs = await BleakScanner.discover(timeout=2.5)
+                    pairs = [(d, None) for d in raw_devs]
+
+                self.last_error = None
+                for d, adv in pairs:
+                    name = (d.name or (adv.local_name if adv else '') or '').strip()
+                    uuids = []
+                    if adv and getattr(adv, 'service_uuids', None):
+                        uuids = [str(u).lower() for u in adv.service_uuids]
+                    elif hasattr(d, 'metadata') and d.metadata:
+                        uuids = [str(u).lower() for u in (d.metadata.get('uuids') or [])]
+
+                    low = name.lower()
+                    is_braille = (
+                        ('braille' in low)
+                        or ('bridge' in low)
+                        or ('esp32' in low)
+                        or (NUS_SERVICE_UUID.lower() in uuids)
+                    )
+                    if is_braille or (include_all_named and name):
                         addr = d.address
                         display_name = name if name else f"BrailleBridge ({addr[-8:]})"
+                        rssi = getattr(adv, 'rssi', None)
+                        rssi_str = f" · {rssi} dBm" if rssi is not None else ""
                         info = {
                             'name': f"BLE:{addr}",
                             'label': f"{display_name} (Bluetooth)",
                             'type': 'bluetooth',
                             'address': addr,
-                            'description': f"Bluetooth LE — {addr}",
-                            'is_braille': True
+                            'description': f"{display_name} — Bluetooth LE [{addr}]{rssi_str}",
+                            'is_braille': is_braille,
                         }
-                        found.append(info)
+                        found_map[f"BLE:{addr}"] = info
                         with self._lock:
                             self.discovered[f"BLE:{addr}"] = info
-                return found
-            except Exception:
-                return []
+            except BleakBluetoothNotAvailableError:
+                self.last_error = "Bluetooth radio is turned OFF in Windows Settings."
+            except Exception as e:
+                self.last_error = str(e)
 
-        res = self.run_coro(_scan(), timeout=4.0)
+            return list(found_map.values())
+
+        res = self.run_coro(_scan(), timeout=6.0)
         return res or []
 
     def get_known_devices(self):
@@ -135,7 +450,7 @@ class BleManager:
                     self.relay._save_log(port_name, conn)
 
                 client = BleakClient(addr, disconnected_callback=on_disconnect)
-                await client.connect(timeout=8.0)
+                await client.connect(timeout=10.0)
                 if not client.is_connected:
                     return False
 
@@ -158,7 +473,6 @@ class BleManager:
                         self.relay.emit('data', port_name, rest)
                         self.relay._buffer_chars(conn, rest)
 
-                # Start notification on Nordic UART TX characteristic
                 await client.start_notify(NUS_TX_UUID, on_notify)
 
                 with conn['lock']:
@@ -167,11 +481,29 @@ class BleManager:
 
                 self.relay.emit('open', port_name, None)
                 return True
-            except Exception:
+            except Exception as e:
+                self.last_error = str(e)
                 return False
 
-        res = self.run_coro(_connect(), timeout=12.0)
+        res = self.run_coro(_connect(), timeout=14.0)
         return bool(res)
+
+    def write_nus(self, conn, text: str):
+        """Write a control command (e.g. LANG:en or LANG:bn) to NUS RX."""
+        if not BLEAK_AVAILABLE or not self._loop:
+            return False
+
+        async def _write():
+            client = conn.get('client')
+            if client and client.is_connected:
+                try:
+                    await client.write_gatt_char(NUS_RX_UUID, text.encode('utf-8'))
+                    return True
+                except Exception:
+                    return False
+            return False
+
+        return bool(self.run_coro(_write(), timeout=4.0))
 
     def disconnect(self, conn):
         """Disconnect Bleak client safely."""
@@ -243,9 +575,9 @@ class RelayManager:
 
         return items
 
-    def scan_bluetooth(self):
-        """Trigger an active BLE scan for new BrailleBridge devices."""
-        return self.ble.scan_devices()
+    def scan_bluetooth(self, include_all_named=False):
+        """Trigger an active BLE scan for BrailleBridge devices."""
+        return self.ble.scan_devices(include_all_named=include_all_named)
 
     @staticmethod
     def _comports_raw():
@@ -299,7 +631,6 @@ class RelayManager:
                     return True
 
         if is_ble:
-            # Connect via Bluetooth Low Energy
             conn = {
                 'is_ble': True,
                 'client': None,
@@ -425,20 +756,25 @@ class RelayManager:
         with conn['lock']:
             if not conn['chars']:
                 return None
-            chars = conn['chars']
+            chars = list(conn['chars'])
             conn['chars'] = []
         os.makedirs(LOGS_DIR, exist_ok=True)
         clean_port = port_name.replace('\\', '').replace(':', '_').replace('-', '_')
         name = conn['name'] or clean_port
         stamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         path = os.path.join(LOGS_DIR, f'{name}_{stamp}.log')
+        blocks = SmartFormatter.format_blocks(chars)
+        plain_doc = SmartFormatter.to_plain_text(blocks)
         lines = self._wrap(chars)
         with open(path, 'w', encoding='utf-8') as f:
-            f.write(f'BrailleBridge Session Log — Device {port_name}\n')
+            f.write(f'BrailleBridge Session Log — {name} ({port_name})\n')
             f.write(f'Saved: {datetime.now().isoformat(timespec="seconds")}\n')
             f.write('=' * 50 + '\n\n')
-            for ts_str, text in lines:
-                f.write(f'[{ts_str}] {text}\n')
+            if plain_doc.strip():
+                f.write(plain_doc + '\n')
+            else:
+                for ts_str, text in lines:
+                    f.write(f'{text}\n')
         return path
 
     @staticmethod
@@ -470,8 +806,8 @@ class RelayManager:
             if ch == ' ':
                 flush_word()
             elif ch in '\n\r':
-                flush_word()
-                flush_line()
+                # Ignore single-char packet newlines so words stay together
+                continue
             else:
                 if not cur:
                     cur_ts = ts
@@ -539,7 +875,7 @@ class RelayManager:
         now = datetime.now()
         with conn['lock']:
             for ch in text:
-                if ch and ch != '\r':
+                if ch and ch not in ('\r', '\n'):
                     conn['chars'].append((now, ch))
 
     # ------------------------------------------------------------ monitor loop
@@ -549,7 +885,6 @@ class RelayManager:
         cycle = 0
         while not self._monitor_stop.is_set():
             try:
-                # Periodic active BLE scan every 2 cycles (6 seconds)
                 if cycle % 2 == 0:
                     self.scan_bluetooth()
                 cycle += 1
@@ -568,13 +903,11 @@ class RelayManager:
                     ]
 
                 for name, c in wanted:
-                    # Serial auto-reconnect
                     if not c.get('is_ble'):
                         if not c.get('serial') or not c['serial'].is_open:
                             if name in port_names:
                                 self.open_port(name, c.get('baud', 115200))
                                 self.emit('reconnect', name, None)
-                    # BLE auto-reconnect
                     else:
                         if not c.get('client') or not c['client'].is_connected:
                             if name in port_names:

@@ -6,15 +6,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
@@ -30,6 +31,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,8 +42,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.data.StudentModel
 import com.example.data.getInitials
+import com.example.protocol.AutoFormatter
 import com.example.ui.theme.AccentGreen
 import com.example.ui.theme.TextMuted
 import kotlinx.coroutines.launch
@@ -53,27 +57,36 @@ fun ExpandModal(
     onPreviewHandOff: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val listState = rememberLazyListState()
+    val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(student.chars.size) {
-        if (student.chars.isNotEmpty()) {
-            listState.animateScrollToItem(student.chars.size - 1)
+    val fullText = remember(student.chars.size) {
+        val raw = student.chars.joinToString("") { it.char }
+            .replace("\r", "")
+            .replace("\n", " ")
+        AutoFormatter.fixPunctuation(raw)
+    }
+
+    LaunchedEffect(fullText) {
+        if (fullText.isNotEmpty()) {
+            scrollState.animateScrollTo(scrollState.maxValue)
         }
     }
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Surface(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(550.dp),
-            shape = RoundedCornerShape(16.dp),
+                .fillMaxSize(0.95f),
+            shape = RoundedCornerShape(18.dp),
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 8.dp
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxSize()
                     .padding(20.dp)
             ) {
                 // Header with avatar & name
@@ -90,7 +103,7 @@ fun ExpandModal(
                         }
                         Box(
                             modifier = Modifier
-                                .size(34.dp)
+                                .size(40.dp)
                                 .clip(CircleShape)
                                 .background(colorParsed),
                             contentAlignment = Alignment.Center
@@ -99,27 +112,28 @@ fun ExpandModal(
                                 text = getInitials(student.name),
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
+                                fontSize = 15.sp
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = student.name,
+                                text = "${student.name} — Full Expanded View",
                                 style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
                                     modifier = Modifier
-                                        .size(6.dp)
+                                        .size(8.dp)
                                         .clip(CircleShape)
                                         .background(if (student.isConnected) AccentGreen else TextMuted)
                                 )
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = if (student.isConnected) "Connected · BLE" else "Offline · BLE",
-                                    fontSize = 11.sp,
+                                    text = if (student.isConnected) "Connected · Live BLE Stream" else "Offline · BLE",
+                                    fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -134,12 +148,12 @@ fun ExpandModal(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Actions toolbar
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Button(
                         onClick = onPreviewHandOff,
@@ -155,7 +169,7 @@ fun ExpandModal(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Preview Prose", fontSize = 11.sp)
+                        Text("Formatted Log Preview", fontSize = 12.sp)
                     }
                     OutlinedButton(
                         onClick = onClear,
@@ -168,46 +182,49 @@ fun ExpandModal(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Clear Feed", fontSize = 11.sp)
+                        Text("Clear Feed", fontSize = 12.sp)
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                // Live Stream Window
+                // Expanded Live Stream Canvas
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
                     color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(14.dp)
                 ) {
-                    Box(modifier = Modifier.padding(12.dp)) {
-                        if (student.chars.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize().padding(18.dp)) {
+                        if (fullText.isEmpty()) {
                             Text(
                                 text = "Waiting for live input from student...",
-                                fontSize = 12.sp,
+                                fontSize = 15.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.align(Alignment.Center)
                             )
                         } else {
-                            val fullText = student.chars.joinToString("") { it.char }
-                            Text(
-                                text = fullText,
-                                fontFamily = FontFamily.Serif,
-                                fontSize = 15.sp,
-                                lineHeight = 22.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(scrollState)
+                            ) {
+                                Text(
+                                    text = fullText,
+                                    fontFamily = FontFamily.Serif,
+                                    fontSize = 22.sp,
+                                    lineHeight = 32.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
                         }
 
                         // Scroll-to-bottom floating button
                         IconButton(
                             onClick = {
                                 scope.launch {
-                                    if (student.chars.isNotEmpty()) {
-                                        listState.animateScrollToItem(student.chars.size - 1)
-                                    }
+                                    scrollState.animateScrollTo(scrollState.maxValue)
                                 }
                             },
                             modifier = Modifier
@@ -225,23 +242,25 @@ fun ExpandModal(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val wordCount = if (fullText.isBlank()) 0 else fullText.trim().split(Regex("\\s+")).size
                     Text(
-                        text = "Total: ${student.chars.size} characters",
-                        fontSize = 11.sp,
+                        text = "$wordCount words · ${student.chars.size} characters",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     OutlinedButton(
                         onClick = onDismiss,
                         shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text("Close", fontSize = 11.sp)
+                        Text("Close", fontSize = 12.sp)
                     }
                 }
             }

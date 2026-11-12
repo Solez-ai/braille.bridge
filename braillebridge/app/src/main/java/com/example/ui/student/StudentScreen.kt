@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,16 +39,17 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothConnected
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.GTranslate
 import androidx.compose.material.icons.filled.KeyboardReturn
 import androidx.compose.material.icons.filled.ScreenShare
 import androidx.compose.material.icons.filled.SpaceBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -69,6 +69,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -79,7 +80,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.protocol.BrailleDict
-import com.example.protocol.TimedChar
 import com.example.ui.MainViewModel
 import com.example.ui.components.LanguageDropdown
 import com.example.ui.theme.AccentGreen
@@ -94,6 +94,7 @@ fun StudentScreen(
     viewModel: MainViewModel,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val pressedDots by viewModel.studentPressedDots.collectAsState()
     val chord by viewModel.studentChord.collectAsState()
     val isBangla by viewModel.isBangla.collectAsState()
@@ -105,30 +106,54 @@ fun StudentScreen(
     val translateTarget by viewModel.studentTranslateTarget.collectAsState()
     val translateError by viewModel.studentTranslateError.collectAsState()
     val isConnected by viewModel.isStudentDeviceConnected.collectAsState()
-    val debugLog by viewModel.debugLog.collectAsState()
     val isAudioEnabled by viewModel.isAudioFeedbackEnabled.collectAsState()
     val capsMode by viewModel.capsMode.collectAsState()
 
-    val currentText = remember(chars) { chars.joinToString("") { it.char } }
+    val currentText = remember(chars) {
+        chars.joinToString("") { it.char }.replace("\r", "").replace("\n", " ")
+    }
     val resolvedChar = remember(chord, isBangla, shiftActive, capsMode) {
         if (chord == 0b100000 && !shiftActive && !isBangla) "⇪"
         else BrailleDict.resolveChord(chord, isBangla, shiftActive, capsMode)
     }
 
-    // Inner text-area scroll (auto-follows the caret) + diagnostics scroll
     val textScrollState = rememberScrollState()
-    val debugScrollState = rememberScrollState()
-    var showDiagnostics by remember { mutableStateOf(false) }
+    val screenScrollState = rememberScrollState()
+    var isOutputExpanded by remember { mutableStateOf(true) }
+    var isFullExpanded by remember { mutableStateOf(false) }
+
+    // Auto-expand significantly when BLE device connects
+    LaunchedEffect(isConnected) {
+        if (isConnected) {
+            isOutputExpanded = true
+            isFullExpanded = true
+        }
+    }
 
     LaunchedEffect(currentText) {
         textScrollState.animateScrollTo(textScrollState.maxValue)
     }
-    LaunchedEffect(debugLog.size, showDiagnostics) {
-        if (showDiagnostics) debugScrollState.animateScrollTo(debugScrollState.maxValue)
-    }
 
-    val screenScrollState = rememberScrollState()
-    var isOutputExpanded by remember { mutableStateOf(true) }
+    val outputMinHeight = when {
+        isFullExpanded -> 360.dp
+        isConnected -> 240.dp
+        else -> 160.dp
+    }
+    val outputMaxHeight = when {
+        isFullExpanded -> 620.dp
+        isConnected -> 460.dp
+        else -> 320.dp
+    }
+    val outputFontSize = when {
+        isFullExpanded -> 24.sp
+        isConnected -> 21.sp
+        else -> 19.sp
+    }
+    val outputLineHeight = when {
+        isFullExpanded -> 34.sp
+        isConnected -> 30.sp
+        else -> 28.sp
+    }
 
     Column(
         modifier = modifier
@@ -147,7 +172,7 @@ fun StudentScreen(
                 color = if (isConnected) AccentGreen.copy(alpha = 0.15f)
                 else MaterialTheme.colorScheme.surfaceVariant,
                 shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, Color(0xFFD6D1C7)),
+                border = BorderStroke(1.dp, if (isConnected) AccentGreen else Color(0xFFD6D1C7)),
                 modifier = Modifier
                     .weight(1f, fill = false)
                     .clickable { viewModel.showBleScanDialog.value = true }
@@ -180,7 +205,6 @@ fun StudentScreen(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Audio Feedback toggle
                 Surface(
                     color = if (isAudioEnabled) AccentGreen.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(12.dp),
@@ -226,7 +250,7 @@ fun StudentScreen(
                     }
                 }
 
-                // Caps Indicator LED (visible or highlighted when active)
+                // Caps Indicator LED
                 if (capsMode != BrailleDict.CapsMode.OFF) {
                     Surface(
                         color = Gold.copy(alpha = 0.25f),
@@ -286,14 +310,14 @@ fun StudentScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ── Live Output card — expandable without fixed height clipping ──────
+        // ── Live Output card — expands significantly when connected or full-expanded ──
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .animateContentSize(),
             shape = RoundedCornerShape(14.dp),
             color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, Color(0xFFD0CCC4))
+            border = BorderStroke(if (isFullExpanded || isConnected) 1.5.dp else 1.dp, if (isFullExpanded || isConnected) Gold else Color(0xFFD0CCC4))
         ) {
             Column(modifier = Modifier.padding(14.dp)) {
                 Row(
@@ -301,12 +325,18 @@ fun StudentScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "LIVE OUTPUT",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (isFullExpanded) "LIVE OUTPUT · EXPANDED CANVAS" else "LIVE OUTPUT",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         Text(
                             text = "${chars.size} chars",
                             style = MaterialTheme.typography.labelSmall,
@@ -314,9 +344,44 @@ fun StudentScreen(
                             overflow = TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+
+                        // Full Expand toggle chip
+                        Surface(
+                            color = if (isFullExpanded) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            else MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (isFullExpanded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+                            modifier = Modifier.clickable {
+                                isFullExpanded = !isFullExpanded
+                                if (isFullExpanded) isOutputExpanded = true
+                            }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = if (isFullExpanded) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                                    contentDescription = "Toggle Full Expand",
+                                    tint = if (isFullExpanded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(
+                                    text = if (isFullExpanded) "Compact" else "Expand",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (isFullExpanded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
                         IconButton(
-                            onClick = { isOutputExpanded = !isOutputExpanded },
-                            modifier = Modifier.size(32.dp)
+                            onClick = {
+                                isOutputExpanded = !isOutputExpanded
+                                if (!isOutputExpanded) isFullExpanded = false
+                            },
+                            modifier = Modifier.size(28.dp)
                         ) {
                             Icon(
                                 imageVector = if (isOutputExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
@@ -334,11 +399,11 @@ fun StudentScreen(
                         color = MaterialTheme.colorScheme.outlineVariant
                     )
 
-                    // The text area itself — wraps, scrolls, auto-follows caret
+                    // Large reading/writing canvas
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(min = 90.dp, max = 220.dp),
+                            .heightIn(min = outputMinHeight, max = outputMaxHeight),
                         shape = RoundedCornerShape(10.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant,
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
@@ -347,13 +412,13 @@ fun StudentScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(90.dp)
-                                    .padding(12.dp),
+                                    .height(outputMinHeight)
+                                    .padding(16.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "No output yet. Start typing...",
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    text = "No output yet. Start typing on your BrailleBridge or use the 6-dot pad below...",
+                                    style = MaterialTheme.typography.bodyLarge,
                                     textAlign = TextAlign.Center,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -363,7 +428,7 @@ fun StudentScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .verticalScroll(textScrollState)
-                                    .padding(12.dp)
+                                    .padding(16.dp)
                             ) {
                                 val caretColor = MaterialTheme.colorScheme.primary
                                 val caretAlpha by rememberInfiniteTransition(label = "caret").animateFloat(
@@ -382,8 +447,10 @@ fun StudentScreen(
                                             append("▏")
                                         }
                                     },
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontFamily = FontFamily.Serif
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontFamily = FontFamily.Serif,
+                                        fontSize = outputFontSize,
+                                        lineHeight = outputLineHeight
                                     ),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
@@ -444,8 +511,12 @@ fun StudentScreen(
                                 ) {
                                     Text(
                                         text = tr.text,
-                                        modifier = Modifier.padding(10.dp),
-                                        style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Serif),
+                                        modifier = Modifier.padding(12.dp),
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            fontFamily = FontFamily.Serif,
+                                            fontSize = 18.sp,
+                                            lineHeight = 26.sp
+                                        ),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
@@ -473,49 +544,52 @@ fun StudentScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        // Hide secondary recent characters strip when in full-expanded mode to give maximum screen space
+        if (!isFullExpanded) {
+            Spacer(modifier = Modifier.height(12.dp))
 
-        // ── Recent characters strip ───────────────────────────────────────────
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(10.dp),
-            color = MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, Color(0xFFD0CCC4))
-        ) {
-            Column(modifier = Modifier.padding(10.dp)) {
-                Text(
-                    text = "RECENT CHARACTERS",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                if (recentChars.isEmpty()) {
+            // ── Recent characters strip ───────────────────────────────────────────
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, Color(0xFFD0CCC4))
+            ) {
+                Column(modifier = Modifier.padding(10.dp)) {
                     Text(
-                        text = "—",
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = "RECENT CHARACTERS",
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                } else {
-                    val listState = rememberLazyListState()
-                    LaunchedEffect(recentChars.size) {
-                        if (recentChars.isNotEmpty()) listState.animateScrollToItem(recentChars.size - 1)
-                    }
-                    LazyRow(
-                        state = listState,
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        items(recentChars) { ch ->
-                            Surface(
-                                color = MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(4.dp)
-                            ) {
-                                Text(
-                                    text = if (ch.char == " ") "␣" else ch.char,
-                                    style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Serif),
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                    color = if (ch.char == " ") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    if (recentChars.isEmpty()) {
+                        Text(
+                            text = "—",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        val listState = rememberLazyListState()
+                        LaunchedEffect(recentChars.size) {
+                            if (recentChars.isNotEmpty()) listState.animateScrollToItem(recentChars.size - 1)
+                        }
+                        LazyRow(
+                            state = listState,
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            items(recentChars) { ch ->
+                                Surface(
+                                    color = MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = RoundedCornerShape(4.dp)
+                                ) {
+                                    Text(
+                                        text = if (ch.char == " ") "␣" else ch.char,
+                                        style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Serif),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                        color = if (ch.char == " ") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                             }
                         }
                     }
@@ -647,7 +721,7 @@ fun StudentScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ── Lower toolbar ─────────────────────────────────────────────────────
+        // ── Lower toolbar: Clear · Export All · Send to Teacher ───────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -655,18 +729,44 @@ fun StudentScreen(
             OutlinedButton(
                 onClick = { viewModel.clearStudentStream() },
                 shape = RoundedCornerShape(10.dp),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(0.85f)
                     .height(48.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Clear,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(16.dp)
                 )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Clear", style = MaterialTheme.typography.labelLarge, maxLines = 1)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Clear", fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+
+            OutlinedButton(
+                onClick = { viewModel.exportAllStudents(context) },
+                shape = RoundedCornerShape(10.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .weight(1.05f)
+                    .height(48.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Download,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    "Export All",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
 
             Button(
@@ -676,22 +776,23 @@ fun StudentScreen(
                     containerColor = Color(0xFFB58D3D),
                     contentColor = Color.White
                 ),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
                 modifier = Modifier
-                    .weight(1.4f)
+                    .weight(1.3f)
                     .height(48.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.ScreenShare,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(16.dp)
                 )
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     "Send to Teacher",
-                    style = MaterialTheme.typography.labelLarge,
+                    fontSize = 12.sp,
                     color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

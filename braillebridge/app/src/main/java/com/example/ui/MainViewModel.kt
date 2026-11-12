@@ -104,6 +104,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val expandStudent = MutableStateFlow<StudentModel?>(null)
     val sendModalOpen = MutableStateFlow(false)
     val reviewExport = MutableStateFlow<ExportEntity?>(null)
+    val selectedLogStudentName = MutableStateFlow<String?>(null)
 
     // Active BLE Connection for Student View
     val activeStudentDeviceAddress = MutableStateFlow<String?>(null)
@@ -615,7 +616,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun exportSingleStudent(student: StudentModel, context: Context) {
         val blocks = AutoFormatter.format(student.chars)
-        val plainText = AutoFormatter.toText(blocks)
         val jsonArray = JSONArray()
         for (b in blocks) {
             val obj = JSONObject()
@@ -629,7 +629,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val export = ExportEntity(
             id = "ex_" + UUID.randomUUID().toString().take(8),
             title = student.name,
-            mode = "Teacher App",
+            mode = "Teacher View",
             source = "student",
             charsCount = student.chars.size,
             blocksJson = jsonArray.toString(),
@@ -640,43 +640,91 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             exportDao.insertExport(export)
-            Toast.makeText(context, "${student.name} export saved to Exports", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "${student.name} saved to Student Logs", Toast.LENGTH_SHORT).show()
         }
     }
 
     fun exportAllStudents(context: Context) {
-        val allChars = mutableListOf<TimedChar>()
+        val now = System.currentTimeMillis()
+        val entriesToInsert = mutableListOf<ExportEntity>()
+
+        // 1. Export each student in the roster who has characters (or create an entry for active students)
         for (s in students.value) {
-            allChars.addAll(s.chars)
+            if (s.chars.isNotEmpty()) {
+                val blocks = AutoFormatter.format(s.chars)
+                val jsonArray = JSONArray()
+                for (b in blocks) {
+                    val obj = JSONObject()
+                    obj.put("type", b.type)
+                    obj.put("text", b.text)
+                    obj.put("time", b.time)
+                    obj.put("level", b.level)
+                    jsonArray.put(obj)
+                }
+                entriesToInsert.add(
+                    ExportEntity(
+                        id = "ex_" + UUID.randomUUID().toString().take(8),
+                        title = s.name,
+                        mode = if (currentMode.value == AppMode.STUDENT) "Student View" else "Teacher View",
+                        source = "student",
+                        charsCount = s.chars.size,
+                        blocksJson = jsonArray.toString(),
+                        created = now,
+                        studentName = s.name,
+                        connInfo = "Bluetooth · ${s.deviceAddress ?: "Virtual"}"
+                    )
+                )
+            }
         }
-        allChars.sortBy { it.time }
 
-        val blocks = AutoFormatter.format(allChars)
-        val jsonArray = JSONArray()
-        for (b in blocks) {
-            val obj = JSONObject()
-            obj.put("type", b.type)
-            obj.put("text", b.text)
-            obj.put("time", b.time)
-            obj.put("level", b.level)
-            jsonArray.put(obj)
+        // 2. Also export the local Student View stream if it has text and wasn't already mirrored
+        val hasMirroredChars = students.value.any { it.isMirror && it.chars.isNotEmpty() }
+        if (studentChars.value.isNotEmpty() && !hasMirroredChars) {
+            val blocks = AutoFormatter.format(studentChars.value)
+            val jsonArray = JSONArray()
+            for (b in blocks) {
+                val obj = JSONObject()
+                obj.put("type", b.type)
+                obj.put("text", b.text)
+                obj.put("time", b.time)
+                obj.put("level", b.level)
+                jsonArray.put(obj)
+            }
+            val stuName = students.value.firstOrNull {
+                it.deviceAddress != null && it.deviceAddress == activeStudentDeviceAddress.value
+            }?.name ?: "Student 1 (Local)"
+            entriesToInsert.add(
+                ExportEntity(
+                    id = "ex_" + UUID.randomUUID().toString().take(8),
+                    title = stuName,
+                    mode = "Student View",
+                    source = "student",
+                    charsCount = studentChars.value.size,
+                    blocksJson = jsonArray.toString(),
+                    created = now,
+                    studentName = stuName,
+                    connInfo = "Bluetooth · ${activeStudentDeviceAddress.value ?: "6-Dot Pad"}"
+                )
+            )
         }
 
-        val export = ExportEntity(
-            id = "ex_" + UUID.randomUUID().toString().take(8),
-            title = "Class Roster (${students.value.size} students)",
-            mode = if (currentMode.value == AppMode.EXAM) "Exam" else "Teacher App",
-            source = "class",
-            charsCount = allChars.size,
-            blocksJson = jsonArray.toString(),
-            created = System.currentTimeMillis(),
-            studentName = "All Students",
-            connInfo = "${students.value.size} student devices"
-        )
+        if (entriesToInsert.isEmpty()) {
+            Toast.makeText(context, "No student writing yet to export to Logs", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         viewModelScope.launch {
-            exportDao.insertExport(export)
-            Toast.makeText(context, "Class export saved to Exports", Toast.LENGTH_SHORT).show()
+            for (exp in entriesToInsert) {
+                exportDao.insertExport(exp)
+            }
+            selectedLogStudentName.value = null
+            reviewExport.value = null
+            currentMode.value = AppMode.EXPORTS
+            Toast.makeText(
+                context,
+                "Saved ${entriesToInsert.size} student log(s) to Logs",
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
@@ -687,6 +735,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteExport(export: ExportEntity) {
         viewModelScope.launch {
             exportDao.deleteExport(export.id)
+        }
+    }
+
+    fun deleteStudentLogs(studentName: String) {
+        viewModelScope.launch {
+            val matching = exportsList.value.filter { (it.studentName ?: it.title) == studentName }
+            for (exp in matching) {
+                exportDao.deleteExport(exp.id)
+            }
         }
     }
 

@@ -28,6 +28,31 @@ class AutoFormatterTest {
     }
 
     @Test
+    fun `test single char packet newlines stripped into sentences`() {
+        val now = System.currentTimeMillis()
+        // Simulate hardware sending Serial.println per character
+        val raw = listOf("h", "\n", "e", "\n", "l", "\n", "l", "\n", "o", "\n", " ", "\n", "w", "\n", "o", "\n", "r", "\n", "l", "\n", "d")
+        val chars = raw.map { TimedChar(it, now) }
+        val blocks = AutoFormatter.format(chars)
+        assertEquals(1, blocks.size)
+        assertEquals("hello world", blocks[0].text)
+    }
+
+    @Test
+    fun `test conditional formatting blocks question answer math callout`() {
+        val now = System.currentTimeMillis()
+        val input = "Chapter 1: Physics\nWhat is velocity? Ans: Velocity is speed with direction. 10 + 20 = 30. Remember: Always include units!\n"
+        val chars = input.map { TimedChar(it.toString(), now) }
+        val blocks = AutoFormatter.format(chars)
+        val types = blocks.map { it.type }
+        assertTrue(types.contains("heading"))
+        assertTrue(types.contains("question"))
+        assertTrue(types.contains("answer"))
+        assertTrue(types.contains("math"))
+        assertTrue(types.contains("callout"))
+    }
+
+    @Test
     fun `test auto format structure and toText`() {
         val now = System.currentTimeMillis()
         val input = "Chapter 1: Introduction\nThis is a paragraph.\n* First bullet\n* Second bullet\n1. Numbered item\n"

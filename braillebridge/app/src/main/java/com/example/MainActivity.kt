@@ -187,29 +187,16 @@ class MainActivity : ComponentActivity() {
                             )
 
                             NavigationBarItem(
-                                selected = currentMode == AppMode.EXAM,
-                                onClick = { viewModel.currentMode.value = AppMode.EXAM },
-                                colors = navItemColors,
-                                icon = {
-                                    Icon(
-                                        imageVector = Icons.Default.Lock,
-                                        contentDescription = "Exam View"
-                                    )
-                                },
-                                label = { Text("Exam", fontSize = 11.sp) }
-                            )
-
-                            NavigationBarItem(
                                 selected = currentMode == AppMode.EXPORTS,
                                 onClick = { viewModel.currentMode.value = AppMode.EXPORTS },
                                 colors = navItemColors,
                                 icon = {
                                     Icon(
                                         imageVector = Icons.Default.Description,
-                                        contentDescription = "Exports Library"
+                                        contentDescription = "Student Logs"
                                     )
                                 },
-                                label = { Text("Exports", fontSize = 11.sp) }
+                                label = { Text("Logs", fontSize = 11.sp) }
                             )
 
                             NavigationBarItem(
@@ -231,7 +218,7 @@ class MainActivity : ComponentActivity() {
                         when (currentMode) {
                             AppMode.STUDENT -> StudentScreen(viewModel = viewModel)
                             AppMode.TEACHER -> TeacherScreen(viewModel = viewModel)
-                            AppMode.EXAM -> ExamScreen(viewModel = viewModel)
+                            AppMode.EXAM -> ExportsScreen(viewModel = viewModel)
                             AppMode.EXPORTS -> ExportsScreen(viewModel = viewModel)
                             AppMode.LEARN -> LearnScreen(viewModel = viewModel)
                         }

@@ -270,6 +270,44 @@ def test_close_port_idempotent():
     print('test_close_port_idempotent: OK')
 
 
+def test_smart_formatter_conditional_blocks():
+    """Verify SmartFormatter turns character-by-character streams into words,
+    sentences, and conditionally formatted blocks (title, heading, question,
+    answer, math, callout, para) instead of 1-char vertical lines."""
+    now = datetime.now()
+    # 1) Simulate characters arriving with single '\n' after each character
+    #    (as older println() sketches do) — must still form 'hello world'
+    raw_println_chars = []
+    for ch in "hello world":
+        raw_println_chars.append((now, ch))
+        raw_println_chars.append((now, '\n'))
+    blocks = relay_mod.SmartFormatter.format_blocks(raw_println_chars)
+    assert len(blocks) == 1
+    assert blocks[0]['text'] == 'hello world', blocks
+
+    # 2) Rich multi-block document with conditional formatting
+    doc_text = (
+        "My Science Notes\n\n"
+        "Chapter 1 Forces and Motion\n\n"
+        "What is velocity? Answer: Velocity is speed in a given direction. "
+        "12 + 15 = 27. Remember: Always include units!\n\n"
+        "- First law of motion\n\n"
+        "1. Measure distance"
+    )
+    doc_chars = [(now, c) for c in doc_text]
+    doc_blocks = relay_mod.SmartFormatter.format_blocks(doc_chars)
+    types = [b['type'] for b in doc_blocks]
+    assert 'title' in types, types
+    assert 'heading' in types, types
+    assert 'question' in types, types
+    assert 'answer' in types, types
+    assert 'math' in types, types
+    assert 'callout' in types, types
+    assert 'bullet' in types, types
+    assert 'numbered' in types, types
+    print('test_smart_formatter_conditional_blocks: OK')
+
+
 if __name__ == '__main__':
     test_relay_flow()
     test_split_utf8_bangla()
@@ -278,4 +316,5 @@ if __name__ == '__main__':
     test_esp32_boot_preamble_suppressed()
     test_boot_partial_chunk_suppressed()
     test_close_port_idempotent()
+    test_smart_formatter_conditional_blocks()
     print('ALL RELAY TESTS PASSED')
