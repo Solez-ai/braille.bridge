@@ -679,14 +679,19 @@ class BrailleBridgeWindow(QMainWindow):
         cell_lay.setSpacing(10)
 
         cell_hdr = QHBoxLayout()
+        cell_hdr.setContentsMargins(0, 0, 0, 0)
         cell_title = SectionHeader("braille", "6-DOT BRAILLE CELL")
+        cell_title.setFixedHeight(22)
         self._section_headers.append(cell_title)
         cell_hdr.addWidget(cell_title)
         cell_hdr.addStretch(1)
         self.chord_preview_lbl = QLabel("Pattern: None  ->  -")
+        self.chord_preview_lbl.setFixedHeight(22)
         self.chord_preview_lbl.setFont(ui_font(10, QFont.Weight.Bold))
         cell_hdr.addWidget(self.chord_preview_lbl)
         cell_lay.addLayout(cell_hdr)
+
+        cell_lay.addStretch(1)
 
         # 2x3 Grid of Dot Buttons (1,2,3 left; 4,5,6 right)
         dots_grid = QGridLayout()
@@ -706,6 +711,8 @@ class BrailleBridgeWindow(QMainWindow):
         dots_wrap.addLayout(dots_grid)
         dots_wrap.addStretch(1)
         cell_lay.addLayout(dots_wrap)
+
+        cell_lay.addStretch(1)
 
         # Commit / Space / Backspace buttons
         act_row = QHBoxLayout()
