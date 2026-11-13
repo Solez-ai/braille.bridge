@@ -1040,7 +1040,8 @@ class BrailleBridgeWindow(QMainWindow):
         self.feed_container = QWidget()
         self.feed_grid_layout = QGridLayout(self.feed_container)
         self.feed_grid_layout.setContentsMargins(0, 0, 0, 0)
-        self.feed_grid_layout.setSpacing(12)
+        self.feed_grid_layout.setSpacing(14)
+        self.feed_grid_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.feed_scroll.setWidget(self.feed_container)
         right_col.addWidget(self.feed_scroll, 1)
 
@@ -1519,16 +1520,22 @@ class BrailleBridgeWindow(QMainWindow):
             }}
         """
         self.setStyleSheet(qss)
-        for sa in (self.roster_scroll, self.feed_scroll, self.logs_students_scroll, self.log_doc_scroll, self.decoder_scroll):
+        for sa in (self.roster_scroll, self.logs_students_scroll, self.log_doc_scroll, self.decoder_scroll):
             sa.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             sa.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             sa.setStyleSheet(f"QScrollArea {{ background-color: {pal['bg_panel']}; border: none; }}")
             if sa.viewport():
                 sa.viewport().setStyleSheet(f"background-color: {pal['bg_panel']};")
+        self.feed_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.feed_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.feed_scroll.setStyleSheet(f"QScrollArea {{ background-color: {pal['bg_window']}; border: none; }}")
+        if self.feed_scroll.viewport():
+            self.feed_scroll.viewport().setStyleSheet(f"background-color: {pal['bg_window']};")
         self.live_text_edit.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.live_text_edit.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        for container in (self.roster_list_widget, self.feed_container, self.logs_students_widget, self.log_doc_container, self.decoder_container):
+        for container in (self.roster_list_widget, self.logs_students_widget, self.log_doc_container, self.decoder_container):
             container.setStyleSheet(f"background-color: {pal['bg_panel']};")
+        self.feed_container.setStyleSheet(f"background-color: {pal['bg_window']};")
         self._update_student_indicators()
         self._update_student_conn_ui()
         self._refresh_student_output_text()
