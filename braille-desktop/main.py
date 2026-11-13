@@ -15,7 +15,7 @@ from datetime import datetime
 
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject, QSize, QRectF, QVariantAnimation, QEasingCurve
 from PyQt6.QtGui import (
-    QColor, QFont, QIcon, QKeyEvent, QPainter, QPen, QBrush, QCursor, QTextCursor
+    QColor, QFont, QFontDatabase, QIcon, QKeyEvent, QPainter, QPen, QBrush, QCursor, QTextCursor
 )
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
@@ -36,6 +36,26 @@ STUDENT_COLORS = [
     '#5a8ae0', '#d45a5a', '#5ab85a', '#c49a4a',
     '#8a6ad4', '#4ac8b8', '#e08a5a', '#5ab8b8'
 ]
+
+
+_UI_FONT_NAME: str | None = None
+
+
+def get_ui_font_family() -> str:
+    global _UI_FONT_NAME
+    if _UI_FONT_NAME is None:
+        fams = set(QFontDatabase.families())
+        for fam in ("SF Pro Display", "SF Pro Text", "SF Pro", "Inter", "Segoe UI Variable", "Segoe UI"):
+            if fam in fams:
+                _UI_FONT_NAME = fam
+                break
+        if _UI_FONT_NAME is None:
+            _UI_FONT_NAME = "Segoe UI"
+    return _UI_FONT_NAME
+
+
+def ui_font(size: int = 12, weight: QFont.Weight = QFont.Weight.Normal) -> QFont:
+    return QFont(get_ui_font_family(), size, weight)
 
 
 def get_initials(name: str) -> str:
@@ -153,7 +173,7 @@ class BrailleDotButton(QPushButton):
 
         p.drawEllipse(rect)
 
-        p.setFont(QFont('Segoe UI', 13, QFont.Weight.Bold))
+        p.setFont(ui_font(13, QFont.Weight.Bold))
         if self.is_active:
             p.setPen(QColor('#141416' if self.is_dark else '#ffffff'))
         else:
@@ -488,7 +508,7 @@ class BrailleBridgeWindow(QMainWindow):
         header_layout.addWidget(self.logo_badge)
 
         self.brand_label = QLabel("Braille<span style='color:#d29a4a;'>Bridge</span>")
-        self.brand_label.setFont(QFont("Georgia", 17, QFont.Weight.Bold))
+        self.brand_label.setFont(ui_font(17, QFont.Weight.Bold))
         header_layout.addWidget(self.brand_label)
 
         header_layout.addStretch(1)
@@ -548,7 +568,7 @@ class BrailleBridgeWindow(QMainWindow):
         self.conn_status_dot = StatusDot('#71717a', 8)
         conn_pill_lay.addWidget(self.conn_status_dot)
         self.conn_status_lbl = QLabel("Disconnected")
-        self.conn_status_lbl.setFont(QFont("Segoe UI", 10, QFont.Weight.DemiBold))
+        self.conn_status_lbl.setFont(ui_font(10, QFont.Weight.DemiBold))
         conn_pill_lay.addWidget(self.conn_status_lbl)
         header_layout.addWidget(conn_pill)
 
@@ -584,7 +604,7 @@ class BrailleBridgeWindow(QMainWindow):
 
         # Left column: Connection Card + 6-Dot Braille Pad Card
         self.student_left_panel = QWidget()
-        self.student_left_panel.setFixedWidth(340)
+        self.student_left_panel.setFixedWidth(368)
         left_layout = QVBoxLayout(self.student_left_panel)
         left_layout.setContentsMargins(0, 0, 0, 0)
         left_layout.setSpacing(12)
@@ -664,7 +684,7 @@ class BrailleBridgeWindow(QMainWindow):
         cell_hdr.addWidget(cell_title)
         cell_hdr.addStretch(1)
         self.chord_preview_lbl = QLabel("Pattern: None  ->  -")
-        self.chord_preview_lbl.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
+        self.chord_preview_lbl.setFont(ui_font(10, QFont.Weight.Bold))
         cell_hdr.addWidget(self.chord_preview_lbl)
         cell_lay.addLayout(cell_hdr)
 
@@ -760,7 +780,7 @@ class BrailleBridgeWindow(QMainWindow):
         bw_num_row = QHBoxLayout()
         bw_num_row.setSpacing(8)
         self.bento_words_val = QLabel("0")
-        self.bento_words_val.setFont(QFont("Segoe UI", 22, QFont.Weight.Bold))
+        self.bento_words_val.setFont(ui_font(22, QFont.Weight.Bold))
         bw_num_row.addWidget(self.bento_words_val)
         self.bento_chars_sub = QLabel("words · 0 chars")
         self.bento_chars_sub.setProperty("muted", True)
@@ -780,7 +800,7 @@ class BrailleBridgeWindow(QMainWindow):
         bm_val_row = QHBoxLayout()
         bm_val_row.setSpacing(8)
         self.bento_lang_val = QLabel("EN")
-        self.bento_lang_val.setFont(QFont("Segoe UI", 20, QFont.Weight.Bold))
+        self.bento_lang_val.setFont(ui_font(20, QFont.Weight.Bold))
         bm_val_row.addWidget(self.bento_lang_val)
         self.bento_case_sub = QLabel("Lowercase")
         self.bento_case_sub.setProperty("muted", True)
@@ -858,7 +878,7 @@ class BrailleBridgeWindow(QMainWindow):
         self.live_text_edit = QTextEdit()
         self.live_text_edit.setReadOnly(True)
         self.live_text_edit.setPlaceholderText("Braille output will appear here as words and sentences...")
-        self.live_text_edit.setFont(QFont("Georgia", 20))
+        self.live_text_edit.setFont(ui_font(20))
         self.live_text_edit.setMinimumHeight(280)
         out_lay.addWidget(self.live_text_edit, 1)
 
@@ -992,7 +1012,7 @@ class BrailleBridgeWindow(QMainWindow):
         tb_lay.setContentsMargins(16, 10, 16, 10)
 
         self.teacher_stats_lbl = QLabel("0 students  ·  0 total characters")
-        self.teacher_stats_lbl.setFont(QFont("Segoe UI", 11, QFont.Weight.DemiBold))
+        self.teacher_stats_lbl.setFont(ui_font(11, QFont.Weight.DemiBold))
         tb_lay.addWidget(self.teacher_stats_lbl)
         tb_lay.addStretch(1)
 
@@ -1091,7 +1111,7 @@ class BrailleBridgeWindow(QMainWindow):
         # Document Reader Top Bar
         doc_top = QHBoxLayout()
         self.log_doc_title = QLabel("Select a Student")
-        self.log_doc_title.setFont(QFont("Georgia", 18, QFont.Weight.Bold))
+        self.log_doc_title.setFont(ui_font(18, QFont.Weight.Bold))
         doc_top.addWidget(self.log_doc_title)
 
         self.log_doc_meta = QLabel("")
@@ -1169,7 +1189,7 @@ class BrailleBridgeWindow(QMainWindow):
         eyebrow.setProperty("overline", True)
         fp_titles.addWidget(eyebrow)
         h2 = QLabel("Freeplay Playground")
-        h2.setFont(QFont("Georgia", 18, QFont.Weight.Bold))
+        h2.setFont(ui_font(18, QFont.Weight.Bold))
         fp_titles.addWidget(h2)
         sub = QLabel(
             "Type on your BrailleBridge or keyboard — every character is spoken aloud. "
@@ -1191,7 +1211,7 @@ class BrailleBridgeWindow(QMainWindow):
 
         self.learner_input = QLineEdit()
         self.learner_input.setPlaceholderText("Type any letter or word — it will be spoken aloud...")
-        self.learner_input.setFont(QFont("Georgia", 16))
+        self.learner_input.setFont(ui_font(16))
         self.learner_input.setFixedHeight(44)
         self.learner_input.textEdited.connect(self._on_learner_input_edited)
         fp_lay.addWidget(self.learner_input)
@@ -1238,7 +1258,7 @@ class BrailleBridgeWindow(QMainWindow):
         eyebrow2.setProperty("overline", True)
         tr_titles.addWidget(eyebrow2)
         h2_2 = QLabel("See What Codes You Need")
-        h2_2.setFont(QFont("Georgia", 18, QFont.Weight.Bold))
+        h2_2.setFont(ui_font(18, QFont.Weight.Bold))
         tr_titles.addWidget(h2_2)
         sub2 = QLabel("Type any word or sentence — get the exact 6-dot chord sequence a student must press, in order.")
         sub2.setProperty("muted", True)
@@ -1258,7 +1278,7 @@ class BrailleBridgeWindow(QMainWindow):
         dec_row = QHBoxLayout()
         self.decoder_input = QLineEdit()
         self.decoder_input.setPlaceholderText("e.g. Hello World or বাংলা")
-        self.decoder_input.setFont(QFont("Georgia", 14))
+        self.decoder_input.setFont(ui_font(14))
         self.decoder_input.setFixedHeight(38)
         self.decoder_input.textChanged.connect(self._update_chord_trainer)
         dec_row.addWidget(self.decoder_input, 1)
@@ -1375,11 +1395,11 @@ class BrailleBridgeWindow(QMainWindow):
             QMainWindow, QWidget#CentralRoot, QDialog {{
                 background-color: {pal['bg_window']};
                 color: {fg};
-                font-family: 'Segoe UI', sans-serif;
+                font-family: 'SF Pro Display', 'SF Pro Text', 'Inter', 'Segoe UI Variable', 'Segoe UI', sans-serif;
             }}
             QWidget {{
                 color: {fg};
-                font-family: 'Segoe UI', sans-serif;
+                font-family: 'SF Pro Display', 'SF Pro Text', 'Inter', 'Segoe UI Variable', 'Segoe UI', sans-serif;
             }}
             QFrame#HeaderFrame, QFrame[card="true"] {{
                 background-color: {pal['bg_panel']};
@@ -1639,13 +1659,13 @@ class BrailleBridgeWindow(QMainWindow):
         self.student_output_expanded = expanded
         self.student_left_panel.setFixedWidth(340)
         if expanded:
-            self.live_text_edit.setFont(QFont("Georgia", 26))
+            self.live_text_edit.setFont(ui_font(26))
             self.live_text_edit.setMinimumHeight(480)
             self.recent_card.hide()
             self.btn_expand_student_view.setText("Standard View")
             self.btn_expand_student_view.setIcon(svg_icon('minimize', pal['text_primary'], 14))
         else:
-            self.live_text_edit.setFont(QFont("Georgia", 20))
+            self.live_text_edit.setFont(ui_font(20))
             self.live_text_edit.setMinimumHeight(280)
             self.recent_card.show()
             self.btn_expand_student_view.setText("Expand Full View")
@@ -1866,8 +1886,8 @@ class BrailleBridgeWindow(QMainWindow):
         self.btn_ind_shift.setText("Shift ON" if self.shift_active else "Shift")
         self.btn_ind_shift.setIcon(svg_icon('arrow_up', gold if self.shift_active else muted, 13))
 
-        active_style = f"background-color: {pal['gold_bg']}; color: {gold}; border: 1px solid {gold}; border-radius: 8px;"
-        idle_style = f"background-color: {pal['bg_surface']}; color: {muted}; border: 1px solid {pal['border']}; border-radius: 8px;"
+        active_style = f"background-color: {pal['gold_bg']}; color: {gold}; border: 1px solid {gold}; border-radius: 12px; padding: 4px 6px; font-size: 11px;"
+        idle_style = f"background-color: {pal['bg_surface']}; color: {muted}; border: 1px solid {pal['border']}; border-radius: 12px; padding: 4px 6px; font-size: 11px;"
 
         self.btn_ind_speech.setStyleSheet(active_style if self.speech.enabled else idle_style)
         self.btn_ind_lang.setStyleSheet(active_style if self.is_bangla else idle_style)
@@ -2079,7 +2099,7 @@ class BrailleBridgeWindow(QMainWindow):
 
                 info_col = QVBoxLayout()
                 n_lbl = QLabel(s['name'])
-                n_lbl.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
+                n_lbl.setFont(ui_font(10, QFont.Weight.Bold))
                 m_lbl = QLabel(f"{s['connType'].upper()} · {s.get('portName') or 'Unassigned'}")
                 m_lbl.setProperty("muted", True)
                 info_col.addWidget(n_lbl)
@@ -2105,7 +2125,7 @@ class BrailleBridgeWindow(QMainWindow):
         if not self.students:
             empty_feed = QLabel("Welcome to Teacher Mode\nAdd students on the left to monitor their BrailleBridge devices.")
             empty_feed.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            empty_feed.setFont(QFont("Georgia", 15))
+            empty_feed.setFont(ui_font(15))
             self.feed_grid_layout.addWidget(empty_feed, 0, 0)
             return
 
@@ -2127,7 +2147,7 @@ class BrailleBridgeWindow(QMainWindow):
 
             meta_col = QVBoxLayout()
             nm = QLabel(s['name'])
-            nm.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
+            nm.setFont(ui_font(12, QFont.Weight.Bold))
             sub_row = QHBoxLayout()
             sub_row.setContentsMargins(0, 0, 0, 0)
             sub_row.setSpacing(6)
@@ -2149,7 +2169,7 @@ class BrailleBridgeWindow(QMainWindow):
             txt_str = ''.join(x['char'] for x in s['chars']).replace('\n\n', ' · ')
             txt_lbl = QLabel(txt_str if txt_str else "Waiting for student input...")
             txt_lbl.setWordWrap(True)
-            txt_lbl.setFont(QFont("Georgia", 13))
+            txt_lbl.setFont(ui_font(13))
             txt_lbl.setMinimumHeight(74)
             txt_lbl.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
             txt_lbl.setStyleSheet(
@@ -2222,7 +2242,7 @@ class BrailleBridgeWindow(QMainWindow):
 
         hdr = QHBoxLayout()
         title = QLabel(f"{student['name']}  ·  Live Expanded Stream")
-        title.setFont(QFont("Georgia", 20, QFont.Weight.Bold))
+        title.setFont(ui_font(20, QFont.Weight.Bold))
         hdr.addWidget(title)
         hdr.addStretch(1)
 
@@ -2248,7 +2268,7 @@ class BrailleBridgeWindow(QMainWindow):
 
         big_text = QTextEdit()
         big_text.setReadOnly(True)
-        big_text.setFont(QFont("Georgia", 24))
+        big_text.setFont(ui_font(24))
         full_str = ''.join(x['char'] for x in student['chars'])
         big_text.setPlainText(full_str if full_str else "Waiting for student input...")
         lay.addWidget(big_text, 1)
@@ -2437,12 +2457,13 @@ class BrailleBridgeWindow(QMainWindow):
                 snippet = sessions[0]['blocks'][0].get('text', '')[:65]
 
             card_btn = QFrame()
+            card_btn.setObjectName("LogStudentCard")
             card_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             border_col = pal['gold'] if is_sel else pal['border']
             bg_col = pal['gold_bg'] if is_sel else pal['bg_surface']
             card_btn.setStyleSheet(
-                f"QFrame {{ background-color: {bg_col}; border: 1.5px solid {border_col}; "
-                f"border-radius: 10px; }}"
+                f"QFrame#LogStudentCard {{ background-color: {bg_col}; border: 1.5px solid {border_col}; "
+                f"border-radius: 16px; }}"
             )
             c_lay = QHBoxLayout(card_btn)
             c_lay.setContentsMargins(12, 10, 12, 10)
@@ -2460,7 +2481,7 @@ class BrailleBridgeWindow(QMainWindow):
             info_col = QVBoxLayout()
             info_col.setSpacing(2)
             nm_lbl = QLabel(g['name'])
-            nm_lbl.setFont(QFont("Segoe UI", 11, QFont.Weight.Bold))
+            nm_lbl.setFont(ui_font(11, QFont.Weight.Bold))
             meta_lbl = QLabel(f"{len(sessions)} session(s) · {total_words} words ({total_chars} chars) · {latest_date}")
             meta_lbl.setStyleSheet(f"color: {pal['text_secondary']}; font-size: 11px;")
             snip_lbl = QLabel(f"\"{snippet}\"")
@@ -2569,7 +2590,7 @@ class BrailleBridgeWindow(QMainWindow):
                 "Have the student type in Student or Teacher view, then click 'Export All'."
             )
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            empty.setFont(QFont("Georgia", 15))
+            empty.setFont(ui_font(15))
             empty.setProperty("muted", True)
             self.log_doc_layout.addWidget(empty)
             self.log_doc_layout.addStretch(1)
@@ -2578,7 +2599,7 @@ class BrailleBridgeWindow(QMainWindow):
         if self.log_raw_mode:
             raw_box = QTextEdit()
             raw_box.setReadOnly(True)
-            raw_box.setFont(QFont("Georgia", 18))
+            raw_box.setFont(ui_font(18))
             raw_box.setPlainText(SmartFormatter.to_plain_text(blocks))
             self.log_doc_layout.addWidget(raw_box, 1)
             return
@@ -2603,7 +2624,7 @@ class BrailleBridgeWindow(QMainWindow):
                 tag.setStyleSheet(f"color: {pal['gold']}; font-size: 10px; font-weight: bold; letter-spacing: 1px;")
                 lbl = QLabel(text)
                 lbl.setWordWrap(True)
-                lbl.setFont(QFont("Georgia", 24, QFont.Weight.Bold))
+                lbl.setFont(ui_font(24, QFont.Weight.Bold))
                 v.addWidget(tag)
                 v.addWidget(lbl)
                 self.log_doc_layout.addWidget(card)
@@ -2619,48 +2640,51 @@ class BrailleBridgeWindow(QMainWindow):
                 tag.setStyleSheet(f"color: {pal['gold']}; font-size: 10px; font-weight: bold;")
                 lbl = QLabel(text)
                 lbl.setWordWrap(True)
-                lbl.setFont(QFont("Georgia", 19, QFont.Weight.Bold))
+                lbl.setFont(ui_font(19, QFont.Weight.Bold))
                 v.addWidget(tag)
                 v.addWidget(lbl)
                 self.log_doc_layout.addWidget(card)
 
             elif btype == 'question':
                 card = QFrame()
+                card.setObjectName("SmartCard")
                 card.setStyleSheet(
-                    f"background-color: {pal['bg_surface']}; "
-                    f"border-left: 5px solid {pal['blue']}; border-radius: 10px; padding: 12px 16px;"
+                    f"QFrame#SmartCard {{ background-color: {pal['bg_surface']}; "
+                    f"border-left: 5px solid {pal['blue']}; border-radius: 16px; padding: 14px 18px; }}"
                 )
                 v = QVBoxLayout(card)
                 tag = SectionHeader("help_circle", "QUESTION")
                 tag.set_color(pal['blue'])
                 lbl = QLabel(text)
                 lbl.setWordWrap(True)
-                lbl.setFont(QFont("Georgia", 17, QFont.Weight.DemiBold))
+                lbl.setFont(ui_font(17, QFont.Weight.DemiBold))
                 v.addWidget(tag)
                 v.addWidget(lbl)
                 self.log_doc_layout.addWidget(card)
 
             elif btype == 'answer':
                 card = QFrame()
+                card.setObjectName("SmartCard")
                 card.setStyleSheet(
-                    f"background-color: {pal['bg_surface']}; "
-                    f"border-left: 5px solid {pal['green']}; border-radius: 10px; padding: 12px 16px;"
+                    f"QFrame#SmartCard {{ background-color: {pal['bg_surface']}; "
+                    f"border-left: 5px solid {pal['green']}; border-radius: 16px; padding: 14px 18px; }}"
                 )
                 v = QVBoxLayout(card)
                 tag = SectionHeader("check_circle", "ANSWER")
                 tag.set_color(pal['green'])
                 lbl = QLabel(text)
                 lbl.setWordWrap(True)
-                lbl.setFont(QFont("Georgia", 17))
+                lbl.setFont(ui_font(17))
                 v.addWidget(tag)
                 v.addWidget(lbl)
                 self.log_doc_layout.addWidget(card)
 
             elif btype == 'math':
                 card = QFrame()
+                card.setObjectName("SmartCard")
                 card.setStyleSheet(
-                    f"background-color: {pal['bg_surface']}; "
-                    f"border-left: 5px solid {pal['teal']}; border-radius: 10px; padding: 12px 16px;"
+                    f"QFrame#SmartCard {{ background-color: {pal['bg_surface']}; "
+                    f"border-left: 5px solid {pal['teal']}; border-radius: 16px; padding: 14px 18px; }}"
                 )
                 v = QVBoxLayout(card)
                 tag = SectionHeader("hash", "MATH & CALCULATION")
@@ -2674,16 +2698,17 @@ class BrailleBridgeWindow(QMainWindow):
 
             elif btype == 'callout':
                 card = QFrame()
+                card.setObjectName("SmartCard")
                 card.setStyleSheet(
-                    f"background-color: {pal['gold_bg']}; "
-                    f"border-left: 5px solid {pal['gold']}; border-radius: 10px; padding: 12px 16px;"
+                    f"QFrame#SmartCard {{ background-color: {pal['gold_bg']}; "
+                    f"border-left: 5px solid {pal['gold']}; border-radius: 16px; padding: 14px 18px; }}"
                 )
                 v = QVBoxLayout(card)
                 tag = SectionHeader("bookmark", "IMPORTANT NOTE")
                 tag.set_color(pal['gold'])
                 lbl = QLabel(text)
                 lbl.setWordWrap(True)
-                lbl.setFont(QFont("Georgia", 17, QFont.Weight.Medium))
+                lbl.setFont(ui_font(17, QFont.Weight.Medium))
                 v.addWidget(tag)
                 v.addWidget(lbl)
                 self.log_doc_layout.addWidget(card)
@@ -2700,12 +2725,12 @@ class BrailleBridgeWindow(QMainWindow):
                 )
                 h = QHBoxLayout(row_w)
                 b_lbl = QLabel(prefix)
-                b_lbl.setFont(QFont("Georgia", 17, QFont.Weight.Bold))
+                b_lbl.setFont(ui_font(17, QFont.Weight.Bold))
                 b_lbl.setStyleSheet(f"color: {pal['gold']};")
                 b_lbl.setFixedWidth(28)
                 t_lbl = QLabel(text)
                 t_lbl.setWordWrap(True)
-                t_lbl.setFont(QFont("Georgia", 17))
+                t_lbl.setFont(ui_font(17))
                 h.addWidget(b_lbl)
                 h.addWidget(t_lbl, 1)
                 self.log_doc_layout.addWidget(row_w)
@@ -2719,7 +2744,7 @@ class BrailleBridgeWindow(QMainWindow):
                 v = QVBoxLayout(p_card)
                 lbl = QLabel(text)
                 lbl.setWordWrap(True)
-                lbl.setFont(QFont("Georgia", 18))
+                lbl.setFont(ui_font(18))
                 v.addWidget(lbl)
                 self.log_doc_layout.addWidget(p_card)
 
@@ -2872,7 +2897,7 @@ class BrailleBridgeWindow(QMainWindow):
 
             ch_lbl = QLabel(step['char'])
             ch_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            ch_lbl.setFont(QFont("Georgia", 14, QFont.Weight.Bold))
+            ch_lbl.setFont(ui_font(14, QFont.Weight.Bold))
             v.addWidget(ch_lbl)
 
             if step['type'] == 'chord':
@@ -2905,7 +2930,7 @@ class BrailleBridgeWindow(QMainWindow):
         lay.setSpacing(10)
 
         name = QLabel("Samin Yeasar")
-        name.setFont(QFont("Georgia", 18, QFont.Weight.Bold))
+        name.setFont(ui_font(18, QFont.Weight.Bold))
         lay.addWidget(name)
 
         role = QLabel("Teacher · Braille Literacy · ID: BB-T-0001")
@@ -2920,7 +2945,7 @@ class BrailleBridgeWindow(QMainWindow):
             f"• Email: samin.yeasar@braillebridge.edu\n"
             f"• Institution: Special Education — BrailleBridge Academy"
         )
-        stats.setFont(QFont("Segoe UI", 11))
+        stats.setFont(ui_font(11))
         lay.addWidget(stats, 1)
 
         btn_ok = QPushButton("Close")
