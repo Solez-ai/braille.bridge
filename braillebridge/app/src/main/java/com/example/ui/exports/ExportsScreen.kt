@@ -298,7 +298,7 @@ fun ExportsScreen(
                             .clickable {
                                 viewModel.selectedLogStudentName.value = group.studentName
                             },
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(20.dp),
                         color = MaterialTheme.colorScheme.surface,
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                     ) {
@@ -345,7 +345,7 @@ fun ExportsScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Surface(
                                         color = Gold.copy(alpha = 0.16f),
-                                        shape = RoundedCornerShape(8.dp),
+                                        shape = RoundedCornerShape(50),
                                         border = BorderStroke(1.dp, Gold.copy(alpha = 0.5f))
                                     ) {
                                         Text(
@@ -376,7 +376,7 @@ fun ExportsScreen(
                                 Surface(
                                     modifier = Modifier.fillMaxWidth(),
                                     color = MaterialTheme.colorScheme.surfaceVariant,
-                                    shape = RoundedCornerShape(10.dp)
+                                    shape = RoundedCornerShape(14.dp)
                                 ) {
                                     Text(
                                         text = previewText,

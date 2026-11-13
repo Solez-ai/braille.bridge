@@ -117,7 +117,7 @@ fun LearnScreen(
         // Dedicated sub-tab selector to avoid vertically stacking and peeking cards
         Surface(
             color = MaterialTheme.colorScheme.surfaceVariant,
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(50),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -127,7 +127,7 @@ fun LearnScreen(
             ) {
                 Surface(
                     color = if (selectedLearnTab == 0) MaterialTheme.colorScheme.primary else Color.Transparent,
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(50),
                     modifier = Modifier
                         .weight(1f)
                         .clickable { selectedLearnTab = 0 }
@@ -143,7 +143,7 @@ fun LearnScreen(
                 }
                 Surface(
                     color = if (selectedLearnTab == 1) MaterialTheme.colorScheme.primary else Color.Transparent,
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(50),
                     modifier = Modifier
                         .weight(1f)
                         .clickable { selectedLearnTab = 1 }

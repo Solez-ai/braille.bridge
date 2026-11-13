@@ -319,11 +319,11 @@ fun StudentScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .animateContentSize(),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surface,
             border = BorderStroke(if (isFullExpanded || isConnected) 1.5.dp else 1.dp, if (isFullExpanded || isConnected) Gold else Color(0xFFD0CCC4))
         ) {
-            Column(modifier = Modifier.padding(14.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -345,7 +345,7 @@ fun StudentScreen(
                         Surface(
                             color = if (isAudioEnabled) AccentGreen.copy(alpha = 0.15f)
                             else MaterialTheme.colorScheme.surfaceVariant,
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(50),
                             border = BorderStroke(1.dp, if (isAudioEnabled) AccentGreen else MaterialTheme.colorScheme.outlineVariant),
                             modifier = Modifier.clickable { viewModel.toggleAudioFeedback() }
                         ) {
@@ -373,7 +373,7 @@ fun StudentScreen(
                         Surface(
                             color = if (isFullExpanded) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                             else MaterialTheme.colorScheme.surfaceVariant,
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(50),
                             border = BorderStroke(1.dp, if (isFullExpanded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
                             modifier = Modifier.clickable {
                                 isFullExpanded = !isFullExpanded
@@ -601,11 +601,11 @@ fun StudentScreen(
             // ── Recent characters strip ───────────────────────────────────────────
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(20.dp),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, Color(0xFFD0CCC4))
             ) {
-                Column(modifier = Modifier.padding(10.dp)) {
+                Column(modifier = Modifier.padding(14.dp)) {
                     Text(
                         text = "RECENT CHARACTERS",
                         style = MaterialTheme.typography.labelSmall,
@@ -652,7 +652,7 @@ fun StudentScreen(
         // ── 6-dot braille cell ────────────────────────────────────────────────
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surface,
             border = BorderStroke(1.dp, Color(0xFFD0CCC4))
         ) {

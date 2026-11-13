@@ -90,11 +90,11 @@ fun TeacherScreen(
         // CLASSROOM ROSTER CARD: Header row + Add student input row
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surface,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
-            Column(modifier = Modifier.padding(14.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 // Row 1 (Header): Title & Stats on left, Export All & Clear All on right
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -365,7 +365,7 @@ private fun StudentAvatarChip(
 
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(50),
         modifier = Modifier.clickable(onClick = onClick)
     ) {
         Row(
@@ -425,11 +425,11 @@ fun StudentFeedCard(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface,
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             // Card Header
             Row(
                 modifier = Modifier.fillMaxWidth(),

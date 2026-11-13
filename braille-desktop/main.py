@@ -739,11 +739,85 @@ class BrailleBridgeWindow(QMainWindow):
         left_layout.addWidget(cell_card, 1)
         self.student_main_layout.addWidget(self.student_left_panel)
 
-        # Right column: Expandable Live Output Card + Recent Characters Card
+        # Right column: Bento KPI Header Row + Expandable Live Output Card + Recent Characters Card
         self.student_right_panel = QWidget()
         right_layout = QVBoxLayout(self.student_right_panel)
         right_layout.setContentsMargins(0, 0, 0, 0)
-        right_layout.setSpacing(12)
+        right_layout.setSpacing(14)
+
+        # Bento Grid Top Row: 3 Modular Bento Tiles (Words/Chars Hero, Active Script/Case, Audio & View)
+        bento_top_row = QHBoxLayout()
+        bento_top_row.setSpacing(14)
+
+        bento_words_tile = QFrame()
+        bento_words_tile.setProperty("bentoHero", True)
+        bw_lay = QVBoxLayout(bento_words_tile)
+        bw_lay.setContentsMargins(18, 12, 18, 12)
+        bw_lay.setSpacing(2)
+        bw_lbl = QLabel("LIVE SESSION OUTPUT")
+        bw_lbl.setProperty("overline", True)
+        bw_lay.addWidget(bw_lbl)
+        bw_num_row = QHBoxLayout()
+        bw_num_row.setSpacing(8)
+        self.bento_words_val = QLabel("0")
+        self.bento_words_val.setFont(QFont("Segoe UI", 22, QFont.Weight.Bold))
+        bw_num_row.addWidget(self.bento_words_val)
+        self.bento_chars_sub = QLabel("words · 0 chars")
+        self.bento_chars_sub.setProperty("muted", True)
+        bw_num_row.addWidget(self.bento_chars_sub)
+        bw_num_row.addStretch(1)
+        bw_lay.addLayout(bw_num_row)
+        bento_top_row.addWidget(bento_words_tile, 2)
+
+        bento_mode_tile = QFrame()
+        bento_mode_tile.setProperty("card", True)
+        bm_lay = QVBoxLayout(bento_mode_tile)
+        bm_lay.setContentsMargins(18, 12, 18, 12)
+        bm_lay.setSpacing(2)
+        bm_lbl = QLabel("ACTIVE SCRIPT")
+        bm_lbl.setProperty("overline", True)
+        bm_lay.addWidget(bm_lbl)
+        bm_val_row = QHBoxLayout()
+        bm_val_row.setSpacing(8)
+        self.bento_lang_val = QLabel("EN")
+        self.bento_lang_val.setFont(QFont("Segoe UI", 20, QFont.Weight.Bold))
+        bm_val_row.addWidget(self.bento_lang_val)
+        self.bento_case_sub = QLabel("Lowercase")
+        self.bento_case_sub.setProperty("muted", True)
+        bm_val_row.addWidget(self.bento_case_sub)
+        bm_val_row.addStretch(1)
+        bm_lay.addLayout(bm_val_row)
+        bento_top_row.addWidget(bento_mode_tile, 2)
+
+        bento_audio_tile = QFrame()
+        bento_audio_tile.setProperty("card", True)
+        ba_lay = QVBoxLayout(bento_audio_tile)
+        ba_lay.setContentsMargins(16, 12, 16, 12)
+        ba_lay.setSpacing(6)
+        ba_lbl = QLabel("AUDIO & VIEW")
+        ba_lbl.setProperty("overline", True)
+        ba_lay.addWidget(ba_lbl)
+        ba_btns = QHBoxLayout()
+        ba_btns.setSpacing(8)
+        # Prominent Sound ON / OFF toggle button right in the Student View main menu
+        self.btn_student_sound_toggle = QPushButton("Sound ON")
+        self.btn_student_sound_toggle.setIconSize(QSize(14, 14))
+        self.btn_student_sound_toggle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_student_sound_toggle.setFixedHeight(32)
+        self.btn_student_sound_toggle.clicked.connect(self._toggle_speech)
+        ba_btns.addWidget(self.btn_student_sound_toggle)
+
+        # Expand / Maximize Student View button
+        self.btn_expand_student_view = QPushButton("Expand")
+        self.btn_expand_student_view.setIconSize(QSize(14, 14))
+        self.btn_expand_student_view.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_expand_student_view.setFixedHeight(32)
+        self.btn_expand_student_view.clicked.connect(self._toggle_student_full_expand)
+        ba_btns.addWidget(self.btn_expand_student_view)
+        ba_lay.addLayout(ba_btns)
+        bento_top_row.addWidget(bento_audio_tile, 2)
+
+        right_layout.addLayout(bento_top_row)
 
         # Live Output Card (Expands dramatically when connected or expanded!)
         self.live_output_card = QFrame()
@@ -761,22 +835,6 @@ class BrailleBridgeWindow(QMainWindow):
         self.live_out_stats.setProperty("muted", True)
         out_hdr.addWidget(self.live_out_stats)
         out_hdr.addStretch(1)
-
-        # Prominent Sound ON / OFF toggle button right in the Student View main menu
-        self.btn_student_sound_toggle = QPushButton("Sound ON")
-        self.btn_student_sound_toggle.setIconSize(QSize(14, 14))
-        self.btn_student_sound_toggle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_student_sound_toggle.setFixedHeight(32)
-        self.btn_student_sound_toggle.clicked.connect(self._toggle_speech)
-        out_hdr.addWidget(self.btn_student_sound_toggle)
-
-        # Expand / Maximize Student View button
-        self.btn_expand_student_view = QPushButton("Expand Full View")
-        self.btn_expand_student_view.setIconSize(QSize(14, 14))
-        self.btn_expand_student_view.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_expand_student_view.setFixedHeight(32)
-        self.btn_expand_student_view.clicked.connect(self._toggle_student_full_expand)
-        out_hdr.addWidget(self.btn_expand_student_view)
 
         # Export All button right inside Student View
         self.btn_student_export_all = QPushButton("Export All to Logs")
@@ -1276,14 +1334,14 @@ class BrailleBridgeWindow(QMainWindow):
                 btn.setIcon(svg_icon(icon_name, gold, 15))
                 btn.setStyleSheet(
                     f"background-color: {pal['gold_bg']}; color: {gold}; "
-                    f"border: 1px solid {gold}; border-radius: 7px; "
-                    f"padding: 4px 14px; font-weight: bold;"
+                    f"border: 1px solid {gold}; border-radius: 14px; "
+                    f"padding: 4px 16px; font-weight: bold;"
                 )
             else:
                 btn.setIcon(svg_icon(icon_name, fg_muted, 15))
                 btn.setStyleSheet(
                     f"background-color: transparent; color: {fg_muted}; "
-                    f"border: none; border-radius: 7px; padding: 4px 14px;"
+                    f"border: none; border-radius: 14px; padding: 4px 16px;"
                 )
 
         # Crisp vector icons on all toolbar & action buttons
@@ -1326,17 +1384,22 @@ class BrailleBridgeWindow(QMainWindow):
             QFrame#HeaderFrame, QFrame[card="true"] {{
                 background-color: {pal['bg_panel']};
                 border: 1px solid {pal['border']};
-                border-radius: 12px;
+                border-radius: 20px;
+            }}
+            QFrame[bentoHero="true"] {{
+                background-color: {pal['gold_bg']};
+                border: 1px solid {pal['gold']};
+                border-radius: 20px;
             }}
             QFrame[subCard="true"] {{
                 background-color: {pal['bg_surface']};
                 border: 1px solid {pal['border']};
-                border-radius: 10px;
+                border-radius: 16px;
             }}
             QFrame#NavContainer {{
                 background-color: {pal['bg_surface']};
                 border: 1px solid {pal['border']};
-                border-radius: 9px;
+                border-radius: 18px;
             }}
             QLabel {{
                 background: transparent;
@@ -1356,16 +1419,16 @@ class BrailleBridgeWindow(QMainWindow):
                 background-color: {pal['bg_surface']};
                 color: {pal['text_secondary']};
                 border: 1px solid {pal['border']};
-                border-radius: 8px;
-                padding: 8px 10px;
+                border-radius: 14px;
+                padding: 8px 12px;
                 font-size: 12px;
             }}
             QPushButton {{
                 background-color: {pal['bg_surface']};
                 color: {pal['text_primary']};
                 border: 1px solid {pal['border']};
-                border-radius: 10px;
-                padding: 5px 12px;
+                border-radius: 14px;
+                padding: 6px 14px;
                 font-weight: 600;
             }}
             QPushButton:hover {{
@@ -1375,6 +1438,7 @@ class BrailleBridgeWindow(QMainWindow):
                 background-color: {pal['gold']};
                 color: #ffffff;
                 border: 1px solid {pal['gold_dark']};
+                border-radius: 14px;
             }}
             QPushButton[primary="true"]:hover {{
                 background-color: {pal['gold_dark']};
@@ -1383,21 +1447,29 @@ class BrailleBridgeWindow(QMainWindow):
                 background-color: {pal['bg_surface']};
                 color: {pal['text_primary']};
                 border: 1px solid {pal['border']};
-                border-radius: 10px;
-                padding: 6px 10px;
+                border-radius: 14px;
+                padding: 6px 12px;
+            }}
+            QComboBox::drop-down {{
+                border: none;
+                width: 24px;
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
             }}
             QComboBox QAbstractItemView {{
                 background-color: {pal['bg_panel']};
                 color: {pal['text_primary']};
                 border: 1px solid {pal['border']};
+                border-radius: 14px;
                 selection-background-color: {pal['gold_bg']};
                 selection-color: {pal['gold']};
                 outline: 0;
-                padding: 4px;
+                padding: 6px;
             }}
             QComboBox QAbstractItemView::item {{
-                min-height: 28px;
-                padding: 4px 10px;
+                min-height: 30px;
+                padding: 4px 12px;
+                border-radius: 10px;
                 color: {pal['text_primary']};
                 background-color: {pal['bg_panel']};
             }}
@@ -1407,38 +1479,34 @@ class BrailleBridgeWindow(QMainWindow):
                 color: {pal['gold']};
             }}
             QTextEdit {{
-                padding: 14px;
+                padding: 16px;
             }}
             QScrollArea, QScrollArea > QWidget > QWidget {{
                 background-color: transparent;
                 border: none;
             }}
-            QScrollBar:vertical {{
-                background: {pal['bg_window']};
-                width: 8px;
-                border-radius: 4px;
+            QScrollBar:vertical, QScrollBar:horizontal {{
+                width: 0px;
+                height: 0px;
+                background: transparent;
+                border: none;
             }}
-            QScrollBar::handle:vertical {{
-                background: {pal['border']};
-                border-radius: 4px;
-                min-height: 24px;
-            }}
-            QScrollBar:horizontal {{
-                background: {pal['bg_window']};
-                height: 8px;
-                border-radius: 4px;
-            }}
-            QScrollBar::handle:horizontal {{
-                background: {pal['border']};
-                border-radius: 4px;
-                min-width: 24px;
+            QScrollBar::handle:vertical, QScrollBar::handle:horizontal,
+            QScrollBar::add-line, QScrollBar::sub-line,
+            QScrollBar::add-page, QScrollBar::sub-page {{
+                background: transparent;
+                border: none;
             }}
         """
         self.setStyleSheet(qss)
         for sa in (self.roster_scroll, self.feed_scroll, self.logs_students_scroll, self.log_doc_scroll, self.decoder_scroll):
+            sa.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            sa.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             sa.setStyleSheet(f"QScrollArea {{ background-color: {pal['bg_panel']}; border: none; }}")
             if sa.viewport():
                 sa.viewport().setStyleSheet(f"background-color: {pal['bg_panel']};")
+        self.live_text_edit.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.live_text_edit.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         for container in (self.roster_list_widget, self.feed_container, self.logs_students_widget, self.log_doc_container, self.decoder_container):
             container.setStyleSheet(f"background-color: {pal['bg_panel']};")
         self._update_student_indicators()
@@ -1725,6 +1793,9 @@ class BrailleBridgeWindow(QMainWindow):
         text = ''.join(x['char'] for x in self.student_chars)
         words = len(text.split()) if text.strip() else 0
         self.live_out_stats.setText(f"{words} words · {len(self.student_chars)} chars")
+        if hasattr(self, 'bento_words_val'):
+            self.bento_words_val.setText(str(words))
+            self.bento_chars_sub.setText(f"words · {len(self.student_chars)} chars")
 
         if not text:
             self.live_text_edit.clear()
@@ -1808,6 +1879,16 @@ class BrailleBridgeWindow(QMainWindow):
         self.btn_student_sound_toggle.setIcon(
             svg_icon('volume_on' if self.speech.enabled else 'volume_off', pal['green'] if self.speech.enabled else muted, 14)
         )
+        if hasattr(self, 'bento_lang_val'):
+            self.bento_lang_val.setText("BN" if self.is_bangla else "EN")
+            if self.is_bangla:
+                self.bento_case_sub.setText("Bangla Script")
+            elif self.shift_active:
+                self.bento_case_sub.setText("Shift Active")
+            elif self.caps_mode != 'OFF':
+                self.bento_case_sub.setText(f"Caps {self.caps_mode}")
+            else:
+                self.bento_case_sub.setText("Lowercase")
         if self.speech.enabled:
             self.btn_student_sound_toggle.setStyleSheet(
                 f"background-color: {pal['bg_surface']}; color: {pal['green']}; "
