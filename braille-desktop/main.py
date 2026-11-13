@@ -13,9 +13,9 @@ import threading
 import time
 from datetime import datetime
 
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject, QSize, QRectF
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject, QSize, QRectF, QVariantAnimation, QEasingCurve
 from PyQt6.QtGui import (
-    QColor, QFont, QIcon, QKeyEvent, QPainter, QPen, QBrush, QCursor
+    QColor, QFont, QIcon, QKeyEvent, QPainter, QPen, QBrush, QCursor, QTextCursor
 )
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
@@ -97,19 +97,36 @@ class RelayBridge(QObject):
 
 
 class BrailleDotButton(QPushButton):
-    """Custom-painted circular Braille dot button for the 6-dot cell."""
+    """Custom-painted circular Braille dot button with smooth spring pop animation."""
 
     def __init__(self, dot_number: int, parent=None):
         super().__init__(parent)
         self.dot_number = dot_number
         self.is_active = False
         self.is_dark = True
-        self.setFixedSize(62, 62)
+        self._pulse_scale = 1.0
+        self._anim = QVariantAnimation(self)
+        self._anim.setDuration(240)
+        self._anim.setStartValue(1.16)
+        self._anim.setEndValue(1.0)
+        self._anim.setEasingCurve(QEasingCurve.Type.OutBack)
+        self._anim.valueChanged.connect(self._on_anim_val)
+        self.setFixedSize(64, 64)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
+    def _on_anim_val(self, val):
+        self._pulse_scale = float(val)
+        self.update()
+
+    def trigger_pulse(self):
+        self._anim.stop()
+        self._anim.start()
 
     def set_active(self, active: bool):
         if self.is_active != active:
             self.is_active = active
+            if active:
+                self.trigger_pulse()
             self.update()
 
     def set_theme(self, is_dark: bool):
@@ -121,7 +138,12 @@ class BrailleDotButton(QPushButton):
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         pal = ThemePalette.DARK if self.is_dark else ThemePalette.LIGHT
 
-        rect = QRectF(4, 4, self.width() - 8, self.height() - 8)
+        cx = self.width() / 2.0
+        cy = self.height() / 2.0
+        base_r = (min(self.width(), self.height()) - 12) / 2.0
+        r = base_r * self._pulse_scale
+        rect = QRectF(cx - r, cy - r, r * 2, r * 2)
+
         if self.is_active:
             p.setBrush(QBrush(QColor(pal['gold'])))
             p.setPen(QPen(QColor(pal['gold_light']), 2.5))
@@ -231,6 +253,14 @@ class BrailleBridgeWindow(QMainWindow):
         self.student_connected = False
         self.student_output_expanded = False  # Full-window expansion toggle
         self.mirror_student_id = None
+        self._caret_visible = True
+        self._just_typed_flash = False
+        self._flash_seq = 0
+        self._dot_pulse_seq = 0
+
+        self._caret_timer = QTimer(self)
+        self._caret_timer.timeout.connect(self._toggle_caret_blink)
+        self._caret_timer.start(520)
 
         # Teacher roster state
         self.students = []             # list of student dicts
@@ -614,9 +644,11 @@ class BrailleBridgeWindow(QMainWindow):
             "Paired Bluetooth Keyboard, or USB Serial."
         )
         self.student_conn_info.setWordWrap(True)
+        self.student_conn_info.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
         self.student_conn_info.setProperty("infoBox", True)
         conn_lay.addWidget(self.student_conn_info)
 
+        conn_card.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
         left_layout.addWidget(conn_card)
 
         # 2) 6-Dot Braille Cell Card
@@ -729,6 +761,14 @@ class BrailleBridgeWindow(QMainWindow):
         self.live_out_stats.setProperty("muted", True)
         out_hdr.addWidget(self.live_out_stats)
         out_hdr.addStretch(1)
+
+        # Prominent Sound ON / OFF toggle button right in the Student View main menu
+        self.btn_student_sound_toggle = QPushButton("Sound ON")
+        self.btn_student_sound_toggle.setIconSize(QSize(14, 14))
+        self.btn_student_sound_toggle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_student_sound_toggle.setFixedHeight(32)
+        self.btn_student_sound_toggle.clicked.connect(self._toggle_speech)
+        out_hdr.addWidget(self.btn_student_sound_toggle)
 
         # Expand / Maximize Student View button
         self.btn_expand_student_view = QPushButton("Expand Full View")
@@ -1346,16 +1386,64 @@ class BrailleBridgeWindow(QMainWindow):
                 border-radius: 10px;
                 padding: 6px 10px;
             }}
+            QComboBox QAbstractItemView {{
+                background-color: {pal['bg_panel']};
+                color: {pal['text_primary']};
+                border: 1px solid {pal['border']};
+                selection-background-color: {pal['gold_bg']};
+                selection-color: {pal['gold']};
+                outline: 0;
+                padding: 4px;
+            }}
+            QComboBox QAbstractItemView::item {{
+                min-height: 28px;
+                padding: 4px 10px;
+                color: {pal['text_primary']};
+                background-color: {pal['bg_panel']};
+            }}
+            QComboBox QAbstractItemView::item:selected,
+            QComboBox QAbstractItemView::item:hover {{
+                background-color: {pal['gold_bg']};
+                color: {pal['gold']};
+            }}
             QTextEdit {{
                 padding: 14px;
             }}
-            QScrollArea {{
-                background: transparent;
+            QScrollArea, QScrollArea > QWidget > QWidget {{
+                background-color: transparent;
+                border: none;
+            }}
+            QScrollBar:vertical {{
+                background: {pal['bg_window']};
+                width: 8px;
+                border-radius: 4px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {pal['border']};
+                border-radius: 4px;
+                min-height: 24px;
+            }}
+            QScrollBar:horizontal {{
+                background: {pal['bg_window']};
+                height: 8px;
+                border-radius: 4px;
+            }}
+            QScrollBar::handle:horizontal {{
+                background: {pal['border']};
+                border-radius: 4px;
+                min-width: 24px;
             }}
         """
         self.setStyleSheet(qss)
+        for sa in (self.roster_scroll, self.feed_scroll, self.logs_students_scroll, self.log_doc_scroll, self.decoder_scroll):
+            sa.setStyleSheet(f"QScrollArea {{ background-color: {pal['bg_panel']}; border: none; }}")
+            if sa.viewport():
+                sa.viewport().setStyleSheet(f"background-color: {pal['bg_panel']};")
+        for container in (self.roster_list_widget, self.feed_container, self.logs_students_widget, self.log_doc_container, self.decoder_container):
+            container.setStyleSheet(f"background-color: {pal['bg_panel']};")
         self._update_student_indicators()
         self._update_student_conn_ui()
+        self._refresh_student_output_text()
 
     def show_toast(self, message: str):
         pal = ThemePalette.DARK if self.is_dark else ThemePalette.LIGHT
@@ -1481,15 +1569,14 @@ class BrailleBridgeWindow(QMainWindow):
     def _set_student_expanded(self, expanded: bool):
         pal = ThemePalette.DARK if self.is_dark else ThemePalette.LIGHT
         self.student_output_expanded = expanded
+        self.student_left_panel.setFixedWidth(340)
         if expanded:
-            self.student_left_panel.setFixedWidth(280)
             self.live_text_edit.setFont(QFont("Georgia", 26))
             self.live_text_edit.setMinimumHeight(480)
             self.recent_card.hide()
             self.btn_expand_student_view.setText("Standard View")
             self.btn_expand_student_view.setIcon(svg_icon('minimize', pal['text_primary'], 14))
         else:
-            self.student_left_panel.setFixedWidth(340)
             self.live_text_edit.setFont(QFont("Georgia", 20))
             self.live_text_edit.setMinimumHeight(280)
             self.recent_card.show()
@@ -1573,7 +1660,45 @@ class BrailleBridgeWindow(QMainWindow):
                     s['lastChord'] = CHAR_TO_CHORD.get(ch, 0)
                     break
 
+        # Trigger typing animations: 6-dot pulse + newly typed character highlight flash
+        self._animate_dots_for_char(ch)
+        self._just_typed_flash = True
+        self._flash_seq += 1
+        seq = self._flash_seq
+        QTimer.singleShot(280, lambda s=seq: self._clear_typed_flash(s))
         self._refresh_student_output_text()
+
+    def _clear_typed_flash(self, seq: int):
+        if seq == self._flash_seq and self._just_typed_flash:
+            self._just_typed_flash = False
+            self._refresh_student_output_text()
+
+    def _toggle_caret_blink(self):
+        if self.current_mode != 'student':
+            return
+        self._caret_visible = not self._caret_visible
+        if self.student_chars:
+            self._refresh_student_output_text()
+
+    def _animate_dots_for_char(self, ch: str):
+        if ch == ' ':
+            return
+        chord = CHAR_TO_CHORD.get(ch, 0) or CHAR_TO_CHORD.get(ch.lower(), 0)
+        if chord <= 0:
+            return
+        dots = chord_dots_list(chord)
+        if not dots:
+            return
+        self._dot_pulse_seq += 1
+        seq = self._dot_pulse_seq
+        for d, btn in self.dot_buttons.items():
+            btn.set_active(d in dots)
+        QTimer.singleShot(340, lambda s=seq: self._clear_dot_pulse(s))
+
+    def _clear_dot_pulse(self, seq: int):
+        if seq == self._dot_pulse_seq and not self.student_dots:
+            for btn in self.dot_buttons.values():
+                btn.set_active(False)
 
     def _student_backspace(self):
         if self.student_chars:
@@ -1595,10 +1720,35 @@ class BrailleBridgeWindow(QMainWindow):
         self._refresh_student_output_text()
 
     def _refresh_student_output_text(self):
+        import html as _html
+        pal = ThemePalette.DARK if self.is_dark else ThemePalette.LIGHT
         text = ''.join(x['char'] for x in self.student_chars)
         words = len(text.split()) if text.strip() else 0
         self.live_out_stats.setText(f"{words} words · {len(self.student_chars)} chars")
-        self.live_text_edit.setPlainText(text + (" ▏" if text else ""))
+
+        if not text:
+            self.live_text_edit.clear()
+        else:
+            caret_col = pal['gold'] if self._caret_visible else 'transparent'
+            caret_html = f"<span style='color:{caret_col}; font-weight:bold;'>|</span>"
+            if self._just_typed_flash and len(text) >= 1:
+                prefix = _html.escape(text[:-1]).replace('\n', '<br>')
+                last_c = _html.escape(text[-1]).replace('\n', '<br>')
+                if last_c == ' ':
+                    last_c = '&nbsp;'
+                flash_html = (
+                    f"<span style='background-color:{pal['gold_bg']}; color:{pal['gold']}; "
+                    f"font-weight:bold; border-radius:4px;'>{last_c}</span>"
+                )
+                self.live_text_edit.setHtml(
+                    f"<div style='line-height:1.5; color:{pal['text_primary']};'>{prefix}{flash_html}{caret_html}</div>"
+                )
+            else:
+                safe = _html.escape(text).replace('\n', '<br>')
+                self.live_text_edit.setHtml(
+                    f"<div style='line-height:1.5; color:{pal['text_primary']};'>{safe}{caret_html}</div>"
+                )
+        self.live_text_edit.moveCursor(QTextCursor.MoveOperation.End)
         sb = self.live_text_edit.verticalScrollBar()
         if sb:
             sb.setValue(sb.maximum())
@@ -1652,6 +1802,22 @@ class BrailleBridgeWindow(QMainWindow):
         self.btn_ind_lang.setStyleSheet(active_style if self.is_bangla else idle_style)
         self.btn_ind_caps.setStyleSheet(active_style if self.caps_mode != 'OFF' else idle_style)
         self.btn_ind_shift.setStyleSheet(active_style if self.shift_active else idle_style)
+
+        # Keep the prominent Sound ON/OFF button in the Student View main menu synced
+        self.btn_student_sound_toggle.setText("Sound ON" if self.speech.enabled else "Sound OFF")
+        self.btn_student_sound_toggle.setIcon(
+            svg_icon('volume_on' if self.speech.enabled else 'volume_off', pal['green'] if self.speech.enabled else muted, 14)
+        )
+        if self.speech.enabled:
+            self.btn_student_sound_toggle.setStyleSheet(
+                f"background-color: {pal['bg_surface']}; color: {pal['green']}; "
+                f"border: 1.5px solid {pal['green']}; border-radius: 10px; padding: 4px 12px; font-weight: bold;"
+            )
+        else:
+            self.btn_student_sound_toggle.setStyleSheet(
+                f"background-color: {pal['bg_surface']}; color: {muted}; "
+                f"border: 1px solid {pal['border']}; border-radius: 10px; padding: 4px 12px; font-weight: 600;"
+            )
 
     def _translate_student_live(self):
         text = ''.join(x['char'] for x in self.student_chars).strip()

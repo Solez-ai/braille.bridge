@@ -4,9 +4,12 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -69,6 +72,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -337,13 +341,33 @@ fun StudentScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Text(
-                            text = "${chars.size} chars",
-                            style = MaterialTheme.typography.labelSmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        // Prominent Sound ON/OFF toggle button right in LIVE OUTPUT menu
+                        Surface(
+                            color = if (isAudioEnabled) AccentGreen.copy(alpha = 0.15f)
+                            else MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (isAudioEnabled) AccentGreen else MaterialTheme.colorScheme.outlineVariant),
+                            modifier = Modifier.clickable { viewModel.toggleAudioFeedback() }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = if (isAudioEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                                    contentDescription = "Toggle Sound",
+                                    tint = if (isAudioEnabled) AccentGreen else TextMuted,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(
+                                    text = if (isAudioEnabled) "Sound ON" else "Sound OFF",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (isAudioEnabled) AccentGreen else TextMuted
+                                )
+                            }
+                        }
 
                         // Full Expand toggle chip
                         Surface(
@@ -440,9 +464,35 @@ fun StudentScreen(
                                     ),
                                     label = "caret_alpha"
                                 )
+                                var justTyped by remember { mutableStateOf(false) }
+                                LaunchedEffect(currentText.length) {
+                                    if (currentText.isNotEmpty()) {
+                                        justTyped = true
+                                        kotlinx.coroutines.delay(260)
+                                        justTyped = false
+                                    }
+                                }
+                                val flashAlpha by animateFloatAsState(
+                                    targetValue = if (justTyped) 0.42f else 0f,
+                                    animationSpec = tween(260),
+                                    label = "type_flash"
+                                )
                                 Text(
                                     text = buildAnnotatedString {
-                                        append(currentText)
+                                        if (currentText.isNotEmpty() && flashAlpha > 0.01f) {
+                                            append(currentText.dropLast(1))
+                                            withStyle(
+                                                SpanStyle(
+                                                    background = Gold.copy(alpha = flashAlpha),
+                                                    color = GoldDark,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            ) {
+                                                append(currentText.takeLast(1))
+                                            }
+                                        } else {
+                                            append(currentText)
+                                        }
                                         withStyle(SpanStyle(background = caretColor.copy(alpha = caretAlpha))) {
                                             append("▏")
                                         }
@@ -807,6 +857,14 @@ private fun BrailleDotButton(
     isPressed: Boolean,
     onClick: () -> Unit
 ) {
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 1.13f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "dot_pop"
+    )
     val bgBrush = if (isPressed) {
         Brush.linearGradient(colors = listOf(GoldLight, GoldDark))
     } else {
@@ -821,6 +879,7 @@ private fun BrailleDotButton(
     Box(
         modifier = Modifier
             .size(56.dp)
+            .graphicsLayer(scaleX = scale, scaleY = scale)
             .clip(CircleShape)
             .background(bgBrush)
             .border(
