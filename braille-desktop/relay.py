@@ -268,7 +268,7 @@ class SmartFormatter:
                 out.extend([f'[Math]     {txt}', ''])
                 num = 0
             elif btype == 'callout':
-                out.extend([f'★ {txt}', ''])
+                out.extend([f'[IMPORTANT] {txt}', ''])
                 num = 0
             elif btype == 'bullet':
                 out.append(f'  • {txt}')

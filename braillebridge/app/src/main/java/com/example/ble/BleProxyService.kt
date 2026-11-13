@@ -179,7 +179,7 @@ class BleProxyService : Service() {
                 if (isAssigned || noActiveConnection) {
                     val assignedStudentName = assignments.entries.find { it.value == address }?.key
                     Log.d(TAG, "Auto-connecting discovered device: '$name' ($address) for student: $assignedStudentName")
-                    _events.tryEmit(BleEvent.Debug("📡 Scan found '$name' — auto-connecting"))
+                    _events.tryEmit(BleEvent.Debug("[BLE] Scan found '$name' — auto-connecting"))
                     connectDevice(device, assignedStudentName)
                 }
             }
@@ -195,7 +195,7 @@ class BleProxyService : Service() {
         super.onCreate()
         instance = this
         settingsStore = SettingsStore(this)
-        _events.tryEmit(BleEvent.Debug("🟢 BLE service started"))
+        _events.tryEmit(BleEvent.Debug("[BLE] BLE service started"))
 
         bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
         bluetoothAdapter = bluetoothManager?.adapter
@@ -273,7 +273,7 @@ class BleProxyService : Service() {
         }
         if (!connections.containsKey(address) || connections[address]?.isConnected != true) {
             Log.d(TAG, "Auto picking up native BrailleBridge connection: '$name' ($address)")
-            _events.tryEmit(BleEvent.Debug("📡 Native BT connect: '$name' — picking up"))
+            _events.tryEmit(BleEvent.Debug("[BLE] Native BT connect: '$name' — picking up"))
             connectDevice(device)
         }
     }

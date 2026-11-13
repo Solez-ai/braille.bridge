@@ -23,8 +23,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.GTranslate
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -482,14 +486,23 @@ fun ReviewScreen(
                                     border = BorderStroke(1.5.dp, qBlue.copy(alpha = 0.65f))
                                 ) {
                                     Column(modifier = Modifier.padding(14.dp)) {
-                                        Text(
-                                            text = "QUESTION",
-                                            fontSize = 10.sp,
-                                            fontFamily = FontFamily.Monospace,
-                                            fontWeight = FontWeight.Bold,
-                                            color = qBlue
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.HelpOutline,
+                                                contentDescription = null,
+                                                tint = qBlue,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(5.dp))
+                                            Text(
+                                                text = "QUESTION",
+                                                fontSize = 10.sp,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontWeight = FontWeight.Bold,
+                                                color = qBlue
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(6.dp))
                                         Text(
                                             text = block.text,
                                             fontSize = 20.sp,
@@ -509,14 +522,23 @@ fun ReviewScreen(
                                     border = BorderStroke(1.5.dp, AccentGreen.copy(alpha = 0.65f))
                                 ) {
                                     Column(modifier = Modifier.padding(14.dp)) {
-                                        Text(
-                                            text = "ANSWER",
-                                            fontSize = 10.sp,
-                                            fontFamily = FontFamily.Monospace,
-                                            fontWeight = FontWeight.Bold,
-                                            color = AccentGreen
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.CheckCircle,
+                                                contentDescription = null,
+                                                tint = AccentGreen,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(5.dp))
+                                            Text(
+                                                text = "ANSWER",
+                                                fontSize = 10.sp,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontWeight = FontWeight.Bold,
+                                                color = AccentGreen
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(6.dp))
                                         Text(
                                             text = block.text,
                                             fontSize = 20.sp,
@@ -536,14 +558,23 @@ fun ReviewScreen(
                                     border = BorderStroke(1.5.dp, tealAccent.copy(alpha = 0.65f))
                                 ) {
                                     Column(modifier = Modifier.padding(14.dp)) {
-                                        Text(
-                                            text = "MATH & CALCULATION",
-                                            fontSize = 10.sp,
-                                            fontFamily = FontFamily.Monospace,
-                                            fontWeight = FontWeight.Bold,
-                                            color = tealAccent
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.Calculate,
+                                                contentDescription = null,
+                                                tint = tealAccent,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(5.dp))
+                                            Text(
+                                                text = "MATH & CALCULATION",
+                                                fontSize = 10.sp,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontWeight = FontWeight.Bold,
+                                                color = tealAccent
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(6.dp))
                                         Text(
                                             text = block.text,
                                             fontSize = 21.sp,
@@ -563,14 +594,23 @@ fun ReviewScreen(
                                     border = BorderStroke(1.5.dp, Gold)
                                 ) {
                                     Column(modifier = Modifier.padding(14.dp)) {
-                                        Text(
-                                            text = "KEY HIGHLIGHT",
-                                            fontSize = 10.sp,
-                                            fontFamily = FontFamily.Monospace,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Gold
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.Bookmark,
+                                                contentDescription = null,
+                                                tint = Gold,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(5.dp))
+                                            Text(
+                                                text = "KEY HIGHLIGHT",
+                                                fontSize = 10.sp,
+                                                fontFamily = FontFamily.Monospace,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Gold
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(6.dp))
                                         Text(
                                             text = block.text,
                                             fontSize = 20.sp,
