@@ -2132,22 +2132,27 @@ class BrailleBridgeWindow(QMainWindow):
         for idx, s in enumerate(self.students):
             card = QFrame()
             card.setProperty("card", True)
+            card.setMaximumHeight(290)
             c_lay = QVBoxLayout(card)
             c_lay.setContentsMargins(16, 14, 16, 14)
             c_lay.setSpacing(10)
 
             top_r = QHBoxLayout()
+            top_r.setSpacing(10)
+            top_r.setAlignment(Qt.AlignmentFlag.AlignVCenter)
             av = QLabel(get_initials(s['name']))
-            av.setFixedSize(34, 34)
+            av.setFixedSize(36, 36)
             av.setAlignment(Qt.AlignmentFlag.AlignCenter)
             av.setStyleSheet(
-                f"background-color: {s['color']}; color: #ffffff; border-radius: 17px; font-weight: bold;"
+                f"background-color: {s['color']}; color: #ffffff; border-radius: 18px; font-weight: bold;"
             )
             top_r.addWidget(av)
 
             meta_col = QVBoxLayout()
+            meta_col.setContentsMargins(0, 0, 0, 0)
+            meta_col.setSpacing(2)
             nm = QLabel(s['name'])
-            nm.setFont(ui_font(12, QFont.Weight.Bold))
+            nm.setFont(ui_font(13, QFont.Weight.Bold))
             sub_row = QHBoxLayout()
             sub_row.setContentsMargins(0, 0, 0, 0)
             sub_row.setSpacing(6)
@@ -2164,18 +2169,18 @@ class BrailleBridgeWindow(QMainWindow):
             meta_col.addLayout(sub_row)
             top_r.addLayout(meta_col, 1)
 
-            c_lay.addLayout(top_r)
+            c_lay.addLayout(top_r, 0)
 
             txt_str = ''.join(x['char'] for x in s['chars']).replace('\n\n', ' · ')
             txt_lbl = QLabel(txt_str if txt_str else "Waiting for student input...")
             txt_lbl.setWordWrap(True)
             txt_lbl.setFont(ui_font(13))
-            txt_lbl.setMinimumHeight(74)
+            txt_lbl.setMinimumHeight(90)
             txt_lbl.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
             txt_lbl.setStyleSheet(
-                f"background-color: {pal['bg_surface']}; border-radius: 8px; padding: 10px;"
+                f"background-color: {pal['bg_surface']}; border-radius: 14px; padding: 12px;"
             )
-            c_lay.addWidget(txt_lbl)
+            c_lay.addWidget(txt_lbl, 1)
             s['_text_lbl'] = txt_lbl
 
             bot_r = QHBoxLayout()
