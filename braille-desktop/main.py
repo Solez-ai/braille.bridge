@@ -25,7 +25,8 @@ from PyQt6.QtWidgets import (
 
 from icons import svg_icon, svg_pixmap, SectionHeader
 from relay import (
-    RelayManager, SmartFormatter, DATA_DIR, LOGS_DIR, STUDENT_LOGS_FILE, ROSTER_FILE
+    RelayManager, SmartFormatter, DATA_DIR, LOGS_DIR,
+    STUDENT_LOGS_FILE, ROSTER_FILE, SETTINGS_FILE
 )
 from protocol import (
     CHAR_TO_CHORD, resolve_chord, chord_dots_list, decode_text_to_steps,
@@ -301,6 +302,11 @@ class BrailleBridgeWindow(QMainWindow):
         self.learner_words = []
         self.last_spoken_word = ''
 
+        # Teacher / Classroom profile (persisted in SETTINGS_FILE)
+        self.teacher_name = "Teacher"
+        self.school_name = "BrailleBridge Classroom"
+        self.teacher_email = ""
+
         # Load persisted data
         self._load_persisted_state()
 
@@ -322,6 +328,20 @@ class BrailleBridgeWindow(QMainWindow):
     # ================================================================ PERSISTENCE
     def _load_persisted_state(self):
         os.makedirs(DATA_DIR, exist_ok=True)
+        try:
+            if os.path.exists(SETTINGS_FILE):
+                with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
+                    cfg = json.load(f)
+                self.teacher_name = cfg.get('teacher_name', 'Teacher') or 'Teacher'
+                self.school_name = cfg.get('school_name', 'BrailleBridge Classroom') or 'BrailleBridge Classroom'
+                self.teacher_email = cfg.get('teacher_email', '') or ''
+                if 'is_dark' in cfg:
+                    self.is_dark = bool(cfg['is_dark'])
+                if 'speech_enabled' in cfg:
+                    self.speech.enabled = bool(cfg['speech_enabled'])
+        except Exception:
+            pass
+
         try:
             if os.path.exists(STUDENT_LOGS_FILE):
                 with open(STUDENT_LOGS_FILE, 'r', encoding='utf-8') as f:
@@ -347,6 +367,20 @@ class BrailleBridgeWindow(QMainWindow):
                         'lastChord': 0,
                     })
                     self.student_id_seq += 1
+        except Exception:
+            pass
+
+    def _save_settings(self):
+        os.makedirs(DATA_DIR, exist_ok=True)
+        try:
+            with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+                json.dump({
+                    'teacher_name': self.teacher_name,
+                    'school_name': self.school_name,
+                    'teacher_email': self.teacher_email,
+                    'is_dark': self.is_dark,
+                    'speech_enabled': self.speech.enabled,
+                }, f, ensure_ascii=False, indent=2)
         except Exception:
             pass
 
@@ -389,6 +423,8 @@ class BrailleBridgeWindow(QMainWindow):
     def _initial_port_scan(self):
         ports = self.relay.list_ports()
         self._on_relay_ports(ports)
+        # Kick off a silent background Bluetooth scan on startup so BLE devices appear automatically
+        self._scan_bluetooth_clicked(silent=True)
 
     def _on_relay_ports(self, ports: list):
         self.available_ports = ports or []
@@ -545,7 +581,7 @@ class BrailleBridgeWindow(QMainWindow):
         header_layout.addWidget(self.nav_container)
 
         # Teacher Profile Pill
-        self.profile_btn = QPushButton("SY  Samin Yeasar")
+        self.profile_btn = QPushButton(f"{get_initials(self.teacher_name)}  {self.teacher_name}")
         self.profile_btn.setIconSize(QSize(15, 15))
         self.profile_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.profile_btn.setFixedHeight(36)
@@ -952,9 +988,10 @@ class BrailleBridgeWindow(QMainWindow):
         self._section_headers.append(r_title)
         roster_hdr.addWidget(r_title)
         roster_hdr.addStretch(1)
-        self.btn_roster_scan = QPushButton("Scan BLE")
+        self.btn_roster_scan = QPushButton("Scan Bluetooth")
         self.btn_roster_scan.setIconSize(QSize(13, 13))
         self.btn_roster_scan.setFixedHeight(28)
+        self.btn_roster_scan.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_roster_scan.clicked.connect(self._scan_bluetooth_clicked)
         roster_hdr.addWidget(self.btn_roster_scan)
         left_lay.addLayout(roster_hdr)
@@ -968,12 +1005,20 @@ class BrailleBridgeWindow(QMainWindow):
 
         self.input_student_name = QLineEdit()
         self.input_student_name.setPlaceholderText("Student Name (e.g. Sarah Ahmed)")
-        self.input_student_name.setFixedHeight(32)
+        self.input_student_name.setFixedHeight(34)
         self.input_student_name.returnPressed.connect(self._add_student_from_form)
         add_lay.addWidget(self.input_student_name)
 
+        self.teacher_conn_type_combo = QComboBox()
+        self.teacher_conn_type_combo.addItem("Bluetooth LE (BrailleBridge)", "ble")
+        self.teacher_conn_type_combo.addItem("USB Serial (COM Port)", "usb")
+        self.teacher_conn_type_combo.addItem("Assign Device Later", "later")
+        self.teacher_conn_type_combo.setFixedHeight(34)
+        self.teacher_conn_type_combo.currentIndexChanged.connect(self._refresh_port_combos)
+        add_lay.addWidget(self.teacher_conn_type_combo)
+
         self.teacher_port_combo = QComboBox()
-        self.teacher_port_combo.setFixedHeight(32)
+        self.teacher_port_combo.setFixedHeight(34)
         add_lay.addWidget(self.teacher_port_combo)
 
         row_baud_add = QHBoxLayout()
@@ -999,6 +1044,7 @@ class BrailleBridgeWindow(QMainWindow):
         self.roster_scroll.setWidgetResizable(True)
         self.roster_scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.roster_list_widget = QWidget()
+        self.roster_list_widget.setObjectName("RosterListWidget")
         self.roster_list_layout = QVBoxLayout(self.roster_list_widget)
         self.roster_list_layout.setContentsMargins(0, 0, 0, 0)
         self.roster_list_layout.setSpacing(8)
@@ -1094,6 +1140,7 @@ class BrailleBridgeWindow(QMainWindow):
         self.logs_students_scroll.setWidgetResizable(True)
         self.logs_students_scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.logs_students_widget = QWidget()
+        self.logs_students_widget.setObjectName("LogsStudentsWidget")
         self.logs_students_layout = QVBoxLayout(self.logs_students_widget)
         self.logs_students_layout.setContentsMargins(0, 0, 0, 0)
         self.logs_students_layout.setSpacing(8)
@@ -1118,6 +1165,7 @@ class BrailleBridgeWindow(QMainWindow):
 
         # Document Reader Top Bar
         doc_top = QHBoxLayout()
+        doc_top.setSpacing(8)
         self.log_doc_title = QLabel("Select a Student")
         self.log_doc_title.setFont(ui_font(18, QFont.Weight.Bold))
         doc_top.addWidget(self.log_doc_title)
@@ -1330,6 +1378,7 @@ class BrailleBridgeWindow(QMainWindow):
         for btn in self.dot_buttons.values():
             btn.set_theme(self.is_dark)
         self._apply_theme()
+        self._save_settings()
         if self.current_mode == 'teacher':
             self._rebuild_teacher_ui()
         elif self.current_mode == 'logs':
@@ -1541,8 +1590,14 @@ class BrailleBridgeWindow(QMainWindow):
         self.live_text_edit.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.live_text_edit.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         for container in (self.roster_list_widget, self.logs_students_widget, self.log_doc_container, self.decoder_container):
-            container.setStyleSheet(f"background-color: {pal['bg_panel']};")
+            obj = container.objectName()
+            if obj:
+                container.setStyleSheet(f"QWidget#{obj} {{ background-color: {pal['bg_panel']}; }}")
+            else:
+                container.setStyleSheet(f"background-color: {pal['bg_panel']};")
         self.feed_container.setStyleSheet(f"background-color: {pal['bg_window']};")
+        self.theme_btn.setText("Light" if self.is_dark else "Dark")
+        self._refresh_port_combos()
         self._update_student_indicators()
         self._update_student_conn_ui()
         self._refresh_student_output_text()
@@ -1561,37 +1616,96 @@ class BrailleBridgeWindow(QMainWindow):
     def _refresh_port_combos(self):
         pal = ThemePalette.DARK if self.is_dark else ThemePalette.LIGHT
         fg = pal['text_primary']
-        for combo in (self.student_port_combo, self.teacher_port_combo):
-            prev = combo.currentData()
-            combo.clear()
-            # Always include Bluetooth HID Keyboard mode on Student combo
-            if combo is self.student_port_combo:
-                combo.addItem(svg_icon('keyboard', pal['gold'], 14), "Bluetooth HID Keyboard (Direct Input)", "KEYBOARD")
-            for p in self.available_ports:
-                name = p.get('name', '')
-                desc = p.get('description', name)
-                ic = svg_icon('bluetooth', pal['blue'], 14) if name.startswith("BLE:") else svg_icon('usb', fg, 14)
-                combo.addItem(ic, desc, name)
-            if prev:
-                idx = combo.findData(prev)
-                if idx >= 0:
-                    combo.setCurrentIndex(idx)
 
-    def _scan_bluetooth_clicked(self):
+        # 1) Student combo: Bluetooth HID Keyboard + BLE + USB Serial
+        prev_st = self.student_port_combo.currentData()
+        self.student_port_combo.clear()
+        self.student_port_combo.addItem(
+            svg_icon('keyboard', pal['gold'], 14),
+            "Bluetooth HID Keyboard (Direct Input)",
+            "KEYBOARD"
+        )
+        for p in self.available_ports:
+            name = p.get('name', '')
+            desc = p.get('description', name)
+            ic = svg_icon('bluetooth', pal['blue'], 14) if name.startswith("BLE:") else svg_icon('usb', fg, 14)
+            self.student_port_combo.addItem(ic, desc, name)
+        if prev_st:
+            idx = self.student_port_combo.findData(prev_st)
+            if idx >= 0:
+                self.student_port_combo.setCurrentIndex(idx)
+
+        # 2) Teacher combo: filtered by teacher_conn_type_combo (ble / usb / later)
+        prev_tc = self.teacher_port_combo.currentData()
+        self.teacher_port_combo.clear()
+        conn_mode = self.teacher_conn_type_combo.currentData() if hasattr(self, 'teacher_conn_type_combo') else 'ble'
+
+        if conn_mode == 'later':
+            self.teacher_port_combo.setEnabled(False)
+            self.teacher_port_combo.addItem(svg_icon('clock', pal['text_muted'], 14), "Assign device later", "")
+            return
+
+        self.teacher_port_combo.setEnabled(True)
+        ble_ports = [p for p in self.available_ports if str(p.get('name', '')).startswith('BLE:')]
+        usb_ports = [p for p in self.available_ports if not str(p.get('name', '')).startswith('BLE:')]
+
+        if conn_mode == 'ble':
+            if ble_ports:
+                for p in ble_ports:
+                    self.teacher_port_combo.addItem(
+                        svg_icon('bluetooth', pal['blue'], 14),
+                        p.get('description', p['name']),
+                        p['name']
+                    )
+            else:
+                self.teacher_port_combo.addItem(
+                    svg_icon('bluetooth', pal['text_muted'], 14),
+                    "No BLE found yet — click 'Scan Bluetooth'",
+                    ""
+                )
+        else:
+            if usb_ports:
+                for p in usb_ports:
+                    self.teacher_port_combo.addItem(
+                        svg_icon('usb', fg, 14),
+                        p.get('description', p['name']),
+                        p['name']
+                    )
+            else:
+                self.teacher_port_combo.addItem(
+                    svg_icon('usb', pal['text_muted'], 14),
+                    "No USB Serial port detected",
+                    ""
+                )
+
+        if prev_tc:
+            idx = self.teacher_port_combo.findData(prev_tc)
+            if idx >= 0:
+                self.teacher_port_combo.setCurrentIndex(idx)
+
+    def _scan_bluetooth_clicked(self, silent: bool = False):
         self.btn_scan_ble.setText("Scanning...")
         self.btn_scan_ble.setEnabled(False)
+        if hasattr(self, 'btn_roster_scan'):
+            self.btn_roster_scan.setText("Scanning...")
+            self.btn_roster_scan.setEnabled(False)
 
         def _worker():
             self.relay.scan_bluetooth(include_all_named=True)
             ports = self.relay.list_ports()
             self.bridge.sig_ports.emit(ports)
-            QTimer.singleShot(0, self._on_ble_scan_finished)
+            QTimer.singleShot(0, lambda: self._on_ble_scan_finished(silent=silent))
 
         threading.Thread(target=_worker, daemon=True).start()
 
-    def _on_ble_scan_finished(self):
+    def _on_ble_scan_finished(self, silent: bool = False):
         self.btn_scan_ble.setText("Scan BLE")
         self.btn_scan_ble.setEnabled(True)
+        if hasattr(self, 'btn_roster_scan'):
+            self.btn_roster_scan.setText("Scan Bluetooth")
+            self.btn_roster_scan.setEnabled(True)
+        if silent:
+            return
         err = self.relay.ble.last_error
         ble_count = sum(1 for p in self.available_ports if str(p.get('name', '')).startswith('BLE:'))
         if err:
@@ -1602,12 +1716,13 @@ class BrailleBridgeWindow(QMainWindow):
 
     def _toggle_student_connection(self):
         if self.student_connected:
-            if self.student_port and self.student_port != "KEYBOARD":
-                self.relay.close_port(self.student_port)
+            old_port = self.student_port
             self.student_port = None
             self.student_connected = False
             self._update_student_conn_ui()
             self.show_toast("Disconnected student device.")
+            if old_port and old_port != "KEYBOARD":
+                threading.Thread(target=lambda: self.relay.close_port(old_port), daemon=True).start()
             return
 
         port_name = self.student_port_combo.currentData()
@@ -1619,26 +1734,33 @@ class BrailleBridgeWindow(QMainWindow):
         if port_name == "KEYBOARD":
             self.student_port = "KEYBOARD"
             self.student_connected = True
-            # Auto-expand Student View when connected!
             self._set_student_expanded(True)
             self._update_student_conn_ui()
             self.show_toast("Connected to Bluetooth HID Keyboard! Start typing on BrailleBridge.")
             return
 
+        self.btn_student_connect.setText("Connecting...")
+        self.btn_student_connect.setEnabled(False)
         self.student_conn_info.setText(f"Connecting to {port_name}...")
-        QApplication.processEvents()
-        ok = self.relay.open_port(port_name, baud)
-        if ok:
-            self.student_port = port_name
-            self.student_connected = True
-            # Auto-expand Student View when connected!
-            self._set_student_expanded(True)
-            self._update_student_conn_ui()
-            self.show_toast(f"Connected to {port_name}!")
-        else:
-            err = self.relay.ble.last_error or "Check that the device is powered on and nearby."
-            self.student_conn_info.setText(f"Failed to connect to {port_name}.\n{err}")
-            self.show_toast(f"Could not open {port_name}.")
+
+        def _worker():
+            ok = self.relay.open_port(port_name, baud)
+            def _done():
+                self.btn_student_connect.setEnabled(True)
+                if ok:
+                    self.student_port = port_name
+                    self.student_connected = True
+                    self._set_student_expanded(True)
+                    self._update_student_conn_ui()
+                    self.show_toast(f"Connected to {port_name}!")
+                else:
+                    err = self.relay.ble.last_error or "Check that the device is powered on and nearby."
+                    self._update_student_conn_ui()
+                    self.student_conn_info.setText(f"Failed to connect to {port_name}.\n{err}")
+                    self.show_toast(f"Could not open {port_name}.")
+            QTimer.singleShot(0, _done)
+
+        threading.Thread(target=_worker, daemon=True).start()
 
     def _update_student_conn_ui(self):
         pal = ThemePalette.DARK if self.is_dark else ThemePalette.LIGHT
@@ -1978,9 +2100,12 @@ class BrailleBridgeWindow(QMainWindow):
         if not name:
             self.show_toast("Enter a student name first.")
             return
+        conn_mode = self.teacher_conn_type_combo.currentData() if hasattr(self, 'teacher_conn_type_combo') else 'ble'
         port_name = self.teacher_port_combo.currentData() or ''
         baud = self.teacher_baud_combo.currentData() or 115200
-        conn_type = 'bluetooth' if (not port_name or str(port_name).startswith('BLE:')) else 'usb'
+        if conn_mode == 'later':
+            port_name = ''
+        conn_type = 'bluetooth' if (conn_mode == 'ble' or str(port_name).startswith('BLE:') or not port_name) else 'usb'
 
         st = {
             'id': self.student_id_seq,
@@ -1991,6 +2116,7 @@ class BrailleBridgeWindow(QMainWindow):
             'color': STUDENT_COLORS[len(self.students) % len(STUDENT_COLORS)],
             'chars': [],
             'connected': False,
+            'connecting': False,
             'mirror': False,
             'lastChord': 0,
         }
@@ -2004,30 +2130,51 @@ class BrailleBridgeWindow(QMainWindow):
         self.show_toast(f"Added {name} to classroom roster.")
 
     def _toggle_roster_student_conn(self, student: dict):
+        if student.get('connecting'):
+            return
         port_name = student.get('portName')
         if not port_name:
-            # Assign currently selected port in teacher combo if available
             port_name = self.teacher_port_combo.currentData()
             if port_name:
                 student['portName'] = port_name
+                student['connType'] = 'bluetooth' if str(port_name).startswith('BLE:') else 'usb'
             else:
-                self.show_toast(f"Select a Bluetooth/Serial device in the dropdown for {student['name']} first.")
+                self.show_toast(f"Select a Bluetooth or USB device for {student['name']} first (click Scan Bluetooth).")
                 return
 
         if student['connected']:
-            self.relay.close_port(port_name)
-            student['connected'] = False
+            student['connecting'] = True
             self._rebuild_teacher_ui()
-            self.show_toast(f"Disconnected {student['name']}.")
+
+            def _disc():
+                self.relay.close_port(port_name)
+                def _done():
+                    student['connected'] = False
+                    student['connecting'] = False
+                    self._rebuild_teacher_ui()
+                    self.show_toast(f"Disconnected {student['name']}.")
+                QTimer.singleShot(0, _done)
+
+            threading.Thread(target=_disc, daemon=True).start()
         else:
-            ok = self.relay.open_port(port_name, student['baud'])
-            if ok:
-                student['connected'] = True
-                self.relay.set_assignment(student['name'], port_name)
-                self._rebuild_teacher_ui()
-                self.show_toast(f"Connected {student['name']} ({port_name})!")
-            else:
-                self.show_toast(f"Could not connect {student['name']} to {port_name}.")
+            student['connecting'] = True
+            self._rebuild_teacher_ui()
+
+            def _conn():
+                ok = self.relay.open_port(port_name, student['baud'])
+                def _done():
+                    student['connecting'] = False
+                    if ok:
+                        student['connected'] = True
+                        self.relay.set_assignment(student['name'], port_name)
+                        self._rebuild_teacher_ui()
+                        self.show_toast(f"Connected {student['name']} ({port_name})!")
+                    else:
+                        self._rebuild_teacher_ui()
+                        self.show_toast(f"Could not connect {student['name']} to {port_name}.")
+                QTimer.singleShot(0, _done)
+
+            threading.Thread(target=_conn, daemon=True).start()
 
     def _simulate_student_typing(self, student: dict):
         sample = "Science Notes\n\nChapter 1 Motion\n\nWhat is speed? Answer: Speed is distance divided by time. 20 + 30 = 50. Remember: Check your units!"
@@ -2051,11 +2198,15 @@ class BrailleBridgeWindow(QMainWindow):
         self._rebuild_teacher_ui()
 
     def _remove_single_student(self, student: dict):
-        if student.get('portName') and student.get('connected'):
-            self.relay.close_port(student['portName'])
+        port_to_close = student.get('portName') if student.get('connected') else None
         self.students = [s for s in self.students if s['id'] != student['id']]
+        if self.mirror_student_id == student['id']:
+            self.mirror_student_id = None
         self._save_persisted_roster()
         self._rebuild_teacher_ui()
+        self.show_toast(f"Removed {student['name']}.")
+        if port_to_close:
+            threading.Thread(target=lambda: self.relay.close_port(port_to_close), daemon=True).start()
 
     def _clear_all_teacher_feeds(self):
         for s in self.students:
@@ -2121,7 +2272,10 @@ class BrailleBridgeWindow(QMainWindow):
                 r_lay.addLayout(info_col, 1)
 
                 if not s.get('mirror'):
-                    c_btn = QPushButton("Disconnect" if s['connected'] else "Connect")
+                    c_label = "..." if s.get('connecting') else ("Disconnect" if s['connected'] else "Connect")
+                    c_btn = QPushButton(c_label)
+                    c_btn.setEnabled(not s.get('connecting'))
+                    c_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
                     c_btn.setFixedHeight(28)
                     c_btn.clicked.connect(lambda checked, st=s: self._toggle_roster_student_conn(st))
                     r_lay.addWidget(c_btn)
@@ -2225,12 +2379,18 @@ class BrailleBridgeWindow(QMainWindow):
             btn_export = QPushButton("Export")
             btn_export.setIcon(svg_icon('upload', '#ffffff', 13))
             btn_export.setIconSize(QSize(13, 13))
-            btn_export.setProperty("primary", True)
+            btn_export.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            btn_export.setStyleSheet(
+                f"QPushButton {{ background-color: {pal['gold']}; color: #ffffff; "
+                f"border: 1px solid {pal['gold_dark']}; border-radius: 14px; padding: 4px 12px; font-weight: 600; }}"
+                f"QPushButton:hover {{ background-color: {pal['gold_dark']}; }}"
+            )
             btn_export.setFixedHeight(28)
             btn_export.clicked.connect(lambda checked, st=s: self.export_single_student_to_logs(st))
             bot_r.addWidget(btn_export)
 
             btn_clr = QPushButton("Clear")
+            btn_clr.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             btn_clr.setFixedHeight(28)
             btn_clr.clicked.connect(lambda checked, st=s: self._clear_single_student(st))
             bot_r.addWidget(btn_clr)
@@ -2238,8 +2398,13 @@ class BrailleBridgeWindow(QMainWindow):
             btn_del = QPushButton()
             btn_del.setIcon(svg_icon('trash', pal['red'], 13))
             btn_del.setIconSize(QSize(13, 13))
+            btn_del.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             btn_del.setToolTip("Remove Student")
             btn_del.setFixedSize(28, 28)
+            btn_del.setStyleSheet(
+                f"QPushButton {{ background-color: {pal['bg_surface']}; border: 1px solid {pal['border']}; border-radius: 14px; padding: 0px; }}"
+                f"QPushButton:hover {{ background-color: {pal['bg_hover']}; border-color: {pal['red']}; }}"
+            )
             btn_del.clicked.connect(lambda checked, st=s: self._remove_single_student(st))
             bot_r.addWidget(btn_del)
 
@@ -2250,7 +2415,7 @@ class BrailleBridgeWindow(QMainWindow):
             self.feed_grid_layout.addWidget(card, row_idx, col_idx)
 
     def _open_expand_student_dialog(self, student: dict):
-        """Large 92%-viewport Expanded Student View Modal."""
+        """Large 92%-viewport Live Expanded Student View Modal."""
         pal = ThemePalette.DARK if self.is_dark else ThemePalette.LIGHT
         dlg = QDialog(self)
         dlg.setWindowTitle(f"{student['name']} — Expanded Student View")
@@ -2260,15 +2425,48 @@ class BrailleBridgeWindow(QMainWindow):
         lay.setSpacing(14)
 
         hdr = QHBoxLayout()
+        hdr.setSpacing(10)
         title = QLabel(f"{student['name']}  ·  Live Expanded Stream")
         title.setFont(ui_font(20, QFont.Weight.Bold))
         hdr.addWidget(title)
+
+        stats_lbl = QLabel(f"{len(student['chars'])} chars")
+        stats_lbl.setProperty("muted", True)
+        hdr.addWidget(stats_lbl)
         hdr.addStretch(1)
+
+        font_sz = [24]
+        big_text = QTextEdit()
+        big_text.setReadOnly(True)
+        big_text.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        big_text.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        big_text.setFont(ui_font(font_sz[0]))
+
+        def _zoom(delta: int):
+            font_sz[0] = max(14, min(42, font_sz[0] + delta))
+            big_text.setFont(ui_font(font_sz[0]))
+
+        btn_zm_out = QPushButton("A-")
+        btn_zm_out.setFixedSize(36, 36)
+        btn_zm_out.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        btn_zm_out.clicked.connect(lambda: _zoom(-3))
+        hdr.addWidget(btn_zm_out)
+
+        btn_zm_in = QPushButton("A+")
+        btn_zm_in.setFixedSize(36, 36)
+        btn_zm_in.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        btn_zm_in.clicked.connect(lambda: _zoom(3))
+        hdr.addWidget(btn_zm_in)
 
         btn_to_logs = QPushButton("Export & View in Logs")
         btn_to_logs.setIcon(svg_icon('upload', '#ffffff', 14))
         btn_to_logs.setIconSize(QSize(14, 14))
-        btn_to_logs.setProperty("primary", True)
+        btn_to_logs.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        btn_to_logs.setStyleSheet(
+            f"QPushButton {{ background-color: {pal['gold']}; color: #ffffff; "
+            f"border: 1px solid {pal['gold_dark']}; border-radius: 14px; padding: 6px 14px; font-weight: 600; }}"
+            f"QPushButton:hover {{ background-color: {pal['gold_dark']}; }}"
+        )
         btn_to_logs.setFixedHeight(36)
         btn_to_logs.clicked.connect(lambda: (
             self.export_single_student_to_logs(student),
@@ -2280,18 +2478,29 @@ class BrailleBridgeWindow(QMainWindow):
         btn_close = QPushButton("Close")
         btn_close.setIcon(svg_icon('x', pal['text_primary'], 14))
         btn_close.setIconSize(QSize(14, 14))
+        btn_close.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         btn_close.setFixedHeight(36)
         btn_close.clicked.connect(dlg.accept)
         hdr.addWidget(btn_close)
         lay.addLayout(hdr)
 
-        big_text = QTextEdit()
-        big_text.setReadOnly(True)
-        big_text.setFont(ui_font(24))
-        full_str = ''.join(x['char'] for x in student['chars'])
-        big_text.setPlainText(full_str if full_str else "Waiting for student input...")
-        lay.addWidget(big_text, 1)
+        last_len = [-1]
+        def _sync_live():
+            cur_len = len(student['chars'])
+            if cur_len != last_len[0]:
+                last_len[0] = cur_len
+                full_str = ''.join(x['char'] for x in student['chars'])
+                big_text.setPlainText(full_str if full_str else "Waiting for student input...")
+                words = len(full_str.split()) if full_str.strip() else 0
+                stats_lbl.setText(f"{words} words · {cur_len} chars")
+                big_text.moveCursor(QTextCursor.MoveOperation.End)
 
+        _sync_live()
+        live_timer = QTimer(dlg)
+        live_timer.timeout.connect(_sync_live)
+        live_timer.start(150)
+
+        lay.addWidget(big_text, 1)
         dlg.exec()
 
     # ================================================================ LOGS VIEW & SMART CONDITIONAL FORMATTING
@@ -2941,37 +3150,75 @@ class BrailleBridgeWindow(QMainWindow):
 
     # ================================================================ ACCOUNT DIALOG
     def _open_account_dialog(self):
+        pal = ThemePalette.DARK if self.is_dark else ThemePalette.LIGHT
         dlg = QDialog(self)
-        dlg.setWindowTitle("Teacher Profile — Samin Yeasar")
-        dlg.setFixedSize(420, 320)
+        dlg.setWindowTitle("Classroom & Teacher Profile")
+        dlg.setFixedSize(440, 380)
         lay = QVBoxLayout(dlg)
         lay.setContentsMargins(24, 20, 24, 20)
         lay.setSpacing(10)
 
-        name = QLabel("Samin Yeasar")
-        name.setFont(ui_font(18, QFont.Weight.Bold))
-        lay.addWidget(name)
+        hdr_lbl = QLabel("Classroom Profile")
+        hdr_lbl.setFont(ui_font(18, QFont.Weight.Bold))
+        lay.addWidget(hdr_lbl)
 
-        role = QLabel("Teacher · Braille Literacy · ID: BB-T-0001")
-        role.setProperty("muted", True)
-        lay.addWidget(role)
+        sub_lbl = QLabel("Customize your teacher name and school for exported logs and reports.")
+        sub_lbl.setProperty("muted", True)
+        sub_lbl.setWordWrap(True)
+        lay.addWidget(sub_lbl)
+
+        in_name = QLineEdit(self.teacher_name)
+        in_name.setPlaceholderText("Teacher Name")
+        in_name.setFixedHeight(36)
+        lay.addWidget(in_name)
+
+        in_school = QLineEdit(self.school_name)
+        in_school.setPlaceholderText("School or Classroom Name")
+        in_school.setFixedHeight(36)
+        lay.addWidget(in_school)
+
+        in_email = QLineEdit(self.teacher_email)
+        in_email.setPlaceholderText("Teacher Email (optional)")
+        in_email.setFixedHeight(36)
+        lay.addWidget(in_email)
 
         total_chars = sum(len(s['chars']) for s in self.students) + len(self.student_chars)
         stats = QLabel(
-            f"• Active Roster Students: {len(self.students)}\n"
-            f"• Saved Student Logs: {len(self.student_logs)}\n"
-            f"• Total Characters Typed: {total_chars}\n"
-            f"• Email: samin.yeasar@braillebridge.edu\n"
-            f"• Institution: Special Education — BrailleBridge Academy"
+            f"Active Roster Students: {len(self.students)}  ·  "
+            f"Saved Logs: {len(self.student_logs)}  ·  "
+            f"Characters: {total_chars}"
         )
-        stats.setFont(ui_font(11))
-        lay.addWidget(stats, 1)
+        stats.setProperty("muted", True)
+        stats.setWordWrap(True)
+        lay.addWidget(stats)
+        lay.addStretch(1)
 
-        btn_ok = QPushButton("Close")
-        btn_ok.setProperty("primary", True)
-        btn_ok.setFixedHeight(36)
-        btn_ok.clicked.connect(dlg.accept)
-        lay.addWidget(btn_ok)
+        btn_row = QHBoxLayout()
+        btn_cancel = QPushButton("Cancel")
+        btn_cancel.setFixedHeight(36)
+        btn_cancel.clicked.connect(dlg.reject)
+        btn_row.addWidget(btn_cancel)
+
+        btn_save = QPushButton("Save Profile")
+        btn_save.setStyleSheet(
+            f"QPushButton {{ background-color: {pal['gold']}; color: #ffffff; "
+            f"border: 1px solid {pal['gold_dark']}; border-radius: 14px; padding: 6px 16px; font-weight: 600; }}"
+            f"QPushButton:hover {{ background-color: {pal['gold_dark']}; }}"
+        )
+        btn_save.setFixedHeight(36)
+
+        def _save():
+            self.teacher_name = in_name.text().strip() or "Teacher"
+            self.school_name = in_school.text().strip() or "BrailleBridge Classroom"
+            self.teacher_email = in_email.text().strip()
+            self.profile_btn.setText(f"{get_initials(self.teacher_name)}  {self.teacher_name}")
+            self._save_settings()
+            dlg.accept()
+            self.show_toast("Classroom profile saved.")
+
+        btn_save.clicked.connect(_save)
+        btn_row.addWidget(btn_save)
+        lay.addLayout(btn_row)
         dlg.exec()
 
     # ================================================================ KEYBOARD SHORTCUTS & BLE KEYBOARD CAPTURE

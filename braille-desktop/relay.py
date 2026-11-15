@@ -37,12 +37,31 @@ try:
 except ImportError:
     WINRT_BLE_AVAILABLE = False
 
+import sys
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LOGS_DIR = os.path.join(BASE_DIR, 'logs')
-DATA_DIR = os.path.join(BASE_DIR, 'data')
+
+
+def get_app_data_dir() -> str:
+    """Return a universal, writable per-user data directory across Windows/macOS/Linux."""
+    env_dir = os.environ.get('BRAILLEBRIDGE_DATA_DIR')
+    if env_dir:
+        return env_dir
+    if sys.platform == 'win32':
+        root = os.environ.get('LOCALAPPDATA') or os.environ.get('APPDATA') or os.path.expanduser('~')
+        return os.path.join(root, 'BrailleBridge')
+    if sys.platform == 'darwin':
+        return os.path.expanduser('~/Library/Application Support/BrailleBridge')
+    return os.path.expanduser('~/.local/share/BrailleBridge')
+
+
+APP_DATA_DIR = get_app_data_dir()
+LOGS_DIR = os.path.join(APP_DATA_DIR, 'logs')
+DATA_DIR = os.path.join(APP_DATA_DIR, 'data')
 ASSIGN_FILE = os.path.join(DATA_DIR, 'assignments.json')
 STUDENT_LOGS_FILE = os.path.join(DATA_DIR, 'student_logs.json')
 ROSTER_FILE = os.path.join(DATA_DIR, 'roster.json')
+SETTINGS_FILE = os.path.join(DATA_DIR, 'settings.json')
 
 SCAN_INTERVAL = 3.0   # seconds between device re-scan / reconnect attempts
 READ_SIZE = 256

@@ -1,3 +1,4 @@
-PyQt6>=6.5.0
+PyQt6>=6.6.0
+bleak>=0.22.0
 pyserial>=3.5
-bleak>=0.21.0
+pyttsx3>=2.90
