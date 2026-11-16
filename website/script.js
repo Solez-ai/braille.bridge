@@ -12,6 +12,182 @@
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ============================================================
+     CLEVER WORDMARK & GOO BORDER LOADER -> HERO -> NAVBAR POP
+     ============================================================ */
+  function initSiteLoader() {
+    const loader = $('#siteLoader');
+    const borderEl = $('#loaderScreenBorder');
+    const gooCanvas = $('#loaderGooCanvas');
+    const dotEl = $('#loaderDot');
+
+    if (!loader || !gooCanvas || !dotEl) {
+      document.body.classList.remove('is-loading', 'nav-pending');
+      return;
+    }
+    if (reducedMotion) {
+      document.body.classList.remove('is-loading', 'nav-pending');
+      loader.hidden = true;
+      window.__startHeroAsciiIntro?.();
+      return;
+    }
+
+    const ctx = gooCanvas.getContext('2d');
+    const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+    const easeInOutCubic = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+    const BORDER_START = 950;
+    const BORDER_HOLD_END = 1550;
+    const SQUISH_END = 2650;
+    const FADE_TEXT_AT = 3150;
+    const REVEAL_HERO_AT = 3620;
+    const CLEANUP_AT = 4300;
+
+    let startTs = 0;
+    let landed = false;
+    let fadedText = false;
+    let revealedHero = false;
+    let navPopped = false;
+
+    function popNavbar() {
+      if (navPopped) return;
+      navPopped = true;
+      setTimeout(() => {
+        document.body.classList.remove('nav-pending');
+      }, 160);
+    }
+
+    window.__onHeroAsciiIntroDone = popNavbar;
+
+    function syncCanvasSize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      if (gooCanvas.width !== Math.round(w * dpr) || gooCanvas.height !== Math.round(h * dpr)) {
+        gooCanvas.width = Math.round(w * dpr);
+        gooCanvas.height = Math.round(h * dpr);
+      }
+      if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { w, h };
+    }
+
+    function tickGoo(now) {
+      if (!startTs) startTs = now;
+      const elapsed = now - startTs;
+      const { w, h } = syncCanvasSize();
+
+      // Phase A: Screen-wide #FF7315 orange border forms around all 4 edges and holds cleanly
+      if (elapsed >= BORDER_START && elapsed < BORDER_HOLD_END) {
+        const growP = Math.min(1, (elapsed - BORDER_START) / 380);
+        const thick = 16 * easeOutCubic(growP);
+        if (borderEl) {
+          borderEl.style.opacity = '1';
+          borderEl.style.borderWidth = `${thick.toFixed(1)}px`;
+        }
+      } else if (elapsed >= BORDER_HOLD_END && elapsed < SQUISH_END) {
+        // Phase B: Entire orange border detaches & squishes inward like goo into the Braille dot
+        const p = easeInOutCubic((elapsed - BORDER_HOLD_END) / (SQUISH_END - BORDER_HOLD_END));
+        if (borderEl) {
+          borderEl.style.opacity = String(Math.max(0, 1 - p * 3.8));
+        }
+
+        if (ctx) {
+          ctx.clearRect(0, 0, w, h);
+          ctx.fillStyle = '#FF7315';
+
+          const dr = dotEl.getBoundingClientRect();
+          const tx = dr.left + dr.width / 2;
+          const ty = dr.top + dr.height / 2;
+          const tr = Math.max(6, dr.width * 0.42);
+
+          // Shrinking outer goo frame collapsing toward (tx, ty)
+          const frameShrink = Math.pow(p, 0.85);
+          const left = tx * frameShrink;
+          const top = ty * frameShrink;
+          const right = w - (w - tx) * frameShrink;
+          const bottom = h - (h - ty) * frameShrink;
+          const strokeW = Math.max(4, 18 * (1 - p * 0.82));
+
+          if (p < 0.85) {
+            ctx.globalAlpha = Math.max(0, 1 - Math.max(0, p - 0.6) / 0.25);
+            ctx.beginPath();
+            ctx.rect(left, top, Math.max(0, right - left), Math.max(0, bottom - top));
+            ctx.lineWidth = strokeW;
+            ctx.strokeStyle = '#FF7315';
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
+
+          // 8 goo strands streaming from screen edges & corners into the dot center
+          const sources = [
+            [0, 0], [w * 0.5, 0], [w, 0],
+            [w, h * 0.5], [w, h], [w * 0.5, h],
+            [0, h], [0, h * 0.5]
+          ];
+          sources.forEach(([sx, sy], idx) => {
+            const delay = (idx % 2) * 0.08;
+            const sp = Math.max(0, Math.min(1, (p - delay) / (1 - delay)));
+            const wobble = Math.sin(sp * Math.PI) * 24 * (idx % 2 === 0 ? 1 : -1);
+            const cx = sx + (tx - sx) * sp + wobble * (1 - sp);
+            const cy = sy + (ty - sy) * sp - wobble * (1 - sp);
+            const blobR = Math.max(3, tr * (0.95 - sp * 0.45) + 8 * Math.sin(sp * Math.PI));
+
+            ctx.beginPath();
+            ctx.arc(cx, cy, blobR, 0, Math.PI * 2);
+            ctx.fill();
+
+            const spTail = Math.max(0, sp - 0.14);
+            const lx = sx + (tx - sx) * spTail + wobble * 0.6 * (1 - spTail);
+            const ly = sy + (ty - sy) * spTail - wobble * 0.6 * (1 - spTail);
+            ctx.beginPath();
+            ctx.arc(lx, ly, blobR * 0.62, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          // Central dot pool growing to exact target dot size
+          const poolP = Math.max(0, (p - 0.32) / 0.68);
+          const poolR = tr * Math.min(1.05, poolP * 1.15);
+          if (poolR > 0.5) {
+            ctx.beginPath();
+            ctx.arc(tx, ty, poolR, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      } else if (elapsed >= SQUISH_END && !landed) {
+        landed = true;
+        if (borderEl) borderEl.style.opacity = '0';
+        if (ctx) ctx.clearRect(0, 0, w, h);
+        dotEl.classList.add('is-landed');
+      }
+
+      if (elapsed >= FADE_TEXT_AT && !fadedText) {
+        fadedText = true;
+        loader.classList.add('is-fading');
+      }
+
+      if (elapsed >= REVEAL_HERO_AT && !revealedHero) {
+        revealedHero = true;
+        document.body.classList.remove('is-loading');
+        loader.classList.add('is-done');
+        if (typeof window.__startHeroAsciiIntro === 'function') {
+          window.__startHeroAsciiIntro();
+        } else {
+          popNavbar();
+        }
+      }
+
+      if (elapsed >= CLEANUP_AT) {
+        loader.hidden = true;
+      }
+
+      if (elapsed < CLEANUP_AT + 100) {
+        requestAnimationFrame(tickGoo);
+      }
+    }
+    requestAnimationFrame(tickGoo);
+  }
+  initSiteLoader();
+
+  /* ============================================================
      BRAILLE DICTIONARIES — mirrored 100% from braile/braile.ino
      and braille-desktop/protocol.py (dot 1 = bit 0 ... dot 6 = bit 5)
      ============================================================ */

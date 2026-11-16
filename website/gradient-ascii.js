@@ -507,7 +507,21 @@ void main() {
     let atlas = buildAtlas(gl, s.characters, s.fontFamily);
     let time = 0;
     let glyphTime = 0;
+    let introActive = !options.deferIntro;
     let introClock = s.intro && !reduce ? 0 : 1;
+    let introNotified = introClock >= 1;
+    if (options.deferIntro && !reduce) {
+      window.__startHeroAsciiIntro = () => {
+        introActive = true;
+        introClock = 0;
+        introNotified = false;
+        last = 0;
+        wake();
+      };
+    } else if (reduce) {
+      introClock = 1;
+      introNotified = true;
+    }
     let frameSeed = 0;
     let grainClock = 0;
     let raf = 0;
@@ -675,7 +689,13 @@ void main() {
         time += dt * s.speed * 0.5;
         glyphTime += dt * Math.max(s.speed, 0.15);
       }
-      if (introClock < 1) introClock = Math.min(1, introClock + dt / INTRO_SECONDS);
+      if (introActive && introClock < 1) {
+        introClock = Math.min(1, introClock + dt / INTRO_SECONDS);
+        if (introClock >= 1 && !introNotified) {
+          introNotified = true;
+          if (typeof options.onIntroDone === 'function') options.onIntroDone();
+        }
+      }
       grainClock += dt;
       if (!reduce && grainClock > 1 / 24) {
         grainClock = 0;
@@ -842,6 +862,7 @@ void main() {
     const el = document.getElementById('heroAsciiBg');
     if (!el || el.querySelector('canvas')) return;
     const renderGlass = createLiquidGlassRenderer();
+    const hasLoader = !!document.getElementById('siteLoader') && document.body.classList.contains('is-loading');
     mountGradientASCII(el, {
       colors: ['#f97316', '#eab308', '#ffa100', '#f0ff00'],
       shape: 'horizon',
@@ -861,7 +882,9 @@ void main() {
       scrambleRadius: 0.1,
       clickEffect: 'wave',
       intro: true,
-      onDraw: renderGlass
+      deferIntro: hasLoader,
+      onDraw: renderGlass,
+      onIntroDone: () => window.__onHeroAsciiIntroDone?.()
     });
   }
 
