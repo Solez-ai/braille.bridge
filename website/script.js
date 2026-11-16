@@ -1,6 +1,8 @@
 /* ============================================================
-   BrailleBridge — Showcase Website
-   Interactions + interactive braille demo
+   BrailleBridge (b'bridge) — Interactive Website & Device Bridge
+   - Firmware-accurate English + Bharati Braille translator
+   - Web Bluetooth (BLE NUS) & Web Serial (115200 baud) device support
+   - Apple-style hardware gallery, dictionary tabs & scroll reveals
    ============================================================ */
 (function () {
   'use strict';
@@ -10,17 +12,18 @@
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ============================================================
-     BRAILLE DICTIONARIES (from docs/braillebridge.tex)
-     chord bits: dot1=bit0 ... dot6=bit5
+     BRAILLE DICTIONARIES — mirrored 100% from braile/braile.ino
+     and braille-desktop/protocol.py (dot 1 = bit 0 ... dot 6 = bit 5)
      ============================================================ */
   const EN_DICT = {
     1: 'a', 3: 'b', 9: 'c', 25: 'd', 17: 'e', 11: 'f', 27: 'g', 19: 'h',
-    10: 'i', 26: 'j', 5: 'k', 7: 'l', 13: 'm', 29: 'n', 21: 'o', 15: 'p',
-    31: 'q', 23: 'r', 14: 's', 30: 't', 37: 'u', 39: 'v', 58: 'w', 45: 'x',
-    61: 'y', 41: 'z'
+    8: 'i', 26: 'j', 5: 'k', 7: 'l', 13: 'm', 29: 'n', 21: 'o', 15: 'p',
+    31: 'q', 23: 'r', 12: 's', 28: 't', 37: 'u', 39: 'v', 58: 'w', 45: 'x',
+    61: 'y', 53: 'z'
   };
+  // Also accept standard Grade-1 I/S/T/Z chords if typed on virtual pad
+  const EN_FALLBACK = { 10: 'i', 14: 's', 30: 't', 41: 'z' };
 
-  // Bangla (Bharati Braille) — vowels, consonants by varga, special marks
   const BN_DICT = {
     1: 'অ', 28: 'আ', 10: 'ই', 20: 'ঈ', 37: 'উ', 51: 'ঊ', 17: 'এ', 12: 'ঐ', 21: 'ও', 42: 'ঔ',
     5: 'ক', 40: 'খ', 27: 'গ', 35: 'ঘ', 44: 'ঙ',
@@ -28,17 +31,26 @@
     62: 'ট', 54: 'ঠ', 43: 'ড', 63: 'ঢ', 60: 'ণ',
     30: 'ত', 57: 'থ', 25: 'দ', 46: 'ধ', 29: 'ন',
     15: 'প', 22: 'ফ', 3: 'ব', 24: 'ভ', 13: 'ম',
-    61: 'য', 23: 'র', 7: 'ল', 41: 'শ', 47: 'ষ', 14: 'স', 19: 'হ',
-    8: '্', 48: 'ং', 32: 'ঃ', 16: 'ঁ'
+    45: 'য', 61: 'য', 23: 'র', 7: 'ল', 49: 'শ', 41: 'শ', 47: 'ষ', 14: 'স', 34: 'স', 19: 'হ',
+    31: 'ক্ষ', 39: 'ৱ', 53: 'ড়',
+    8: '্', 48: 'ং', 32: 'ঃ', 16: 'ঁ',
+    38: 'ি', 50: 'ূ'
   };
 
-  // Shift + vowel = vowel sign (কার) in Bangla
-  const BN_KAR = { 1: 'া', 10: 'ি', 20: 'ী', 37: 'ু', 51: 'ূ', 17: 'ে', 12: 'ৈ', 21: 'ো', 42: 'ৌ' };
+  // Shift + vowel = Bangla vowel sign (কার)
+  const BN_KAR = { 28: 'া', 10: 'ি', 20: 'ী', 37: 'ু', 51: 'ূ', 17: 'ে', 12: 'ৈ', 21: 'ো', 42: 'ৌ' };
 
-  // Numbers: Shift + A–J = 1–0  |  Punctuation & math from docs
-  const NUM_DICT = { 1: '1', 3: '2', 9: '3', 25: '4', 17: '5', 11: '6', 27: '7', 19: '8', 10: '9', 26: '0' };
-  // Note: '×' is omitted — it shares chord (2,3,6) with '?' in the docs; '?' wins.
-  const SYM_DICT = { 2: ',', 6: ';', 18: ':', 50: '.', 38: '?', 22: '!', 36: '−', 12: '÷', 54: '=' };
+  // Numbers: Shift + a-j chords → 1-0 (mirrors NUMBER_CHORDS in protocol.py & braile.ino)
+  const NUM_DICT = {
+    1: '1', 3: '2', 9: '3', 25: '4', 17: '5',
+    11: '6', 27: '7', 19: '8', 8: '9', 10: '9', 26: '0'
+  };
+
+  // Shift + math & punctuation (mirrors shiftSymbols in braile.ino)
+  const SYM_DICT = {
+    22: '+', 36: '-', 38: '×', 54: '=', 12: '÷',
+    2: ',', 6: ';', 18: ':', 50: '.'
+  };
 
   const chordToDots = (chord) => {
     const dots = [];
@@ -55,28 +67,113 @@
   const burger = $('#navBurger');
   const navLinks = $('#navLinks');
 
-  const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 12);
+  const onScroll = () => {
+    if (nav) nav.classList.toggle('scrolled', window.scrollY > 12);
+  };
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
 
-  burger.addEventListener('click', () => {
-    const open = navLinks.classList.toggle('open');
-    burger.classList.toggle('open', open);
-    burger.setAttribute('aria-expanded', String(open));
-    burger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
-  });
-  $$('#navLinks a').forEach((a) =>
-    a.addEventListener('click', () => {
-      navLinks.classList.remove('open');
-      burger.classList.remove('open');
-      burger.setAttribute('aria-expanded', 'false');
-    })
-  );
+  if (burger && navLinks) {
+    burger.addEventListener('click', () => {
+      const open = navLinks.classList.toggle('open');
+      burger.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', String(open));
+      burger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    });
+    $$('#navLinks a').forEach((a) =>
+      a.addEventListener('click', () => {
+        navLinks.classList.remove('open');
+        burger.classList.remove('open');
+        burger.setAttribute('aria-expanded', 'false');
+      })
+    );
+  }
+
+  /* ============================================================
+     HERO SUBTLE DEPTH PARALLAX
+     ============================================================ */
+  const heroProductWrap = $('#heroProductWrap');
+  if (heroProductWrap && !reducedMotion) {
+    let ticking = false;
+    const updateParallax = () => {
+      const y = Math.min(window.scrollY, 700);
+      heroProductWrap.style.transform = `translate3d(0, ${(y * 0.08).toFixed(1)}px, 0)`;
+      ticking = false;
+    };
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(updateParallax);
+      }
+    }, { passive: true });
+  }
+
+  /* ============================================================
+     HARDWARE PRODUCT GALLERY
+     ============================================================ */
+  const galleryTabs = $$('.gallery-tab');
+  const galleryImg = $('#galleryMainImg');
+  const galleryBadge = $('#galleryBadge');
+  const galleryCaption = $('#galleryCaption');
+
+  if (galleryTabs.length && galleryImg) {
+    const activateGalleryTab = (tab) => {
+      galleryTabs.forEach((t) => {
+        const active = t === tab;
+        t.classList.toggle('active', active);
+        t.setAttribute('aria-selected', String(active));
+      });
+      const nextSrc = tab.dataset.src;
+      const nextAlt = tab.dataset.alt || '';
+      const nextBadge = tab.dataset.badge || '';
+      const nextCaption = tab.dataset.caption || '';
+
+      if (galleryBadge) galleryBadge.textContent = nextBadge;
+      if (galleryCaption) galleryCaption.textContent = nextCaption;
+
+      if (reducedMotion || galleryImg.getAttribute('src') === nextSrc) {
+        galleryImg.src = nextSrc;
+        galleryImg.alt = nextAlt;
+        return;
+      }
+
+      galleryImg.classList.add('switching');
+      setTimeout(() => {
+        galleryImg.src = nextSrc;
+        galleryImg.alt = nextAlt;
+        galleryImg.classList.remove('switching');
+      }, 150);
+    };
+
+    galleryTabs.forEach((tab, idx) => {
+      tab.addEventListener('click', () => activateGalleryTab(tab));
+      tab.addEventListener('keydown', (e) => {
+        let next = null;
+        if (e.key === 'ArrowRight') next = galleryTabs[(idx + 1) % galleryTabs.length];
+        else if (e.key === 'ArrowLeft') next = galleryTabs[(idx - 1 + galleryTabs.length) % galleryTabs.length];
+        if (next) {
+          e.preventDefault();
+          activateGalleryTab(next);
+          next.focus();
+        }
+      });
+    });
+  }
 
   /* ============================================================
      REVEAL ON SCROLL
      ============================================================ */
   const revealEls = $$('.reveal');
+  const revealInViewport = () => {
+    const vh = window.innerHeight || 900;
+    revealEls.forEach((el) => {
+      if (el.classList.contains('in')) return;
+      const r = el.getBoundingClientRect();
+      if (r.top < vh * 1.05 && r.bottom > -40) {
+        el.classList.add('in');
+      }
+    });
+  };
   if ('IntersectionObserver' in window && !reducedMotion) {
     const io = new IntersectionObserver(
       (entries) => {
@@ -87,9 +184,13 @@
           }
         });
       },
-      { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
+      { threshold: 0.05, rootMargin: '0px 0px -20px 0px' }
     );
     revealEls.forEach((el) => io.observe(el));
+    revealInViewport();
+    window.addEventListener('scroll', revealInViewport, { passive: true });
+    window.addEventListener('hashchange', () => setTimeout(revealInViewport, 60));
+    window.addEventListener('load', revealInViewport);
   } else {
     revealEls.forEach((el) => el.classList.add('in'));
   }
@@ -101,7 +202,7 @@
     const target = parseInt(el.dataset.count, 10);
     const prefix = el.dataset.prefix || '';
     if (reducedMotion) { el.innerHTML = prefix + target; return; }
-    const dur = 1100;
+    const dur = 950;
     const start = performance.now();
     const tick = (now) => {
       const p = Math.min((now - start) / dur, 1);
@@ -123,7 +224,7 @@
           }
         });
       },
-      { threshold: 0.6 }
+      { threshold: 0.5 }
     );
     statEls.forEach((el) => io2.observe(el));
   } else {
@@ -131,51 +232,22 @@
   }
 
   /* ============================================================
-     HERO — ambient braille animation
-     ============================================================ */
-  const heroDots = $$('.hero-dot');
-  const heroOutput = $('#heroOutput');
-  const heroDotsLabel = $('#heroDots');
-  let heroIdx = 0;
-  const heroSeq = [
-    { chord: 1, ch: 'a' }, { chord: 3, ch: 'b' }, { chord: 9, ch: 'c' },
-    { chord: 25, ch: 'd' }, { chord: 17, ch: 'e' }, { chord: 11, ch: 'f' },
-    { chord: 27, ch: 'g' }, { chord: 19, ch: 'h' }, { chord: 10, ch: 'i' },
-    { chord: 26, ch: 'j' }, { chord: 5, ch: 'k' }, { chord: 7, ch: 'l' },
-    { chord: 13, ch: 'm' }, { chord: 29, ch: 'n' }, { chord: 21, ch: 'o' },
-    { chord: 15, ch: 'p' }, { chord: 31, ch: 'q' }, { chord: 23, ch: 'r' },
-    { chord: 14, ch: 's' }, { chord: 30, ch: 't' }, { chord: 37, ch: 'u' },
-    { chord: 39, ch: 'v' }, { chord: 58, ch: 'w' }, { chord: 45, ch: 'x' },
-    { chord: 61, ch: 'y' }, { chord: 41, ch: 'z' }
-  ];
-
-  if (!reducedMotion) {
-    const stepHero = () => {
-      const seq = heroSeq[heroIdx % heroSeq.length];
-      heroDots.forEach((d) => d.classList.toggle('on', Boolean(seq.chord & (1 << parseInt(d.dataset.d, 10)))));
-      heroDotsLabel.textContent = '0b' + toBinary(seq.chord);
-      heroOutput.textContent = seq.ch;
-      heroIdx++;
-      setTimeout(stepHero, 1700);
-    };
-    setTimeout(stepHero, 800);
-  } else {
-    heroDots[0].classList.add('on');
-    heroDotsLabel.textContent = '0b000001';
-    heroOutput.textContent = 'a';
-  }
-
-  /* ============================================================
-     INTERACTIVE DEMO
+     INTERACTIVE DEMO + REAL BRAILLEBRIDGE BLE / USB SERIAL BRIDGE
      ============================================================ */
   const demoCell = $('#demoCell');
   const demoDots = $$('.demo-dot', demoCell);
   const langEn = $('#langEn');
   const langBn = $('#langBn');
   const shiftToggle = $('#shiftToggle');
+  const autoCommitToggle = $('#autoCommitToggle');
+  const commitBtn = $('#commitBtn');
   const spaceBtn = $('#spaceBtn');
+  const bkspBtn = $('#bkspBtn');
   const clearBtn = $('#clearBtn');
+  const copyStreamBtn = $('#copyStreamBtn');
+  const speakStreamBtn = $('#speakStreamBtn');
   const readoutGlyph = $('#readoutGlyph');
+  const readoutPreviewPill = $('#readoutPreviewPill');
   const readoutTrans = $('#readoutTrans');
   const readoutChord = $('#readoutChord');
   const readoutDots = $('#readoutDots');
@@ -185,113 +257,108 @@
   const ledEn = $('#ledEn');
   const ledBn = $('#ledBn');
 
-  /* ============================================================
-     BB SHARED MODULE WIRING (shared.js)
-     Account chip · Exports library · Google Translate on the demo
-     ============================================================ */
-  const demoTranslateBtn = $('#demoTranslateBtn');
-  const demoTranslateStatus = $('#demoTranslateStatus');
-  const exportSessionBtn = $('#exportSessionBtn');
-
-  const demoTranslateLang = $('#demoTranslateLang');
-  if (demoTranslateLang && window.BBTranslate) {
-    demoTranslateLang.innerHTML = window.BBTranslate.optionsHTML('en');
-  }
-
-  if (demoTranslateBtn) {
-    demoTranslateBtn.addEventListener('click', async () => {
-      const text = $$('.stream-char, .stream-space', readoutStream)
-        .map((s) => s.textContent).join('');
-      if (!text.trim()) {
-        demoTranslateStatus.textContent = 'Compose some chords first — the output stream is empty.';
-        return;
-      }
-      const target = demoTranslateLang && demoTranslateLang.value ? demoTranslateLang.value : 'en';
-      const detected = window.BBTranslate.detectLanguage(text);
-      demoTranslateBtn.disabled = true;
-      demoTranslateStatus.innerHTML = '<span class="spinner-inline"></span> Translating with Google Translate…';
-      const res = await window.BBTranslate.translate(text, target);
-      demoTranslateBtn.disabled = false;
-      if (res.ok) {
-        const from = res.detected
-          ? window.BBTranslate.name(res.detected)
-          : (detected ? window.BBTranslate.name(detected) : 'auto');
-        demoTranslateStatus.innerHTML = '<strong></strong> <span class="demo-translate-muted"></span>';
-        demoTranslateStatus.firstChild.textContent = res.text;
-        demoTranslateStatus.querySelector('.demo-translate-muted').textContent = `(${from} → ${window.BBTranslate.name(target)})`;
-      } else {
-        demoTranslateStatus.innerHTML = '<span class="err"></span>';
-        demoTranslateStatus.querySelector('.err').textContent = res.error;
-      }
-    });
-  }
-
-  if (exportSessionBtn) {
-    exportSessionBtn.addEventListener('click', () => {
-      const text = $$('.stream-char, .stream-space', readoutStream)
-        .map((s) => s.textContent).join('');
-      if (!text.trim()) {
-        window.BBExports.toast('Compose some chords first — nothing to export yet.');
-        return;
-      }
-      const chars = Array.from(text).map((ch, i) => ({ char: ch, time: Date.now() - (text.length - i) * 250 }));
-      const id = window.BBExports.save({
-        title: 'Website Demo Session',
-        mode: 'Website Demo',
-        source: 'demo',
-        chars,
-        charsCount: text.replace(/ /g, '').length
-      });
-      window.BBExports.toast('Session saved to Exports — click the account chip → Exports library.');
-      window.BBExports.openModal();
-    });
-  }
+  // Hardware bridge controls
+  const hwStatusDot = $('#hwStatusDot');
+  const hwStatusTitle = $('#hwStatusTitle');
+  const hwStatusSub = $('#hwStatusSub');
+  const connectBleBtn = $('#connectBleBtn');
+  const connectSerialBtn = $('#connectSerialBtn');
+  const disconnectHwBtn = $('#disconnectHwBtn');
 
   let currentChord = 0;
   let currentLang = 'en'; // 'en' | 'bn'
   let shiftActive = false;
+  let capsMode = 'OFF';   // 'OFF' | 'ONCE' | 'LOCK'
+  let autoCommit = false;
+  let autoTimer = null;
 
-  const isVowel = (chord) => chord in BN_KAR;
-
-  const translate = (chord, lang, shift) => {
+  const translateChord = (chord, lang, shift) => {
+    if (!chord) return { ch: null, note: null };
+    if (chord === 32 && !shift && lang === 'en') {
+      return { ch: null, note: 'Capital sign (Dot 6)', isCapSign: true };
+    }
     if (lang === 'bn') {
-      if (shift && isVowel(chord)) return { ch: BN_KAR[chord], note: 'vowel sign (কার)' };
+      if (shift) {
+        if (chord in NUM_DICT) return { ch: NUM_DICT[chord], note: 'number' };
+        if (chord in SYM_DICT) return { ch: SYM_DICT[chord], note: 'symbol' };
+        if (chord in BN_KAR) return { ch: BN_KAR[chord], note: 'vowel sign (কার)' };
+        return { ch: BN_DICT[chord] || null, note: null };
+      }
       return { ch: BN_DICT[chord] || null, note: null };
     }
     if (shift) {
       if (chord in NUM_DICT) return { ch: NUM_DICT[chord], note: 'number' };
       if (chord in SYM_DICT) return { ch: SYM_DICT[chord], note: 'symbol' };
-      const up = EN_DICT[chord];
+      const up = EN_DICT[chord] || EN_FALLBACK[chord];
       return up ? { ch: up.toUpperCase(), note: 'uppercase' } : { ch: null, note: null };
     }
-    return { ch: EN_DICT[chord] || null, note: null };
+    let ch = EN_DICT[chord] || EN_FALLBACK[chord] || null;
+    if (ch && capsMode !== 'OFF') {
+      ch = ch.toUpperCase();
+      return { ch, note: capsMode === 'LOCK' ? 'CAPS LOCK' : 'capitalized' };
+    }
+    return { ch, note: null };
+  };
+
+  const setLanguageUI = (lang) => {
+    currentLang = lang;
+    if (langEn && langBn) {
+      langEn.classList.toggle('active', lang === 'en');
+      langBn.classList.toggle('active', lang === 'bn');
+      langEn.setAttribute('aria-pressed', String(lang === 'en'));
+      langBn.setAttribute('aria-pressed', String(lang === 'bn'));
+    }
+    renderDemo(false);
   };
 
   const renderDemo = (animate) => {
+    if (!demoCell) return;
     const dots = chordToDots(currentChord);
     demoDots.forEach((d) => {
       const on = Boolean(currentChord & (1 << parseInt(d.dataset.d, 10)));
       d.setAttribute('aria-pressed', String(on));
       if (animate && on) {
         d.classList.remove('pop');
-        void d.offsetWidth; // restart animation
+        void d.offsetWidth;
         d.classList.add('pop');
       }
     });
 
     const isBn = currentLang === 'bn';
-    const result = translate(currentChord, currentLang, shiftActive);
+    const result = translateChord(currentChord, currentLang, shiftActive);
 
     readoutGlyph.textContent = currentChord ? brailleUnicode(currentChord) : '⠀';
     readoutChar.classList.toggle('bangla', isBn);
-    readoutTrans.textContent = result && result.ch ? result.ch + (result.note ? ' · ' + result.note : '') : '—';
+
+    if (result && result.isCapSign) {
+      readoutTrans.textContent = 'Capital Prefix (Dot 6)';
+      readoutPreviewPill.textContent = 'Next letter UPPERCASE';
+      readoutPreviewPill.classList.add('has-char');
+    } else if (result && result.ch) {
+      readoutTrans.textContent = result.ch + (result.note ? ' · ' + result.note : '');
+      readoutPreviewPill.textContent = `Preview: "${result.ch}"`;
+      readoutPreviewPill.classList.add('has-char');
+    } else if (currentChord) {
+      readoutTrans.textContent = 'Unmapped chord';
+      readoutPreviewPill.textContent = 'No match';
+      readoutPreviewPill.classList.remove('has-char');
+    } else {
+      readoutTrans.textContent = '—';
+      readoutPreviewPill.textContent = 'Ready';
+      readoutPreviewPill.classList.remove('has-char');
+    }
+
     readoutChord.textContent = '0b' + toBinary(currentChord);
     readoutDots.textContent = dots.length ? dots.join(', ') : 'None';
-    readoutMode.textContent = (isBn ? 'Bangla' : 'English') + (shiftActive ? ' · Shift' : '');
+    const modeParts = [isBn ? 'Bangla' : 'English'];
+    if (shiftActive) modeParts.push('Shift');
+    if (capsMode === 'ONCE') modeParts.push('Cap Next');
+    if (capsMode === 'LOCK') modeParts.push('CAPS LOCK');
+    readoutMode.textContent = modeParts.join(' · ');
     readoutStream.classList.toggle('bangla-stream', isBn);
 
-    ledEn.classList.toggle('on', !isBn);
-    ledBn.classList.toggle('on', isBn);
+    if (ledEn) ledEn.classList.toggle('on', !isBn);
+    if (ledBn) ledBn.classList.toggle('on', isBn);
 
     if (animate && currentChord) {
       readoutGlyph.classList.remove('flash');
@@ -300,114 +367,440 @@
     }
   };
 
+  const getStreamText = () =>
+    $$('.stream-char, .stream-space', readoutStream).map((s) => s.textContent).join('');
+
   const appendToStream = (text, invalid) => {
     const placeholder = $('.stream-placeholder', readoutStream);
     if (placeholder) placeholder.remove();
-    const span = document.createElement('span');
-    span.className = text === ' ' ? 'stream-space' : invalid ? 'stream-invalid' : 'stream-char';
-    span.textContent = text;
-    readoutStream.appendChild(span);
+    for (const ch of Array.from(text)) {
+      if (ch === '\r') continue;
+      if (ch === '\n') continue;
+      const span = document.createElement('span');
+      span.className = ch === ' ' ? 'stream-space' : invalid ? 'stream-invalid' : 'stream-char';
+      span.textContent = ch;
+      readoutStream.appendChild(span);
+    }
     readoutStream.scrollTop = readoutStream.scrollHeight;
   };
 
-  const commitChord = () => {
-    if (!currentChord) return;
-    const result = translate(currentChord, currentLang, shiftActive);
-    if (result && result.ch) {
-      appendToStream(result.ch);
-    } else {
-      appendToStream('✕', true); // invalid chord — visually distinct
+  const backspaceStream = () => {
+    const items = $$('.stream-char, .stream-space, .stream-invalid', readoutStream);
+    if (items.length) {
+      items[items.length - 1].remove();
     }
-    currentChord = 0;
-    renderDemo(true);
+    if (!$$('.stream-char, .stream-space, .stream-invalid', readoutStream).length) {
+      readoutStream.innerHTML = '<span class="stream-placeholder">Output appears here…</span>';
+    }
   };
 
-  demoCell.addEventListener('click', (e) => {
-    const dot = e.target.closest('.demo-dot');
-    if (!dot) return;
-    const idx = parseInt(dot.dataset.d, 10);
-    currentChord ^= (1 << idx);
-    renderDemo(true);
-  });
-
-  langEn.addEventListener('click', () => {
-    if (currentLang === 'en') return;
-    currentLang = 'en';
-    langEn.classList.add('active');
-    langBn.classList.remove('active');
-    langEn.setAttribute('aria-pressed', 'true');
-    langBn.setAttribute('aria-pressed', 'false');
-    renderDemo(true);
-  });
-  langBn.addEventListener('click', () => {
-    if (currentLang === 'bn') return;
-    currentLang = 'bn';
-    langBn.classList.add('active');
-    langEn.classList.remove('active');
-    langBn.setAttribute('aria-pressed', 'true');
-    langEn.setAttribute('aria-pressed', 'false');
-    renderDemo(true);
-  });
-
-  shiftToggle.addEventListener('click', () => {
-    shiftActive = !shiftActive;
-    shiftToggle.classList.toggle('active', shiftActive);
-    shiftToggle.setAttribute('aria-pressed', String(shiftActive));
-    renderDemo(true);
-  });
-
-  spaceBtn.addEventListener('click', () => {
-    if (currentChord) commitChord(); // commit any composed chord first
-    appendToStream(' ');
-    renderDemo(false);
-  });
-
-  clearBtn.addEventListener('click', () => {
-    currentChord = 0;
-    readoutStream.innerHTML = '<span class="stream-placeholder">Output appears here…</span>';
-    renderDemo(true);
-  });
-
-  // Keyboard support: 1-6 toggle dots, space = space, shift = shift modifier, enter = commit, esc = clear
-  const demoSection = $('#demo');
-  const demoInView = () => {
-    if (!demoSection) return false;
-    const r = demoSection.getBoundingClientRect();
-    // Require the section to be mostly on-screen so we never hijack scroll
-    return r.top <= window.innerHeight * 0.7 && r.bottom >= window.innerHeight * 0.25;
-  };
-  document.addEventListener('keydown', (e) => {
-    if (e.repeat) return; // no auto-repeat flicker
-    if (!demoInView()) return;
-    const tag = (e.target.tagName || '').toLowerCase();
-    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
-
-    const k = e.key.toLowerCase();
-    if (k >= '1' && k <= '6') {
-      e.preventDefault();
-      currentChord ^= (1 << (parseInt(k, 10) - 1));
-      renderDemo(true);
-    } else if (e.key === ' ') {
-      e.preventDefault();
-      if (currentChord) commitChord();
-      appendToStream(' ');
-      renderDemo(false);
-    } else if (e.key === 'Shift' && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      e.preventDefault();
-      shiftActive = !shiftActive;
-      shiftToggle.classList.toggle('active', shiftActive);
-      shiftToggle.setAttribute('aria-pressed', String(shiftActive));
-      renderDemo(true);
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      commitChord();
-    } else if (e.key === 'Escape') {
+  const commitChord = () => {
+    clearTimeout(autoTimer);
+    if (!currentChord) return;
+    if (currentChord === 32 && !shiftActive && currentLang === 'en') {
+      capsMode = capsMode === 'OFF' ? 'ONCE' : capsMode === 'ONCE' ? 'LOCK' : 'OFF';
       currentChord = 0;
       renderDemo(true);
+      return;
     }
-  });
+    const result = translateChord(currentChord, currentLang, shiftActive);
+    if (result && result.ch) {
+      appendToStream(result.ch);
+      if (capsMode === 'ONCE') capsMode = 'OFF';
+    } else {
+      appendToStream('✕', true);
+      if (capsMode === 'ONCE') capsMode = 'OFF';
+    }
+    currentChord = 0;
+    renderDemo(true);
+  };
 
-  renderDemo(false);
+  const scheduleAutoCommit = () => {
+    clearTimeout(autoTimer);
+    if (autoCommit && currentChord) {
+      autoTimer = setTimeout(commitChord, 650);
+    }
+  };
+
+  /* ============================================================
+     HARDWARE CONNECTION (Web Bluetooth NUS + Web Serial 115200)
+     Mirrors protocol from braille-desktop/relay.py & braile.ino
+     ============================================================ */
+  const NUS_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+  const NUS_TX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+  const NUS_RX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+
+  const BOOT_PREFIXES = [
+    'ets ', 'rst:0x', 'boot:0x', 'configSPIWP', 'clk_drv:', 'q_drv:',
+    'd_drv:', 'cs0_drv:', 'hd_drv:', 'wp_drv:', 'mode:DIO', 'load:0x', 'entry 0x'
+  ];
+
+  let hwTransport = null; // 'ble' | 'serial' | null
+  let bleDevice = null;
+  let bleRxChar = null;
+  let serialPort = null;
+  let serialReader = null;
+  let serialReading = false;
+  let hwLineBuf = '';
+  let bootSuppress = false;
+
+  const setHwStatus = (state, title, sub) => {
+    if (!hwStatusDot) return;
+    hwStatusDot.classList.remove('connected', 'error');
+    if (state === 'connected') hwStatusDot.classList.add('connected');
+    if (state === 'error') hwStatusDot.classList.add('error');
+    if (hwStatusTitle) hwStatusTitle.textContent = title;
+    if (hwStatusSub) hwStatusSub.textContent = sub;
+    if (disconnectHwBtn) disconnectHwBtn.hidden = state !== 'connected';
+    if (connectBleBtn) connectBleBtn.hidden = state === 'connected';
+    if (connectSerialBtn) connectSerialBtn.hidden = state === 'connected';
+  };
+
+  const handleControlLine = (rawLine) => {
+    const line = rawLine.trim();
+    if (!line) return;
+    if (line.startsWith('ets ')) { bootSuppress = true; return; }
+    if (BOOT_PREFIXES.some((p) => line.startsWith(p))) { bootSuppress = true; return; }
+    if (bootSuppress && (line.includes('SYSTEM:') || line.startsWith('LANG:'))) {
+      bootSuppress = false;
+    }
+    if (bootSuppress) { bootSuppress = false; return; }
+
+    if (line === 'LANG:en') {
+      setLanguageUI('en');
+      return;
+    }
+    if (line === 'LANG:bn') {
+      setLanguageUI('bn');
+      return;
+    }
+    if (line === 'SYSTEM:BKSP') {
+      backspaceStream();
+      return;
+    }
+    if (line === 'SYSTEM:CAP_ONCE') { capsMode = 'ONCE'; renderDemo(false); return; }
+    if (line === 'SYSTEM:CAP_LOCK') { capsMode = 'LOCK'; renderDemo(false); return; }
+    if (line === 'SYSTEM:CAP_OFF') { capsMode = 'OFF'; renderDemo(false); return; }
+    if (line.startsWith('SYSTEM:') || line === 'Invalid' || line.startsWith('SHIFT')) {
+      readoutPreviewPill.textContent = line;
+      return;
+    }
+    // Otherwise it's typed text from the device
+    appendToStream(line);
+    const lastCh = Array.from(line).pop();
+    if (lastCh) {
+      readoutTrans.textContent = lastCh + ' · hardware';
+      readoutPreviewPill.textContent = `Hardware: "${lastCh}"`;
+      readoutPreviewPill.classList.add('has-char');
+    }
+  };
+
+  const handleHardwareChunk = (chunk) => {
+    hwLineBuf += chunk;
+    // Process complete newline-delimited messages; if no newline yet, forward immediate chars unless partial control prefix
+    while (hwLineBuf.includes('\n')) {
+      const idx = hwLineBuf.indexOf('\n');
+      const line = hwLineBuf.slice(0, idx).replace(/\r$/, '');
+      hwLineBuf = hwLineBuf.slice(idx + 1);
+      handleControlLine(line);
+    }
+    if (hwLineBuf) {
+      const rest = hwLineBuf;
+      // Hold back incomplete control/boot prefixes until newline arrives
+      const looksControl =
+        'SYSTEM:'.startsWith(rest) || rest.startsWith('SYSTEM:') ||
+        'LANG:'.startsWith(rest) || rest.startsWith('LANG:') ||
+        'Invalid'.startsWith(rest) ||
+        BOOT_PREFIXES.some((p) => p.startsWith(rest) || rest.startsWith(p));
+      if (!looksControl) {
+        hwLineBuf = '';
+        appendToStream(rest);
+        const lastCh = Array.from(rest).pop();
+        if (lastCh) {
+          readoutTrans.textContent = lastCh + ' · hardware';
+          readoutPreviewPill.textContent = `Hardware: "${lastCh}"`;
+          readoutPreviewPill.classList.add('has-char');
+        }
+      }
+    }
+  };
+
+  const sendCommandToHardware = async (cmd) => {
+    const payload = new TextEncoder().encode(cmd);
+    if (hwTransport === 'ble' && bleRxChar) {
+      try {
+        await bleRxChar.writeValue(payload);
+      } catch (_) { /* ignore write errors */ }
+    } else if (hwTransport === 'serial' && serialPort && serialPort.writable) {
+      try {
+        const writer = serialPort.writable.getWriter();
+        await writer.write(new TextEncoder().encode(cmd + '\n'));
+        writer.releaseLock();
+      } catch (_) { /* ignore write errors */ }
+    }
+  };
+
+  const disconnectHardware = async () => {
+    serialReading = false;
+    hwLineBuf = '';
+    if (serialReader) {
+      try { await serialReader.cancel(); } catch (_) {}
+      serialReader = null;
+    }
+    if (serialPort) {
+      try { await serialPort.close(); } catch (_) {}
+      serialPort = null;
+    }
+    if (bleDevice && bleDevice.gatt && bleDevice.gatt.connected) {
+      try { bleDevice.gatt.disconnect(); } catch (_) {}
+    }
+    bleDevice = null;
+    bleRxChar = null;
+    hwTransport = null;
+    setHwStatus('idle', 'Virtual Braille Pad', 'Click dots below or connect a physical BrailleBridge device');
+  };
+
+  if (connectBleBtn) {
+    connectBleBtn.addEventListener('click', async () => {
+      if (!navigator.bluetooth) {
+        setHwStatus('error', 'Bluetooth unavailable in this browser', 'Open this page in Chrome or Edge (desktop or Android) to connect over Bluetooth LE.');
+        return;
+      }
+      try {
+        setHwStatus('idle', 'Scanning for BrailleBridge…', 'Select your BrailleBridge device in the browser prompt.');
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [{ namePrefix: 'BrailleBridge' }, { services: [NUS_SERVICE_UUID] }],
+          optionalServices: [NUS_SERVICE_UUID]
+        });
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService(NUS_SERVICE_UUID);
+        const txChar = await service.getCharacteristic(NUS_TX_UUID);
+        try {
+          bleRxChar = await service.getCharacteristic(NUS_RX_UUID);
+        } catch (_) {
+          bleRxChar = null;
+        }
+        const decoder = new TextDecoder('utf-8');
+        await txChar.startNotifications();
+        txChar.addEventListener('characteristicvaluechanged', (ev) => {
+          handleHardwareChunk(decoder.decode(ev.target.value, { stream: true }));
+        });
+        device.addEventListener('gattserverdisconnected', () => {
+          if (hwTransport === 'ble') disconnectHardware();
+        });
+        bleDevice = device;
+        hwTransport = 'ble';
+        setHwStatus('connected', `Bluetooth Connected · ${device.name || 'BrailleBridge'}`, 'Type on your physical BrailleBridge — characters stream here live.');
+      } catch (err) {
+        if (err && err.name === 'NotFoundError') {
+          setHwStatus('idle', 'Virtual Braille Pad', 'Bluetooth pairing cancelled.');
+        } else {
+          setHwStatus('error', 'Bluetooth connection failed', (err && err.message) || 'Make sure BrailleBridge is powered on and nearby.');
+        }
+      }
+    });
+  }
+
+  if (connectSerialBtn) {
+    connectSerialBtn.addEventListener('click', async () => {
+      if (!('serial' in navigator)) {
+        setHwStatus('error', 'Web Serial unavailable in this browser', 'Use Chrome or Edge on desktop to connect over USB Serial (115200 baud).');
+        return;
+      }
+      try {
+        setHwStatus('idle', 'Waiting for USB port…', 'Select the BrailleBridge ESP32 COM / ttyUSB port.');
+        const port = await navigator.serial.requestPort();
+        await port.open({ baudRate: 115200 });
+        serialPort = port;
+        hwTransport = 'serial';
+        serialReading = true;
+        setHwStatus('connected', 'USB Serial Connected · 115200 baud', 'Type on your physical BrailleBridge — characters stream here live.');
+
+        const decoder = new TextDecoderStream();
+        port.readable.pipeTo(decoder.writable).catch(() => {});
+        serialReader = decoder.readable.getReader();
+
+        (async () => {
+          try {
+            while (serialReading) {
+              const { value, done } = await serialReader.read();
+              if (done) break;
+              if (value) handleHardwareChunk(value);
+            }
+          } catch (_) {
+            /* port closed */
+          } finally {
+            if (hwTransport === 'serial') disconnectHardware();
+          }
+        })();
+      } catch (err) {
+        if (err && err.name === 'NotFoundError') {
+          setHwStatus('idle', 'Virtual Braille Pad', 'Serial port selection cancelled.');
+        } else {
+          setHwStatus('error', 'USB Serial connection failed', (err && err.message) || 'Port may be busy in another application.');
+        }
+      }
+    });
+  }
+
+  if (disconnectHwBtn) {
+    disconnectHwBtn.addEventListener('click', disconnectHardware);
+  }
+
+  /* ============================================================
+     VIRTUAL PAD EVENT WIRING
+     ============================================================ */
+  if (demoCell) {
+    demoCell.addEventListener('click', (e) => {
+      const dot = e.target.closest('.demo-dot');
+      if (!dot) return;
+      const idx = parseInt(dot.dataset.d, 10);
+      currentChord ^= (1 << idx);
+      renderDemo(true);
+      scheduleAutoCommit();
+    });
+
+    if (commitBtn) {
+      commitBtn.addEventListener('click', commitChord);
+    }
+
+    if (langEn) {
+      langEn.addEventListener('click', () => {
+        if (currentLang === 'en') return;
+        setLanguageUI('en');
+        sendCommandToHardware('LANG:en');
+      });
+    }
+    if (langBn) {
+      langBn.addEventListener('click', () => {
+        if (currentLang === 'bn') return;
+        setLanguageUI('bn');
+        sendCommandToHardware('LANG:bn');
+      });
+    }
+
+    if (shiftToggle) {
+      shiftToggle.addEventListener('click', () => {
+        shiftActive = !shiftActive;
+        shiftToggle.classList.toggle('active', shiftActive);
+        shiftToggle.setAttribute('aria-pressed', String(shiftActive));
+        renderDemo(true);
+      });
+    }
+
+    if (autoCommitToggle) {
+      autoCommitToggle.addEventListener('click', () => {
+        autoCommit = !autoCommit;
+        autoCommitToggle.classList.toggle('active', autoCommit);
+        autoCommitToggle.setAttribute('aria-pressed', String(autoCommit));
+        if (autoCommit && currentChord) scheduleAutoCommit();
+        else clearTimeout(autoTimer);
+      });
+    }
+
+    if (spaceBtn) {
+      spaceBtn.addEventListener('click', () => {
+        if (currentChord) commitChord();
+        appendToStream(' ');
+        renderDemo(false);
+      });
+    }
+
+    if (bkspBtn) {
+      bkspBtn.addEventListener('click', () => {
+        if (currentChord) {
+          currentChord = 0;
+          renderDemo(true);
+        } else {
+          backspaceStream();
+        }
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        clearTimeout(autoTimer);
+        currentChord = 0;
+        capsMode = 'OFF';
+        readoutStream.innerHTML = '<span class="stream-placeholder">Output appears here…</span>';
+        renderDemo(true);
+      });
+    }
+
+    if (copyStreamBtn) {
+      copyStreamBtn.addEventListener('click', async () => {
+        const text = getStreamText();
+        if (!text) return;
+        try {
+          await navigator.clipboard.writeText(text);
+          const orig = copyStreamBtn.textContent;
+          copyStreamBtn.textContent = 'Copied';
+          setTimeout(() => { copyStreamBtn.textContent = orig; }, 1400);
+        } catch (_) {}
+      });
+    }
+
+    if (speakStreamBtn) {
+      speakStreamBtn.addEventListener('click', () => {
+        const text = getStreamText().trim();
+        if (!text || !('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = currentLang === 'bn' ? 'bn-BD' : 'en-US';
+        window.speechSynthesis.speak(utter);
+      });
+    }
+
+    const demoSection = $('#demo');
+    const demoInView = () => {
+      if (!demoSection) return false;
+      const r = demoSection.getBoundingClientRect();
+      return r.top <= window.innerHeight * 0.75 && r.bottom >= window.innerHeight * 0.2;
+    };
+
+    document.addEventListener('keydown', (e) => {
+      if (e.repeat) return;
+      if (!demoInView()) return;
+      const tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      const k = e.key.toLowerCase();
+      if (k >= '1' && k <= '6') {
+        e.preventDefault();
+        currentChord ^= (1 << (parseInt(k, 10) - 1));
+        renderDemo(true);
+        scheduleAutoCommit();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        if (currentChord) commitChord();
+        appendToStream(' ');
+        renderDemo(false);
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        if (currentChord) {
+          currentChord = 0;
+          renderDemo(true);
+        } else {
+          backspaceStream();
+        }
+      } else if (e.key === 'Shift' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        shiftActive = !shiftActive;
+        shiftToggle.classList.toggle('active', shiftActive);
+        shiftToggle.setAttribute('aria-pressed', String(shiftActive));
+        renderDemo(true);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        commitChord();
+      } else if (e.key === 'Escape') {
+        clearTimeout(autoTimer);
+        currentChord = 0;
+        renderDemo(true);
+      }
+    });
+
+    renderDemo(false);
+  }
 
   /* ============================================================
      DICTIONARY TABS
@@ -443,166 +836,8 @@
   });
 
   /* ============================================================
-     CURVED MARQUEE — mission quote on a curved path
-     (native reimplementation of the React Bits CurvedLoop)
-     ============================================================ */
-  const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-  const loopJacket = $('#curvedLoop');
-  if (loopJacket) {
-    const MARQUEE_TEXT =
-      'BrailleBridge does not replace Braille \u2726 It protects Braille as the ' +
-      'student\u2019s natural writing method \u2726 Removing the barrier between ' +
-      'braille input and teacher-readable output \u2726\u00A0';
-    const measureRef = $('#curveMeasure');
-    const textPathRef = $('#curveTextPath');
-    const spacingRef = { value: 0 };
-    const dirRef = { value: 'left' };
-    const velRef = { value: 0 };
-    const dragRef = { value: false };
-    const lastXRef = { value: 0 };
-    let rafId = 0;
-
-    const setOffset = (px) => {
-      let o = px;
-      if (spacingRef.value && o <= -spacingRef.value) o += spacingRef.value;
-      if (spacingRef.value && o > 0) o -= spacingRef.value;
-      textPathRef.setAttribute('startOffset', o + 'px');
-      return o;
-    };
-
-    let listenersAttached = false;
-    const offsetRef = { value: 0 };
-
-    const initMarquee = () => {
-      if (!measureRef || !textPathRef) return;
-      cancelAnimationFrame(rafId);
-      measureRef.textContent = MARQUEE_TEXT;
-      const spacing = measureRef.getComputedTextLength();
-      if (!spacing) return;
-      spacingRef.value = spacing;
-      const totalText = Array(Math.ceil(1800 / spacing) + 2).fill(MARQUEE_TEXT).join('');
-      textPathRef.textContent = totalText;
-
-      if (reducedMotion) {
-        setOffset(0);
-        return;
-      }
-
-      let offset = setOffset(-spacing);
-      offsetRef.value = offset;
-      const step = () => {
-        if (!dragRef.value) {
-          const delta = dirRef.value === 'right' ? 2 : -2;
-          offsetRef.value = setOffset(offsetRef.value + delta);
-        }
-        rafId = requestAnimationFrame(step);
-      };
-      rafId = requestAnimationFrame(step);
-
-      if (listenersAttached) return;
-      listenersAttached = true;
-      const onDown = (e) => {
-        if (!finePointer) return;
-        dragRef.value = true;
-        lastXRef.value = e.clientX;
-        velRef.value = 0;
-        e.target.setPointerCapture(e.pointerId);
-      };
-      const onMove = (e) => {
-        if (!dragRef.value || !finePointer) return;
-        const dx = e.clientX - lastXRef.value;
-        lastXRef.value = e.clientX;
-        velRef.value = dx;
-        offsetRef.value = setOffset(offsetRef.value + dx);
-      };
-      const endDrag = () => {
-        if (!dragRef.value) return;
-        dragRef.value = false;
-        dirRef.value = velRef.value > 0 ? 'right' : 'left';
-      };
-
-      loopJacket.addEventListener('pointerdown', onDown);
-      loopJacket.addEventListener('pointermove', onMove);
-      loopJacket.addEventListener('pointerup', endDrag);
-      loopJacket.addEventListener('pointercancel', endDrag);
-      loopJacket.addEventListener('pointerleave', endDrag);
-    };
-
-    // Wait for fonts so measured width is accurate; retry on font load.
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(initMarquee);
-    } else {
-      window.addEventListener('load', initMarquee);
-    }
-    // Fallback: try immediately too (will be corrected once fonts settle).
-    initMarquee();
-    window.addEventListener('resize', () => {
-      cancelAnimationFrame(rafId);
-      initMarquee();
-    });
-  }
-
-  /* ============================================================
-     CUSTOM BRAILLE-CELL CURSOR
-     ============================================================ */
-  const cursor = $('#cursor');
-  const IS_TEXT = 'P, H1, H2, H3, H4, H5, H6, LI, TD, TH, DD, DT, CAPTION, FIGCAPTION, BLOCKQUOTE, EM, STRONG';
-
-  if (cursor && finePointer) {
-    document.documentElement.classList.add('js-cursor');
-    let targetX = -100, targetY = -100, curX = -100, curY = -100, raf = null;
-
-    const INTERACTIVE =
-      'a, button, [role="button"], .toggle-btn, .dict-tab, .demo-dot, .pipe, .nav-burger, label, .device-caption, .curved-loop';
-
-    const loop = () => {
-      curX += (targetX - curX) * 0.32;
-      curY += (targetY - curY) * 0.32;
-      cursor.style.transform =
-        'translate(' + curX + 'px, ' + curY + 'px) translate(-50%, -50%)';
-      if (Math.abs(targetX - curX) > 0.2 || Math.abs(targetY - curY) > 0.2) {
-        raf = requestAnimationFrame(loop);
-      } else {
-        raf = null;
-      }
-    };
-
-    const move = (e) => {
-      targetX = e.clientX;
-      targetY = e.clientY;
-      if (!raf) raf = requestAnimationFrame(loop);
-      if (!reducedMotion) cursor.classList.add('on');
-    };
-
-    const leave = () => cursor.classList.remove('on');
-
-    const classify = (e) => {
-      const t = e.target;
-      const isInteractive = !!(t.closest && t.closest(INTERACTIVE));
-      const isText = !!(t.closest && t.closest(IS_TEXT));
-      cursor.classList.toggle('cursor--hover', isInteractive);
-      // text-bar state is mutually exclusive with the interactive state
-      cursor.classList.toggle('cursor--text', !isInteractive && isText);
-    };
-
-    document.addEventListener('mousemove', move);
-    document.addEventListener('mouseover', classify);
-    document.addEventListener('mousedown', () => cursor.classList.add('cursor--press'));
-    document.addEventListener('mouseup', () => cursor.classList.remove('cursor--press'));
-    document.documentElement.addEventListener('mouseleave', leave);
-
-    if (reducedMotion) {
-      document.removeEventListener('mousemove', move);
-      document.addEventListener('mousemove', (e) => {
-        cursor.style.transform =
-          'translate(' + e.clientX + 'px, ' + e.clientY + 'px) translate(-50%, -50%)';
-        cursor.classList.add('on');
-      });
-    }
-  }
-
-  /* ============================================================
      FOOTER YEAR
      ============================================================ */
-  $('#year').textContent = new Date().getFullYear();
+  const yearEl = $('#year');
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
 })();
