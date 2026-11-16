@@ -55,53 +55,30 @@
 
     <!-- ================= HERO (APPLE PRO SHOWCASE) ================= -->
     <section class="hero" id="hero" aria-label="BrailleBridge showcase">
+      <div id="heroAsciiBg" class="gradient-ascii-container hero-ascii-bg" aria-hidden="true"></div>
       <div class="hero-stage">
-        <!-- Giant Chrome Iridescent Wordmark behind the hardware -->
-        <div class="hero-pro-backdrop" aria-hidden="true">
+        <!-- Adaptive Liquid Glass Wordmark behind the hardware -->
+        <div class="hero-pro-backdrop" id="heroGlassBackdrop" aria-hidden="true">
+          <canvas id="heroGlassCanvas" class="hero-glass-canvas"></canvas>
           <svg class="hero-pro-svg" viewBox="0 0 1600 700" preserveAspectRatio="xMidYMid meet" role="img" aria-label="BRAILLE BRIDGE">
             <defs>
-              <linearGradient id="proChromeTop" gradientUnits="userSpaceOnUse" x1="620" y1="30" x2="980" y2="270">
-                <stop offset="0%" stop-color="#5B636E" />
-                <stop offset="22%" stop-color="#CFD9E4" />
-                <stop offset="38%" stop-color="#FFFFFF" />
-                <stop offset="47%" stop-color="#F3C59B" />
-                <stop offset="53%" stop-color="#3E322B" />
-                <stop offset="63%" stop-color="#B9D0E3" />
-                <stop offset="78%" stop-color="#E5ECEF" />
-                <stop offset="100%" stop-color="#F7E5D4" />
+              <linearGradient id="liquidRimTop" gradientUnits="userSpaceOnUse" x1="0" y1="30" x2="0" y2="270">
+                <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.92" />
+                <stop offset="45%" stop-color="#FFFFFF" stop-opacity="0.38" />
+                <stop offset="100%" stop-color="#001242" stop-opacity="0.65" />
               </linearGradient>
-
-              <linearGradient id="proChromeBot" gradientUnits="userSpaceOnUse" x1="620" y1="400" x2="980" y2="650">
-                <stop offset="0%" stop-color="#76818E" />
-                <stop offset="24%" stop-color="#DCE5EE" />
-                <stop offset="40%" stop-color="#FFFFFF" />
-                <stop offset="49%" stop-color="#F5C79D" />
-                <stop offset="56%" stop-color="#4A3B32" />
-                <stop offset="68%" stop-color="#C5DAEB" />
-                <stop offset="84%" stop-color="#E8EEF3" />
-                <stop offset="100%" stop-color="#F8E7D7" />
-              </linearGradient>
-
-              <linearGradient id="proRimTop" gradientUnits="userSpaceOnUse" x1="0" y1="30" x2="0" y2="270">
+              <linearGradient id="liquidRimBot" gradientUnits="userSpaceOnUse" x1="0" y1="400" x2="0" y2="650">
                 <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95" />
-                <stop offset="45%" stop-color="#FFD4AF" stop-opacity="0.9" />
-                <stop offset="65%" stop-color="#B6D3EA" stop-opacity="0.85" />
-                <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.95" />
+                <stop offset="55%" stop-color="#FFFFFF" stop-opacity="0.52" />
+                <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.78" />
               </linearGradient>
-              <linearGradient id="proRimBot" gradientUnits="userSpaceOnUse" x1="0" y1="400" x2="0" y2="650">
-                <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95" />
-                <stop offset="45%" stop-color="#FFD4AF" stop-opacity="0.9" />
-                <stop offset="65%" stop-color="#B6D3EA" stop-opacity="0.85" />
-                <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.95" />
-              </linearGradient>
-
             </defs>
 
             <g>
               <text class="pro-word pro-word-top" x="800" y="250" text-anchor="middle"
-                fill="url(#proChromeTop)" stroke="url(#proRimTop)" stroke-width="8" stroke-linejoin="round">BRAILLE</text>
+                fill="none" stroke="url(#liquidRimTop)" stroke-width="4.5" stroke-linejoin="round">BRAILLE</text>
               <text class="pro-word pro-word-bottom" x="800" y="630" text-anchor="middle"
-                fill="url(#proChromeBot)" stroke="url(#proRimBot)" stroke-width="8" stroke-linejoin="round">BRIDGE</text>
+                fill="none" stroke="url(#liquidRimBot)" stroke-width="4.5" stroke-linejoin="round">BRIDGE</text>
             </g>
           </svg>
         </div>
@@ -145,7 +122,6 @@
         <div class="overview-grid reveal">
           <div class="overview-brand-lockup">
             <img class="overview-logo" src="assets/logo/logo-braille.png" alt="b'bridge Braille official logo" width="300" height="96" />
-            <p class="eyebrow">Science &amp; Technology Innovation Competition</p>
           </div>
           <div class="overview-copy">
             <p class="hero-lede">
@@ -1246,7 +1222,6 @@
         </a>
         <p>
           A Low-Cost Bilingual Braille Writing and Classroom Examination System.
-          A project submitted for the Science &amp; Technology Innovation Competition.
         </p>
       </div>
 
@@ -1277,6 +1252,7 @@
     </div>
   </footer>
 
+  <script src="gradient-ascii.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
