@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/logo/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+Bengali:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -20,8 +20,7 @@
   <header class="site-nav" id="siteNav">
     <nav class="nav-inner" aria-label="Primary">
       <a class="brand" href="#hero" aria-label="BrailleBridge home">
-        <img class="brand-icon" src="assets/logo/favicon-64.png" alt="" width="28" height="28" />
-        <span class="brand-name">b&middot;bridge</span>
+        <img class="brand-wordmark" src="assets/logo/logo-wordmark.png" alt="b'bridge" width="120" height="36" />
       </a>
 
       <ul class="nav-links" id="navLinks">
@@ -96,25 +95,13 @@
                 <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.95" />
               </linearGradient>
 
-              <filter id="proGlow" x="-10%" y="-12%" width="120%" height="124%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="16" result="blur1" />
-                <feColorMatrix in="blur1" type="matrix"
-                  values="1.15 0 0 0 0.09
-                          0 1.05 0 0 0.05
-                          0 0 1.0 0 0.02
-                          0 0 0 0.65 0" result="tintedBlur" />
-                <feMerge>
-                  <feMergeNode in="tintedBlur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
             </defs>
 
-            <g filter="url(#proGlow)">
+            <g>
               <text class="pro-word pro-word-top" x="800" y="250" text-anchor="middle"
-                fill="url(#proChromeTop)" stroke="url(#proRimTop)" stroke-width="10" stroke-linejoin="round">BRAILLE</text>
+                fill="url(#proChromeTop)" stroke="url(#proRimTop)" stroke-width="8" stroke-linejoin="round">BRAILLE</text>
               <text class="pro-word pro-word-bottom" x="800" y="630" text-anchor="middle"
-                fill="url(#proChromeBot)" stroke="url(#proRimBot)" stroke-width="10" stroke-linejoin="round">BRIDGE</text>
+                fill="url(#proChromeBot)" stroke="url(#proRimBot)" stroke-width="8" stroke-linejoin="round">BRIDGE</text>
             </g>
           </svg>
         </div>
@@ -157,7 +144,7 @@
       <div class="container">
         <div class="overview-grid reveal">
           <div class="overview-brand-lockup">
-            <img class="overview-logo" src="assets/logo/logo-wordmark.png" alt="b'bridge official logo" width="220" height="66" />
+            <img class="overview-logo" src="assets/logo/logo-braille.png" alt="b'bridge Braille official logo" width="300" height="96" />
             <p class="eyebrow">Science &amp; Technology Innovation Competition</p>
           </div>
           <div class="overview-copy">
@@ -200,7 +187,7 @@
     <!-- ================= MISSION STATEMENT ================= -->
     <section class="mission-band" aria-label="Mission statement">
       <div class="container mission-inner reveal">
-        <img class="mission-logo" src="assets/logo/logo-braille-orange.png" alt="b'bridge Braille dot logotype" width="240" height="240" />
+        <img class="mission-logo" src="assets/logo/logo-braille-on-orange.png" alt="b'bridge Braille logotype" width="280" height="90" />
         <blockquote class="mission-quote">
           BrailleBridge does not replace Braille. It protects Braille as the student&rsquo;s
           natural writing method — while removing the barrier between braille input and
@@ -568,16 +555,16 @@
                 <tr><th scope="col">Function</th><th scope="col">GPIO</th><th scope="col">Notes</th></tr>
               </thead>
               <tbody>
-                <tr><td>Dot 1</td><td class="mono">14</td><td>Top-left</td></tr>
-                <tr><td>Dot 2</td><td class="mono">12</td><td>Middle-left</td></tr>
-                <tr><td>Dot 3</td><td class="mono">13</td><td>Bottom-left</td></tr>
-                <tr><td>Dot 4</td><td class="mono">27</td><td>Top-right</td></tr>
-                <tr><td>Dot 5</td><td class="mono">26</td><td>Middle-right</td></tr>
-                <tr><td>Dot 6</td><td class="mono">25</td><td>Bottom-right</td></tr>
-                <tr><td>Space</td><td class="mono">33</td><td>Dedicated space key</td></tr>
-                <tr><td>Shift</td><td class="mono">32</td><td>Modifier</td></tr>
-                <tr class="tbl-highlight"><td>Red LED</td><td class="mono">18</td><td>English indicator</td></tr>
-                <tr class="tbl-highlight"><td>Green LED</td><td class="mono">19</td><td>Bangla indicator</td></tr>
+                <tr><td>Dot 1</td><td>14</td><td>Top-left</td></tr>
+                <tr><td>Dot 2</td><td>12</td><td>Middle-left</td></tr>
+                <tr><td>Dot 3</td><td>13</td><td>Bottom-left</td></tr>
+                <tr><td>Dot 4</td><td>27</td><td>Top-right</td></tr>
+                <tr><td>Dot 5</td><td>26</td><td>Middle-right</td></tr>
+                <tr><td>Dot 6</td><td>25</td><td>Bottom-right</td></tr>
+                <tr><td>Space</td><td>33</td><td>Dedicated space key</td></tr>
+                <tr><td>Shift</td><td>32</td><td>Modifier</td></tr>
+                <tr class="tbl-highlight"><td>Red LED</td><td>18</td><td>English indicator</td></tr>
+                <tr class="tbl-highlight"><td>Green LED</td><td>19</td><td>Bangla indicator</td></tr>
               </tbody>
             </table>
           </div>
@@ -607,26 +594,8 @@
           </p>
         </div>
 
-        <div class="firmware-grid">
-          <div class="code-card reveal">
-            <div class="code-head">
-              <span class="code-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-              <span class="code-name">chord-read.ino</span>
-              <span class="code-lang">C++</span>
-            </div>
-            <pre><code><span class="c-kw">uint8_t</span> readChord() {
-  <span class="c-kw">uint8_t</span> chord = <span class="c-num">0</span>;
-  <span class="c-kw">if</span> (digitalRead(PIN_DOT1) == LOW) chord |= (<span class="c-num">1</span> &lt;&lt; <span class="c-num">0</span>);
-  <span class="c-kw">if</span> (digitalRead(PIN_DOT2) == LOW) chord |= (<span class="c-num">1</span> &lt;&lt; <span class="c-num">1</span>);
-  <span class="c-kw">if</span> (digitalRead(PIN_DOT3) == LOW) chord |= (<span class="c-num">1</span> &lt;&lt; <span class="c-num">2</span>);
-  <span class="c-kw">if</span> (digitalRead(PIN_DOT4) == LOW) chord |= (<span class="c-num">1</span> &lt;&lt; <span class="c-num">3</span>);
-  <span class="c-kw">if</span> (digitalRead(PIN_DOT5) == LOW) chord |= (<span class="c-num">1</span> &lt;&lt; <span class="c-num">4</span>);
-  <span class="c-kw">if</span> (digitalRead(PIN_DOT6) == LOW) chord |= (<span class="c-num">1</span> &lt;&lt; <span class="c-num">5</span>);
-  <span class="c-kw">return</span> chord;
-}</code></pre>
-          </div>
-
-          <div class="firmware-copy reveal">
+        <div class="firmware-steps reveal">
+          <div class="firmware-copy">
             <div class="firmware-point">
               <span class="fw-num">1</span>
               <div>
@@ -645,14 +614,14 @@
               <span class="fw-num">3</span>
               <div>
                 <h4>Dictionary-driven</h4>
-                <p>Translations live in a <code class="mono">BrailleEntry</code> array. Adding a language? Append entries — no control-flow changes.</p>
+                <p>Translations live in a <span class="fw-tag">BrailleEntry</span> lookup table. Adding a language? Append entries — no control-flow changes.</p>
               </div>
             </div>
             <div class="firmware-point">
               <span class="fw-num">4</span>
               <div>
                 <h4>Software-defined language</h4>
-                <p>Hold dots 4+5+6 for 500&nbsp;ms to toggle English &harr; Bangla. No hardware switch — just a boolean.</p>
+                <p>Hold dots 4+5+6 for 500&nbsp;ms to toggle English &harr; Bangla. No hardware switch — just a software state flag.</p>
               </div>
             </div>
             <div class="firmware-point">
@@ -773,7 +742,7 @@
               </div>
               <div class="meta-row">
                 <span class="meta-label">Chord value</span>
-                <span class="meta-value mono" id="readoutChord">0b000000</span>
+                <span class="meta-value chord-val" id="readoutChord">0b000000</span>
               </div>
               <div class="meta-row">
                 <span class="meta-label">Active dots</span>
@@ -829,16 +798,16 @@
                 <caption>First decade &middot; A–J</caption>
                 <thead><tr><th>Letter</th><th>Chord</th><th>Dots</th></tr></thead>
                 <tbody>
-                  <tr><td>A</td><td class="mono">0b000001</td><td>1</td></tr>
-                  <tr><td>B</td><td class="mono">0b000011</td><td>1,2</td></tr>
-                  <tr><td>C</td><td class="mono">0b001001</td><td>1,4</td></tr>
-                  <tr><td>D</td><td class="mono">0b011001</td><td>1,4,5</td></tr>
-                  <tr><td>E</td><td class="mono">0b010001</td><td>1,5</td></tr>
-                  <tr><td>F</td><td class="mono">0b001011</td><td>1,2,4</td></tr>
-                  <tr><td>G</td><td class="mono">0b011011</td><td>1,2,4,5</td></tr>
-                  <tr><td>H</td><td class="mono">0b010011</td><td>1,2,5</td></tr>
-                  <tr><td>I</td><td class="mono">0b001010</td><td>2,4</td></tr>
-                  <tr><td>J</td><td class="mono">0b011010</td><td>2,4,5</td></tr>
+                  <tr><td>A</td><td class="chord-cell">0b000001</td><td>1</td></tr>
+                  <tr><td>B</td><td class="chord-cell">0b000011</td><td>1,2</td></tr>
+                  <tr><td>C</td><td class="chord-cell">0b001001</td><td>1,4</td></tr>
+                  <tr><td>D</td><td class="chord-cell">0b011001</td><td>1,4,5</td></tr>
+                  <tr><td>E</td><td class="chord-cell">0b010001</td><td>1,5</td></tr>
+                  <tr><td>F</td><td class="chord-cell">0b001011</td><td>1,2,4</td></tr>
+                  <tr><td>G</td><td class="chord-cell">0b011011</td><td>1,2,4,5</td></tr>
+                  <tr><td>H</td><td class="chord-cell">0b010011</td><td>1,2,5</td></tr>
+                  <tr><td>I</td><td class="chord-cell">0b001010</td><td>2,4</td></tr>
+                  <tr><td>J</td><td class="chord-cell">0b011010</td><td>2,4,5</td></tr>
                 </tbody>
               </table>
             </div>
@@ -847,16 +816,16 @@
                 <caption>Second decade &middot; K–T (first + dot 3)</caption>
                 <thead><tr><th>Letter</th><th>Chord</th><th>Dots</th></tr></thead>
                 <tbody>
-                  <tr><td>K</td><td class="mono">0b000101</td><td>1,3</td></tr>
-                  <tr><td>L</td><td class="mono">0b000111</td><td>1,2,3</td></tr>
-                  <tr><td>M</td><td class="mono">0b001101</td><td>1,3,4</td></tr>
-                  <tr><td>N</td><td class="mono">0b011101</td><td>1,3,4,5</td></tr>
-                  <tr><td>O</td><td class="mono">0b010101</td><td>1,3,5</td></tr>
-                  <tr><td>P</td><td class="mono">0b001111</td><td>1,2,3,4</td></tr>
-                  <tr><td>Q</td><td class="mono">0b011111</td><td>1–5</td></tr>
-                  <tr><td>R</td><td class="mono">0b010111</td><td>1,2,3,5</td></tr>
-                  <tr><td>S</td><td class="mono">0b001110</td><td>2,3,4</td></tr>
-                  <tr><td>T</td><td class="mono">0b011110</td><td>2,3,4,5</td></tr>
+                  <tr><td>K</td><td class="chord-cell">0b000101</td><td>1,3</td></tr>
+                  <tr><td>L</td><td class="chord-cell">0b000111</td><td>1,2,3</td></tr>
+                  <tr><td>M</td><td class="chord-cell">0b001101</td><td>1,3,4</td></tr>
+                  <tr><td>N</td><td class="chord-cell">0b011101</td><td>1,3,4,5</td></tr>
+                  <tr><td>O</td><td class="chord-cell">0b010101</td><td>1,3,5</td></tr>
+                  <tr><td>P</td><td class="chord-cell">0b001111</td><td>1,2,3,4</td></tr>
+                  <tr><td>Q</td><td class="chord-cell">0b011111</td><td>1–5</td></tr>
+                  <tr><td>R</td><td class="chord-cell">0b010111</td><td>1,2,3,5</td></tr>
+                  <tr><td>S</td><td class="chord-cell">0b001110</td><td>2,3,4</td></tr>
+                  <tr><td>T</td><td class="chord-cell">0b011110</td><td>2,3,4,5</td></tr>
                 </tbody>
               </table>
             </div>
@@ -865,12 +834,12 @@
                 <caption>Third decade &middot; U–Z (first + dots 3 &amp; 6)</caption>
                 <thead><tr><th>Letter</th><th>Chord</th><th>Dots</th></tr></thead>
                 <tbody>
-                  <tr><td>U</td><td class="mono">0b100101</td><td>1,3,6</td></tr>
-                  <tr><td>V</td><td class="mono">0b100111</td><td>1,2,3,6</td></tr>
-                  <tr class="tbl-highlight"><td>W</td><td class="mono">0b111010</td><td>2,4,5,6 &middot; exception</td></tr>
-                  <tr><td>X</td><td class="mono">0b101101</td><td>1,3,4,6</td></tr>
-                  <tr><td>Y</td><td class="mono">0b111101</td><td>1,3,4,5,6</td></tr>
-                  <tr><td>Z</td><td class="mono">0b101001</td><td>1,3,5,6</td></tr>
+                  <tr><td>U</td><td class="chord-cell">0b100101</td><td>1,3,6</td></tr>
+                  <tr><td>V</td><td class="chord-cell">0b100111</td><td>1,2,3,6</td></tr>
+                  <tr class="tbl-highlight"><td>W</td><td class="chord-cell">0b111010</td><td>2,4,5,6 &middot; exception</td></tr>
+                  <tr><td>X</td><td class="chord-cell">0b101101</td><td>1,3,4,6</td></tr>
+                  <tr><td>Y</td><td class="chord-cell">0b111101</td><td>1,3,4,5,6</td></tr>
+                  <tr><td>Z</td><td class="chord-cell">0b101001</td><td>1,3,5,6</td></tr>
                 </tbody>
               </table>
             </div>
@@ -885,16 +854,16 @@
                 <caption>Vowels &middot; স্বরবর্ণ</caption>
                 <thead><tr><th>Vowel</th><th>English</th><th>Dots</th><th>Binary</th></tr></thead>
                 <tbody>
-                  <tr><td class="bn">অ</td><td>O</td><td>1</td><td class="mono">0b000001</td></tr>
-                  <tr><td class="bn">আ</td><td>&mdash;</td><td>3,4,5</td><td class="mono">0b011100</td></tr>
-                  <tr><td class="bn">ই</td><td>I</td><td>2,4</td><td class="mono">0b001010</td></tr>
-                  <tr><td class="bn">ঈ</td><td>&mdash;</td><td>3,5</td><td class="mono">0b010100</td></tr>
-                  <tr><td class="bn">উ</td><td>U</td><td>1,3,6</td><td class="mono">0b100101</td></tr>
-                  <tr><td class="bn">ঊ</td><td>&mdash;</td><td>1,2,5,6</td><td class="mono">0b110011</td></tr>
-                  <tr><td class="bn">এ</td><td>E</td><td>1,5</td><td class="mono">0b010001</td></tr>
-                  <tr><td class="bn">ঐ</td><td>&mdash;</td><td>3,4</td><td class="mono">0b001100</td></tr>
-                  <tr><td class="bn">ও</td><td>O</td><td>1,3,5</td><td class="mono">0b010101</td></tr>
-                  <tr><td class="bn">ঔ</td><td>&mdash;</td><td>2,4,6</td><td class="mono">0b101010</td></tr>
+                  <tr><td class="bn">অ</td><td>O</td><td>1</td><td class="chord-cell">0b000001</td></tr>
+                  <tr><td class="bn">আ</td><td>&mdash;</td><td>3,4,5</td><td class="chord-cell">0b011100</td></tr>
+                  <tr><td class="bn">ই</td><td>I</td><td>2,4</td><td class="chord-cell">0b001010</td></tr>
+                  <tr><td class="bn">ঈ</td><td>&mdash;</td><td>3,5</td><td class="chord-cell">0b010100</td></tr>
+                  <tr><td class="bn">উ</td><td>U</td><td>1,3,6</td><td class="chord-cell">0b100101</td></tr>
+                  <tr><td class="bn">ঊ</td><td>&mdash;</td><td>1,2,5,6</td><td class="chord-cell">0b110011</td></tr>
+                  <tr><td class="bn">এ</td><td>E</td><td>1,5</td><td class="chord-cell">0b010001</td></tr>
+                  <tr><td class="bn">ঐ</td><td>&mdash;</td><td>3,4</td><td class="chord-cell">0b001100</td></tr>
+                  <tr><td class="bn">ও</td><td>O</td><td>1,3,5</td><td class="chord-cell">0b010101</td></tr>
+                  <tr><td class="bn">ঔ</td><td>&mdash;</td><td>2,4,6</td><td class="chord-cell">0b101010</td></tr>
                 </tbody>
               </table>
             </div>
@@ -904,22 +873,22 @@
                 <caption>ক-বর্গ &middot; Velar</caption>
                 <thead><tr><th>Letter</th><th>Dots</th><th>Binary</th></tr></thead>
                 <tbody>
-                  <tr><td class="bn">ক</td><td>1,3</td><td class="mono">0b000101</td></tr>
-                  <tr><td class="bn">খ</td><td>4,6</td><td class="mono">0b101000</td></tr>
-                  <tr><td class="bn">গ</td><td>1,2,4,5</td><td class="mono">0b011011</td></tr>
-                  <tr><td class="bn">ঘ</td><td>1,2,6</td><td class="mono">0b100011</td></tr>
-                  <tr><td class="bn">ঙ</td><td>3,4,6</td><td class="mono">0b101100</td></tr>
+                  <tr><td class="bn">ক</td><td>1,3</td><td class="chord-cell">0b000101</td></tr>
+                  <tr><td class="bn">খ</td><td>4,6</td><td class="chord-cell">0b101000</td></tr>
+                  <tr><td class="bn">গ</td><td>1,2,4,5</td><td class="chord-cell">0b011011</td></tr>
+                  <tr><td class="bn">ঘ</td><td>1,2,6</td><td class="chord-cell">0b100011</td></tr>
+                  <tr><td class="bn">ঙ</td><td>3,4,6</td><td class="chord-cell">0b101100</td></tr>
                 </tbody>
               </table>
               <table class="tbl bn-tbl">
                 <caption>চ-বর্গ &middot; Palatal</caption>
                 <thead><tr><th>Letter</th><th>Dots</th><th>Binary</th></tr></thead>
                 <tbody>
-                  <tr><td class="bn">চ</td><td>1,4</td><td class="mono">0b001001</td></tr>
-                  <tr><td class="bn">ছ</td><td>1,6</td><td class="mono">0b100001</td></tr>
-                  <tr><td class="bn">জ</td><td>2,4,5</td><td class="mono">0b011010</td></tr>
-                  <tr><td class="bn">ঝ</td><td>3,5,6</td><td class="mono">0b110100</td></tr>
-                  <tr><td class="bn">ঞ</td><td>2,5</td><td class="mono">0b010010</td></tr>
+                  <tr><td class="bn">চ</td><td>1,4</td><td class="chord-cell">0b001001</td></tr>
+                  <tr><td class="bn">ছ</td><td>1,6</td><td class="chord-cell">0b100001</td></tr>
+                  <tr><td class="bn">জ</td><td>2,4,5</td><td class="chord-cell">0b011010</td></tr>
+                  <tr><td class="bn">ঝ</td><td>3,5,6</td><td class="chord-cell">0b110100</td></tr>
+                  <tr><td class="bn">ঞ</td><td>2,5</td><td class="chord-cell">0b010010</td></tr>
                 </tbody>
               </table>
             </div>
@@ -929,22 +898,22 @@
                 <caption>ট-বর্গ &middot; Retroflex</caption>
                 <thead><tr><th>Letter</th><th>Dots</th><th>Binary</th></tr></thead>
                 <tbody>
-                  <tr><td class="bn">ট</td><td>2,3,4,5,6</td><td class="mono">0b111110</td></tr>
-                  <tr><td class="bn">ঠ</td><td>2,4,5,6</td><td class="mono">0b110110</td></tr>
-                  <tr><td class="bn">ড</td><td>1,2,4,6</td><td class="mono">0b101011</td></tr>
-                  <tr><td class="bn">ঢ</td><td>All 6</td><td class="mono">0b111111</td></tr>
-                  <tr><td class="bn">ণ</td><td>3,4,5,6</td><td class="mono">0b111100</td></tr>
+                  <tr><td class="bn">ট</td><td>2,3,4,5,6</td><td class="chord-cell">0b111110</td></tr>
+                  <tr><td class="bn">ঠ</td><td>2,4,5,6</td><td class="chord-cell">0b110110</td></tr>
+                  <tr><td class="bn">ড</td><td>1,2,4,6</td><td class="chord-cell">0b101011</td></tr>
+                  <tr><td class="bn">ঢ</td><td>All 6</td><td class="chord-cell">0b111111</td></tr>
+                  <tr><td class="bn">ণ</td><td>3,4,5,6</td><td class="chord-cell">0b111100</td></tr>
                 </tbody>
               </table>
               <table class="tbl bn-tbl">
                 <caption>ত-বর্গ &middot; Dental</caption>
                 <thead><tr><th>Letter</th><th>Dots</th><th>Binary</th></tr></thead>
                 <tbody>
-                  <tr><td class="bn">ত</td><td>2,3,4,5</td><td class="mono">0b011110</td></tr>
-                  <tr><td class="bn">থ</td><td>1,4,5,6</td><td class="mono">0b111001</td></tr>
-                  <tr><td class="bn">দ</td><td>1,4,5</td><td class="mono">0b011001</td></tr>
-                  <tr><td class="bn">ধ</td><td>2,3,4,6</td><td class="mono">0b101110</td></tr>
-                  <tr><td class="bn">ন</td><td>1,3,4,5</td><td class="mono">0b011101</td></tr>
+                  <tr><td class="bn">ত</td><td>2,3,4,5</td><td class="chord-cell">0b011110</td></tr>
+                  <tr><td class="bn">থ</td><td>1,4,5,6</td><td class="chord-cell">0b111001</td></tr>
+                  <tr><td class="bn">দ</td><td>1,4,5</td><td class="chord-cell">0b011001</td></tr>
+                  <tr><td class="bn">ধ</td><td>2,3,4,6</td><td class="chord-cell">0b101110</td></tr>
+                  <tr><td class="bn">ন</td><td>1,3,4,5</td><td class="chord-cell">0b011101</td></tr>
                 </tbody>
               </table>
             </div>
@@ -954,24 +923,24 @@
                 <caption>প-বর্গ &middot; Labial</caption>
                 <thead><tr><th>Letter</th><th>Dots</th><th>Binary</th></tr></thead>
                 <tbody>
-                  <tr><td class="bn">প</td><td>1,2,3,4</td><td class="mono">0b001111</td></tr>
-                  <tr><td class="bn">ফ</td><td>2,3,5</td><td class="mono">0b010110</td></tr>
-                  <tr><td class="bn">ব</td><td>1,2</td><td class="mono">0b000011</td></tr>
-                  <tr><td class="bn">ভ</td><td>4,5</td><td class="mono">0b011000</td></tr>
-                  <tr><td class="bn">ম</td><td>1,3,4</td><td class="mono">0b001101</td></tr>
+                  <tr><td class="bn">প</td><td>1,2,3,4</td><td class="chord-cell">0b001111</td></tr>
+                  <tr><td class="bn">ফ</td><td>2,3,5</td><td class="chord-cell">0b010110</td></tr>
+                  <tr><td class="bn">ব</td><td>1,2</td><td class="chord-cell">0b000011</td></tr>
+                  <tr><td class="bn">ভ</td><td>4,5</td><td class="chord-cell">0b011000</td></tr>
+                  <tr><td class="bn">ম</td><td>1,3,4</td><td class="chord-cell">0b001101</td></tr>
                 </tbody>
               </table>
               <table class="tbl bn-tbl">
                 <caption>Semi-vowels &amp; others</caption>
                 <thead><tr><th>Letter</th><th>Dots</th><th>Binary</th></tr></thead>
                 <tbody>
-                  <tr><td class="bn">য</td><td>1,3,4,5,6</td><td class="mono">0b111101</td></tr>
-                  <tr><td class="bn">র</td><td>1,2,3,5</td><td class="mono">0b010111</td></tr>
-                  <tr><td class="bn">ল</td><td>1,2,3</td><td class="mono">0b000111</td></tr>
-                  <tr><td class="bn">শ</td><td>1,4,6</td><td class="mono">0b101001</td></tr>
-                  <tr><td class="bn">ষ</td><td>1,2,3,4,6</td><td class="mono">0b101111</td></tr>
-                  <tr><td class="bn">স</td><td>2,3,4</td><td class="mono">0b001110</td></tr>
-                  <tr><td class="bn">হ</td><td>1,2,5</td><td class="mono">0b010011</td></tr>
+                  <tr><td class="bn">য</td><td>1,3,4,5,6</td><td class="chord-cell">0b111101</td></tr>
+                  <tr><td class="bn">র</td><td>1,2,3,5</td><td class="chord-cell">0b010111</td></tr>
+                  <tr><td class="bn">ল</td><td>1,2,3</td><td class="chord-cell">0b000111</td></tr>
+                  <tr><td class="bn">শ</td><td>1,4,6</td><td class="chord-cell">0b101001</td></tr>
+                  <tr><td class="bn">ষ</td><td>1,2,3,4,6</td><td class="chord-cell">0b101111</td></tr>
+                  <tr><td class="bn">স</td><td>2,3,4</td><td class="chord-cell">0b001110</td></tr>
+                  <tr><td class="bn">হ</td><td>1,2,5</td><td class="chord-cell">0b010011</td></tr>
                 </tbody>
               </table>
             </div>
@@ -981,10 +950,10 @@
                 <caption>Special marks</caption>
                 <thead><tr><th>Mark</th><th>Name</th><th>Dots</th><th>Binary</th></tr></thead>
                 <tbody>
-                  <tr><td class="bn">্</td><td>Halant (virama)</td><td>4</td><td class="mono">0b001000</td></tr>
-                  <tr><td class="bn">ং</td><td>Anusvara</td><td>5,6</td><td class="mono">0b110000</td></tr>
-                  <tr><td class="bn">ঃ</td><td>Visarga</td><td>6</td><td class="mono">0b100000</td></tr>
-                  <tr><td class="bn">ঁ</td><td>Candrabindu</td><td>5</td><td class="mono">0b010000</td></tr>
+                  <tr><td class="bn">্</td><td>Halant (virama)</td><td>4</td><td class="chord-cell">0b001000</td></tr>
+                  <tr><td class="bn">ং</td><td>Anusvara</td><td>5,6</td><td class="chord-cell">0b110000</td></tr>
+                  <tr><td class="bn">ঃ</td><td>Visarga</td><td>6</td><td class="chord-cell">0b100000</td></tr>
+                  <tr><td class="bn">ঁ</td><td>Candrabindu</td><td>5</td><td class="chord-cell">0b010000</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1068,7 +1037,7 @@
             </li>
             <li>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-              Automatic language detection from <code class="mono">LANG:en</code> / <code class="mono">LANG:bn</code>
+              Automatic language detection from <span class="sw-tag">LANG:en</span> / <span class="sw-tag">LANG:bn</span>
             </li>
             <li>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
@@ -1084,7 +1053,7 @@
             </li>
             <li>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-              Timestamped export — <code class="mono">[HH:MM:SS]</code> per character
+              Timestamped export — <span class="sw-tag">[HH:MM:SS]</span> per character
             </li>
             <li>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
@@ -1133,32 +1102,6 @@
               </a>
             </div>
           </div>
-        </div>
-
-        <div class="code-card reveal">
-          <div class="code-head">
-            <span class="code-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span class="code-name">serial-connect.js</span>
-            <span class="code-lang">JavaScript</span>
-          </div>
-          <pre><code><span class="c-kw">async function</span> connectStudentSerial(student) {
-  <span class="c-kw">const</span> port = <span class="c-kw">await</span> navigator.serial.requestPort();
-  <span class="c-kw">await</span> port.open({ baudRate: student.baud });
-  student.serialPort = port; student.connected = <span class="c-bool">true</span>;
-
-  <span class="c-kw">const</span> decoder = <span class="c-kw">new</span> TextDecoderStream();
-  port.readable.pipeTo(decoder.writable);
-  <span class="c-kw">const</span> reader = decoder.readable.getReader();
-
-  <span class="c-kw">async function</span> readLoop() {
-    <span class="c-kw">while</span> (student.readLoopActive) {
-      <span class="c-kw">const</span> { value, done } = <span class="c-kw">await</span> reader.read();
-      <span class="c-kw">if</span> (done) <span class="c-kw">break</span>;
-      <span class="c-kw">for</span> (<span class="c-kw">const</span> ch of value) handleStudentChar(student, ch);
-    }
-  }
-  readLoop();
-}</code></pre>
         </div>
       </div>
     </section>
@@ -1272,7 +1215,6 @@
         <div class="creator-card reveal">
           <div class="creator-avatar-wrap">
             <div class="creator-avatar">SY</div>
-            <img class="creator-badge-logo" src="assets/logo/logo-mark-orange.png" alt="b'bridge mark" width="36" height="36" />
           </div>
           <div class="creator-info">
             <p class="eyebrow">Creator &amp; Developer</p>
@@ -1286,7 +1228,7 @@
             <div class="creator-links">
               <a class="btn btn-primary btn-sm" href="mailto:samin@mentormind.bd">samin@mentormind.bd</a>
               <a class="btn btn-ghost btn-sm" href="https://github.com/Solez-ai" target="_blank" rel="noopener">github.com/Solez-ai</a>
-              <a class="btn btn-ghost btn-sm" href="https://solez.html-5.me" target="_blank" rel="noopener">solez.html-5.me</a>
+              <a class="btn btn-ghost btn-sm" href="https://solez.me" target="_blank" rel="noopener">solez.me</a>
             </div>
           </div>
         </div>
@@ -1300,7 +1242,7 @@
     <div class="container footer-grid">
       <div class="footer-brand">
         <a class="footer-logo-link" href="#hero" aria-label="BrailleBridge home">
-          <img class="footer-logo-img" src="assets/logo/logo-wordmark-orange.png" alt="b'bridge official brand mark" width="160" height="160" />
+          <img class="footer-logo-img" src="assets/logo/logo-braille.png" alt="b'bridge official brand mark" width="220" height="71" />
         </a>
         <p>
           A Low-Cost Bilingual Braille Writing and Classroom Examination System.
@@ -1325,7 +1267,7 @@
           <li><strong>Samin Yeasar</strong></li>
           <li><a href="mailto:samin@mentormind.bd">samin@mentormind.bd</a></li>
           <li><a href="https://github.com/Solez-ai" target="_blank" rel="noopener">github.com/Solez-ai</a></li>
-          <li><a href="https://solez.html-5.me" target="_blank" rel="noopener">solez.html-5.me</a></li>
+          <li><a href="https://solez.me" target="_blank" rel="noopener">solez.me</a></li>
         </ul>
       </div>
     </div>
