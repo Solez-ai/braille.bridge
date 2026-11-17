@@ -1,0 +1,27 @@
+** Drc report for bb1_wiring_board.kicad_pcb **
+** Created on 2026-11-17T21:17:10 **
+** Report includes: Errors, Warnings, Exclusions **
+
+** Found 3 DRC violations **
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x16_P2.54mm_Horizontal' does not match copy in library 'Connector_PinHeader_2.54mm'
+    Local override; warning
+    @(6.5000 mm, 4.1000 mm): Footprint J1
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x11_P2.54mm_Horizontal' does not match copy in library 'Connector_PinHeader_2.54mm'
+    Local override; warning
+    @(45.4000 mm, 29.9000 mm): Footprint J2
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x04_P2.54mm_Horizontal' does not match copy in library 'Connector_PinHeader_2.54mm'
+    Local override; warning
+    @(4.1000 mm, 21.6200 mm): Footprint J3
+
+** Found 0 unconnected pads **
+
+** Found 0 Footprint errors **
+
+** Ignored checks **
+    - Footprint has no courtyard defined
+    - Track endpoint not centered on via
+    - Tuning profile track geometries
+    - Footprint doesn't match symbol's footprint filters
+    - Footprint component type doesn't match footprint pads
+
+** End of Report **

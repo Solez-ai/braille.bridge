@@ -1,0 +1,32 @@
+Group,Reference,Pin,Silkscreen_Label,Net,Note
+Switch Edge,J1,1,D1 / S,/D1,Dot 1 switch signal (GPIO14)
+Switch Edge,J1,2,D1 / G,/GND,Dot 1 switch ground
+Switch Edge,J1,3,D2 / S,/D2,Dot 2 switch signal (GPIO12* boot strap - no pull-up)
+Switch Edge,J1,4,D2 / G,/GND,Dot 2 switch ground
+Switch Edge,J1,5,D3 / S,/D3,Dot 3 switch signal (GPIO13)
+Switch Edge,J1,6,D3 / G,/GND,Dot 3 switch ground
+Switch Edge,J1,7,D4 / S,/D4,Dot 4 switch signal (GPIO27)
+Switch Edge,J1,8,D4 / G,/GND,Dot 4 switch ground
+Switch Edge,J1,9,D5 / S,/D5,Dot 5 switch signal (GPIO26)
+Switch Edge,J1,10,D5 / G,/GND,Dot 5 switch ground
+Switch Edge,J1,11,D6 / S,/D6,Dot 6 switch signal (GPIO25)
+Switch Edge,J1,12,D6 / G,/GND,Dot 6 switch ground
+Switch Edge,J1,13,SPACE / S,/SPACE,Space switch signal (GPIO33)
+Switch Edge,J1,14,SPACE / G,/GND,Space switch ground
+Switch Edge,J1,15,SHIFT / S,/SHIFT,Shift switch signal (GPIO32)
+Switch Edge,J1,16,SHIFT / G,/GND,Shift switch ground
+ESP32 Edge,J2,11,D1 14,/D1,To ESP32 GPIO14
+ESP32 Edge,J2,10,D2 12*,/D2,To ESP32 GPIO12 (12* boot pin: no pull-up)
+ESP32 Edge,J2,9,D3 13,/D3,To ESP32 GPIO13
+ESP32 Edge,J2,8,D4 27,/D4,To ESP32 GPIO27
+ESP32 Edge,J2,7,D5 26,/D5,To ESP32 GPIO26
+ESP32 Edge,J2,6,D6 25,/D6,To ESP32 GPIO25
+ESP32 Edge,J2,5,SPACE 33,/SPACE,To ESP32 GPIO33
+ESP32 Edge,J2,4,SHIFT 32,/SHIFT,To ESP32 GPIO32
+ESP32 Edge,J2,3,GND,/GND,To ESP32 GND
+ESP32 Edge,J2,2,GND,/GND,To ESP32 GND
+ESP32 Edge,J2,1,VIN,/VIN,To ESP32 VIN (from D1 cathode)
+Power Group,J3,4,- / BAT-,/GND,Battery -
+Power Group,J3,3,+ / BAT+,/BAT_POS,Battery + (in)
+Power Group,J3,2,BAT+ > SW,/BAT_POS,Battery + to off-board slide switch
+Power Group,J3,1,SW BACK,/SW_BACK,Return from off-board slide switch to D1 anode

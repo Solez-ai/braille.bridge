@@ -1,0 +1,6 @@
+Reference,Quantity,Value,Description,Footprint,Notes
+J1,1,PinHeader_1x16_P2.54mm_Horizontal,16-pin 2.54mm pitch male right-angle pin header (Switch Edge),Connector_PinHeader_2.54mm:PinHeader_1x16_P2.54mm_Horizontal,Pins 1-16 = 8x (SIG GND) pairs D1..SHIFT
+J2,1,PinHeader_1x11_P2.54mm_Horizontal,11-pin 2.54mm pitch male right-angle pin header (ESP32 Edge),Connector_PinHeader_2.54mm:PinHeader_1x11_P2.54mm_Horizontal,Pins 11..1 = D1..SHIFT GND GND VIN
+J3,1,PinHeader_1x04_P2.54mm_Horizontal,4-pin 2.54mm pitch male right-angle pin header (Power Group),Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Horizontal,Pins 4..1 = BAT- BAT+ BAT+>SW SW BACK
+D1,1,1N5819,1N5819 Schottky Barrier Diode 40V 1A DO-41 Axial Horizontal,Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal,Pin 1 (K/Band)=VIN Pin 2 (A)=SW_BACK
+H1 H2,2,MountingHole_2.2mm_M2,M2 Non-Plated Mounting Hole 2.2mm drill (BOM/PNP excluded),MountingHole:MountingHole_2.2mm_M2,Drilled PCB holes only (5mm copper keepout)
