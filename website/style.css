@@ -29,8 +29,10 @@
   --line-table-light: rgba(0, 18, 66, 0.14);
   --line-table-dark: rgba(255, 255, 255, 0.16);
 
-  --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
-  --bangla: 'Noto Sans Bengali', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+  --sans: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  --serif: 'Noto Serif', Georgia, serif;
+  --paragraph: 'Garet W05 Regular', 'Garet', 'Poppins', sans-serif;
+  --bangla: 'Noto Sans Bengali', 'Poppins', sans-serif;
 
   --container: 1180px;
   --radius: 4px;
@@ -63,6 +65,42 @@ body {
   overflow-x: clip;
 }
 
+h1, h2, h3, h4,
+.hero-title,
+.section-title,
+.mission-quote,
+.conclusion-title,
+.creator-name {
+  font-family: var(--serif);
+}
+
+p,
+.section-lede,
+.hero-lede,
+.conclusion-lede,
+.creator-bio {
+  font-family: var(--paragraph);
+}
+
+.card p,
+.feature p,
+.arch-node p,
+.bento-hero-copy p,
+.bento-mini p,
+.spotlight-meta p,
+.firmware-point p,
+.eng-card p,
+.eng-hw-copy p,
+.footer-brand p,
+.creator-bio,
+.cost-note,
+.led-note,
+.spotlight-note,
+.demo-hint {
+  font-family: var(--paragraph);
+  letter-spacing: -0.013em;
+}
+
 ::selection { background: var(--orange); color: var(--white); }
 
 img, svg { display: block; }
@@ -86,11 +124,17 @@ a:hover { color: var(--midnight); }
   min-width: 0;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--slate); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: var(--orange); }
+/* Hide native side scrollbar — replaced by minimal Braille Dots rail */
+html, body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
 
 /* ============================================================
    BUTTONS — crisp flat 4px architectural controls
@@ -335,16 +379,9 @@ body.is-loading .hero-bottom-bar {
 .creator-pill-avatar {
   width: 26px; height: 26px;
   border-radius: 3px;
-  background: var(--midnight);
-  color: var(--white);
-  font-size: 10.5px;
-  font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  transition: background 180ms ease, color 180ms ease;
-}
-.creator-pill:hover .creator-pill-avatar {
-  background: var(--white);
-  color: var(--orange);
+  object-fit: cover;
+  object-position: center 20%;
+  flex-shrink: 0;
 }
 .creator-pill-label {
   font-size: 12px;
@@ -456,7 +493,7 @@ body.is-loading .hero-bottom-bar {
 }
 
 .pro-word {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+  font-family: var(--sans);
   font-weight: 900;
   font-size: 274px;
   letter-spacing: -0.02em;
@@ -1416,16 +1453,13 @@ body.is-loading .hero-bottom-bar {
   border-radius: var(--radius);
   padding: 40px;
 }
-.creator-avatar-wrap { width: 104px; height: 104px; }
-.creator-avatar {
-  width: 104px; height: 104px;
+.creator-avatar-wrap { width: 116px; height: 116px; }
+.creator-avatar-img {
+  width: 116px; height: 116px;
   border-radius: var(--radius);
-  background: var(--midnight);
-  color: var(--white);
-  font-size: 34px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  display: flex; align-items: center; justify-content: center;
+  object-fit: cover;
+  object-position: center 20%;
+  display: block;
 }
 .creator-name {
   font-size: clamp(26px, 3vw, 36px);
@@ -1589,3 +1623,155 @@ body.is-loading .hero-bottom-bar {
 @media (prefers-contrast: more) {
   .table-wrap { border-width: 2px; border-color: var(--jet); }
 }
+
+/* ============================================================
+   MINIMAL BRAILLE DOTS SCROLL INDICATOR (Replaces Native Scrollbar)
+   ============================================================ */
+.braille-scroll-rail {
+  position: fixed;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 6px;
+  border-radius: 999px;
+  background: rgba(0, 18, 66, 0.22);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: opacity 320ms var(--ease), transform 320ms var(--ease);
+}
+
+body.is-loading .braille-scroll-rail {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.braille-scroll-dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 253, 249, 0.38);
+  transition: transform 220ms var(--ease), background 220ms var(--ease), box-shadow 220ms var(--ease);
+}
+
+.braille-scroll-dot.passed {
+  background: rgba(255, 115, 21, 0.52);
+}
+
+.braille-scroll-dot.active {
+  background: var(--orange);
+  transform: scale(1.42);
+  box-shadow: 0 0 0 3px rgba(255, 115, 21, 0.26);
+}
+
+.braille-scroll-dot:hover {
+  background: var(--white);
+  transform: scale(1.35);
+}
+
+.braille-scroll-dot::before {
+  content: attr(data-label);
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%) translateX(4px);
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--midnight);
+  color: var(--white);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.braille-scroll-dot:hover::before {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+@media (max-width: 760px) {
+  .braille-scroll-rail { display: none; }
+}
+
+/* ============================================================
+   SYSTEM CURSOR OVERRIDE (.cur files directly in CSS)
+   ============================================================ */
+html, body {
+  cursor: url('assets/cursors/normal.cur?v=2'), auto;
+}
+
+a, a *,
+button, button *,
+[role="button"],
+.btn,
+.hero-pill-btn,
+.creator-pill,
+.nav-toggle,
+.nav-links a,
+.demo-dot,
+.demo-key,
+.gallery-thumb,
+.dict-tab,
+.braille-scroll-dot,
+summary,
+select,
+label[for] {
+  cursor: url('assets/cursors/link.cur?v=2'), pointer;
+}
+
+p, h1, h2, h3, h4, h5, h6,
+li, td, th, dt, dd, blockquote,
+.section-lede,
+.hero-lede,
+.mission-quote,
+.conclusion-lede,
+.creator-bio,
+.readout-stream,
+.console-line,
+input[type="text"],
+input[type="email"],
+input[type="search"],
+textarea,
+[contenteditable="true"] {
+  cursor: url('assets/cursors/text.cur?v=2'), text;
+}
+
+:disabled,
+[aria-disabled="true"],
+.disabled {
+  cursor: url('assets/cursors/unavailable.cur?v=2'), not-allowed;
+}
+
+[draggable="true"],
+.cursor-move {
+  cursor: url('assets/cursors/move.cur?v=2'), move;
+}
+
+abbr[title],
+.cursor-help {
+  cursor: url('assets/cursors/help.cur?v=2'), help;
+}
+
+.cursor-precision {
+  cursor: url('assets/cursors/precision.cur?v=2'), crosshair;
+}
+
+.cursor-handwriting {
+  cursor: url('assets/cursors/handwriting.cur?v=2'), auto;
+}
+
+.cursor-ew-resize { cursor: url('assets/cursors/resize-h.cur?v=2'), ew-resize; }
+.cursor-ns-resize { cursor: url('assets/cursors/resize-v.cur?v=2'), ns-resize; }
+.cursor-nwse-resize { cursor: url('assets/cursors/resize-d1.cur?v=2'), nwse-resize; }
+.cursor-nesw-resize { cursor: url('assets/cursors/resize-d2.cur?v=2'), nesw-resize; }

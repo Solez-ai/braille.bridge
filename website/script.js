@@ -1012,6 +1012,42 @@
   });
 
   /* ============================================================
+     MINIMAL BRAILLE DOTS SCROLL INDICATOR
+     ============================================================ */
+  const scrollDots = $$('.braille-scroll-dot');
+  if (scrollDots.length) {
+    const dotTargets = scrollDots.map((dot) => {
+      const sel = dot.getAttribute('data-target');
+      return sel ? $(sel) : null;
+    });
+
+    const updateScrollDots = () => {
+      const probe = window.scrollY + window.innerHeight * 0.35;
+      let activeIdx = 0;
+      dotTargets.forEach((sec, idx) => {
+        if (sec && sec.offsetTop <= probe) activeIdx = idx;
+      });
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 24) {
+        activeIdx = scrollDots.length - 1;
+      }
+      scrollDots.forEach((dot, idx) => {
+        dot.classList.toggle('active', idx === activeIdx);
+        dot.classList.toggle('passed', idx < activeIdx);
+      });
+    };
+
+    scrollDots.forEach((dot, idx) => {
+      dot.addEventListener('click', () => {
+        const target = dotTargets[idx];
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+      });
+    });
+
+    window.addEventListener('scroll', updateScrollDots, { passive: true });
+    updateScrollDots();
+  }
+
+  /* ============================================================
      FOOTER YEAR
      ============================================================ */
   const yearEl = $('#year');

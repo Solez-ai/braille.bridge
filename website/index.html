@@ -11,7 +11,8 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/logo/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Noto+Serif:wght@400;600;700;800&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://db.onlinewebfonts.com/c/7b2f4e99395dcee2673f41661274a830?family=Garet+W05+Regular" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="is-loading nav-pending">
@@ -31,11 +32,11 @@
     <canvas class="loader-goo-canvas" id="loaderGooCanvas"></canvas>
     <svg class="loader-wordmark" viewBox="0 0 800 240" role="img" aria-label="b'bridge">
       <g class="loader-b">
-        <text x="26" y="190" fill="#FFFFFF" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-weight="800" font-size="184" letter-spacing="-4">b</text>
+        <text x="26" y="190" fill="#FFFFFF" font-family="Poppins, -apple-system, BlinkMacSystemFont, sans-serif" font-weight="800" font-size="184" letter-spacing="-4">b</text>
       </g>
       <circle class="loader-dot" id="loaderDot" cx="154" cy="74" r="29" fill="#FF7315" />
       <g class="loader-bridge">
-        <text x="192" y="190" fill="#FF7315" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-weight="800" font-size="184" letter-spacing="-4">bridge</text>
+        <text x="192" y="190" fill="#FF7315" font-family="Poppins, -apple-system, BlinkMacSystemFont, sans-serif" font-weight="800" font-size="184" letter-spacing="-4">bridge</text>
       </g>
     </svg>
   </div>
@@ -65,7 +66,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
         <a class="creator-pill" href="#creator" title="Created by Samin Yeasar">
-          <span class="creator-pill-avatar">SY</span>
+          <img class="creator-pill-avatar" src="assets/creator.jpg" alt="Samin Yeasar" width="26" height="26" />
           <span class="creator-pill-label">Creator</span>
         </a>
         <button type="button" class="nav-burger" id="navBurger" aria-label="Open menu" aria-expanded="false">
@@ -1214,7 +1215,7 @@
       <div class="container">
         <div class="creator-card reveal">
           <div class="creator-avatar-wrap">
-            <div class="creator-avatar">SY</div>
+            <img class="creator-avatar-img" src="assets/creator.jpg" alt="Samin Yeasar — Creator of BrailleBridge" width="116" height="116" />
           </div>
           <div class="creator-info">
             <p class="eyebrow">Creator &amp; Developer</p>
@@ -1275,6 +1276,15 @@
       <img class="footer-mark-mini" src="assets/logo/logo-mark.png" alt="b'bridge icon" width="24" height="24" />
     </div>
   </footer>
+
+  <nav class="braille-scroll-rail" id="brailleScrollRail" aria-label="Scroll progress">
+    <button class="braille-scroll-dot active" type="button" data-target="#hero" aria-label="Hero" data-label="Top"></button>
+    <button class="braille-scroll-dot" type="button" data-target="#problem" aria-label="The Problem" data-label="Problem"></button>
+    <button class="braille-scroll-dot" type="button" data-target="#hardware" aria-label="Hardware" data-label="Hardware"></button>
+    <button class="braille-scroll-dot" type="button" data-target="#specs" aria-label="Specifications" data-label="Specs"></button>
+    <button class="braille-scroll-dot" type="button" data-target="#demo" aria-label="Live Demo" data-label="Live Demo"></button>
+    <button class="braille-scroll-dot" type="button" data-target="#cost" aria-label="Cost and Creator" data-label="Cost &amp; Creator"></button>
+  </nav>
 
   <script src="gradient-ascii.js"></script>
   <script src="script.js"></script>
