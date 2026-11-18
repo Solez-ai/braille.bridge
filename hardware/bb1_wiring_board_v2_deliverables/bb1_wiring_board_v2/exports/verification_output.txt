@@ -1,0 +1,14 @@
+=== BB1 WIRING BOARD v2 VERIFICATION REPORT ===
+Total component pins checked : 60 (NC pins: 27, Connected pins: 33)
+Netlist & PCB parity mismatches: 0
+Active copper nets (12)   : ['BAT_POS', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'GND', 'SHIFT', 'SPACE', 'SW_BACK', 'VIN']
+GND connected pins (11)  : [('J3', 4), ('J2', 14), ('J1', 2), ('J1', 4), ('J1', 6), ('J1', 8), ('J1', 10), ('J1', 12), ('J1', 14), ('J1', 16), ('J4', 1)]
+BAT_POS pins (2)        : [('J3', 2), ('J3', 3)]
+ESP32_ROW_SPACING_MM         : 20.300 mm (target 20.300 mm)
+J1 min dist to ESP32 outline : 9.45 mm (pad center to 54x22.8 box; min req >= 3.0 mm)
+J3 min dist to ESP32 outline : 4.55 mm (pad center to 54x22.8 box; min req >= 3.0 mm)
+Mounting hole min dist->pin  : 7.52 mm (hole center to pin center; min req >= 3.0 mm)
+Min power track width        : 1.00 mm (req >= 1.00 mm)
+Min signal track width       : 0.30 mm
+Vias total                   : 38 (4 signal vias + 34 GND stitching vias)
+VERIFICATION_ALL_PASS
