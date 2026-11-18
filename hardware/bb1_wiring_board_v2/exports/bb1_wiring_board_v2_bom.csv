@@ -1,0 +1,6 @@
+Designator,Qty,Value_Part,Package_Footprint,Description,DNP
+D1,1,1N5819,Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal,"40V 1A Schottky Barrier Diode (through-hole, band to VIN)",No
+J1,1,Conn_01x16_Pin,Connector_PinHeader_2.54mm:PinHeader_1x16_P2.54mm_Vertical,2.54mm 1x16 vertical male pin header (8x SIG+GND switch pairs),No
+"J2, J4",2,ESP32_38Pin_RowA / RowB (1x19 Female Socket),Connector_PinSocket_2.54mm:PinSocket_1x19_P2.54mm_Vertical,2.54mm 1x19 vertical female socket header for 38-pin ESP32 DevKit (20.3mm row spacing),No
+J3,1,Conn_01x04_Pin,Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical,"2.54mm 1x04 vertical male pin header (BAT-, BAT+, BAT+>SW, SW BACK)",No
+"H1, H2",2,MountingHole_2.2mm_M2,MountingHole:MountingHole_2.2mm_M2,"M2 unplated mounting hole (2.2mm drill, 5mm copper keepout)",Mechanical

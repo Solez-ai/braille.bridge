@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "bb1_v2")(type "KiCad")(uri "${KIPRJMOD}/bb1_v2.kicad_sym")(options "")(descr "BB1 v2 project symbols"))
+)

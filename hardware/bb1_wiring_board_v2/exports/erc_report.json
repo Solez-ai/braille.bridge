@@ -1,0 +1,20 @@
+{
+    "$schema": "https://schemas.kicad.org/erc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-11-18T20:51:35",
+    "ignored_checks": [],
+    "included_severities": [
+        "error",
+        "warning",
+        "exclusion"
+    ],
+    "kicad_version": "10.0.8",
+    "sheets": [
+        {
+            "path": "/",
+            "uuid_path": "/73194c57-5b9a-4426-948f-33fe4f69c4ed",
+            "violations": []
+        }
+    ],
+    "source": "bb1_wiring_board_v2.kicad_sch"
+}

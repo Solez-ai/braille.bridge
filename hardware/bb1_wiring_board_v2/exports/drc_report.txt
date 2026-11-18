@@ -1,0 +1,14 @@
+** Drc report for bb1_wiring_board_v2.kicad_pcb **
+** Created on 2026-11-18T21:26:30 **
+** Report includes: Errors, Warnings, Exclusions **
+
+** Found 0 DRC violations **
+
+** Found 0 unconnected pads **
+
+** Found 0 Footprint errors **
+
+** Ignored checks **
+    - None
+
+** End of Report **

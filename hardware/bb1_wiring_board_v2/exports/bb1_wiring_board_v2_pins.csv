@@ -1,0 +1,61 @@
+Component,Pin,Net,Role_Label,PCB_X_mm,PCB_Y_mm,Connects_To
+J1,1,D1,D1 SIG,5.50,35.00,J1 Pin 1 <-> J2 Pin 12 (GPIO14)
+J1,2,GND,D1 GND,8.04,35.00,Shared GND copper pour (all 11 GND pins)
+J1,3,D2,D2 SIG (12*),10.58,35.00,J1 Pin 3 <-> J2 Pin 13 (GPIO12* boot pin)
+J1,4,GND,D2 GND,13.12,35.00,Shared GND copper pour (all 11 GND pins)
+J1,5,D3,D3 SIG,15.66,35.00,J1 Pin 5 <-> J2 Pin 15 (GPIO13)
+J1,6,GND,D3 GND,18.20,35.00,Shared GND copper pour (all 11 GND pins)
+J1,7,D4,D4 SIG,20.74,35.00,J1 Pin 7 <-> J2 Pin 11 (GPIO27)
+J1,8,GND,D4 GND,23.28,35.00,Shared GND copper pour (all 11 GND pins)
+J1,9,D5,D5 SIG,25.82,35.00,J1 Pin 9 <-> J2 Pin 10 (GPIO26)
+J1,10,GND,D5 GND,28.36,35.00,Shared GND copper pour (all 11 GND pins)
+J1,11,D6,D6 SIG,30.90,35.00,J1 Pin 11 <-> J2 Pin 9 (GPIO25)
+J1,12,GND,D6 GND,33.44,35.00,Shared GND copper pour (all 11 GND pins)
+J1,13,SPACE,SPACE SIG,35.98,35.00,J1 Pin 13 <-> J2 Pin 8 (GPIO33)
+J1,14,GND,SPACE GND,38.52,35.00,Shared GND copper pour (all 11 GND pins)
+J1,15,SHIFT,SHIFT SIG,41.06,35.00,J1 Pin 15 <-> J2 Pin 7 (GPIO32)
+J1,16,GND,SHIFT GND,43.60,35.00,Shared GND copper pour (all 11 GND pins)
+J2,1,NC,3V3,11.50,24.30,"No Connect (socket holds pin mechanically, copper isolated)"
+J2,2,NC,EN,14.04,24.30,"No Connect (socket holds pin mechanically, copper isolated)"
+J2,3,NC,SP,16.58,24.30,"No Connect (socket holds pin mechanically, copper isolated)"
+J2,4,NC,SN,19.12,24.30,"No Connect (socket holds pin mechanically, copper isolated)"
+J2,5,NC,34,21.66,24.30,"No Connect (socket holds pin mechanically, copper isolated)"
+J2,6,NC,35,24.20,24.30,"No Connect (socket holds pin mechanically, copper isolated)"
+J2,7,SHIFT,32 (SHIFT),26.74,24.30,J1 Pin 15 <-> J2 Pin 7 (GPIO32)
+J2,8,SPACE,33 (SPACE),29.28,24.30,J1 Pin 13 <-> J2 Pin 8 (GPIO33)
+J2,9,D6,25 (D6),31.82,24.30,J1 Pin 11 <-> J2 Pin 9 (GPIO25)
+J2,10,D5,26 (D5),34.36,24.30,J1 Pin 9 <-> J2 Pin 10 (GPIO26)
+J2,11,D4,27 (D4),36.90,24.30,J1 Pin 7 <-> J2 Pin 11 (GPIO27)
+J2,12,D1,14 (D1),39.44,24.30,J1 Pin 1 <-> J2 Pin 12 (GPIO14)
+J2,13,D2,12* (D2 boot),41.98,24.30,J1 Pin 3 <-> J2 Pin 13 (GPIO12* boot pin)
+J2,14,GND,GND,44.52,24.30,Shared GND copper pour (all 11 GND pins)
+J2,15,D3,13 (D3),47.06,24.30,J1 Pin 5 <-> J2 Pin 15 (GPIO13)
+J2,16,NC,SD2,49.60,24.30,"No Connect (socket holds pin mechanically, copper isolated)"
+J2,17,NC,SD3,52.14,24.30,"No Connect (socket holds pin mechanically, copper isolated)"
+J2,18,NC,CMD,54.68,24.30,"No Connect (socket holds pin mechanically, copper isolated)"
+J2,19,VIN,V5 (VIN),57.22,24.30,D1 Pin 1 (Cathode/Band) <-> J2 Pin 19 (ESP32 V5)
+J4,1,GND,GND,11.50,4.00,Shared GND copper pour (all 11 GND pins)
+J4,2,NC,23,14.04,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J4,3,NC,22,16.58,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J4,4,NC,TXD,19.12,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J4,5,NC,RXD,21.66,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J4,6,NC,21,24.20,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J4,7,NC,GND (NC),26.74,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J4,8,NC,19,29.28,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J4,9,NC,18,31.82,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J4,10,NC,5,34.36,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J4,11,NC,17,36.90,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J4,12,NC,16,39.44,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J4,13,NC,4,41.98,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J4,14,NC,0,44.52,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J4,15,NC,2,47.06,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J4,16,NC,15,49.60,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J4,17,NC,SD1,52.14,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J4,18,NC,SD0,54.68,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J4,19,NC,CLK,57.22,4.00,"No Connect (socket holds pin mechanically, copper isolated)"
+J3,1,SW_BACK,SW BACK (to D1 anode),49.50,37.72,J3 Pin 1 <-> D1 Pin 2 (Anode)
+J3,2,BAT_POS,BAT+ > SW (to switch),49.50,35.18,J3 Pin 2 <-> J3 Pin 3 (Battery + to external switch)
+J3,3,BAT_POS,BAT+ (battery +),49.50,32.64,J3 Pin 2 <-> J3 Pin 3 (Battery + to external switch)
+J3,4,GND,BAT- (battery -),49.50,30.10,Shared GND copper pour (all 11 GND pins)
+D1,1,VIN,"Cathode (K, band -> VIN)",57.22,13.50,D1 Pin 1 (Cathode/Band) <-> J2 Pin 19 (ESP32 V5)
+D1,2,SW_BACK,Anode (A <- SW_BACK),47.06,13.50,J3 Pin 1 <-> D1 Pin 2 (Anode)
