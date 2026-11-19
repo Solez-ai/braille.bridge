@@ -1,0 +1,542 @@
+[
+  {
+    "Component": "J1",
+    "Pin": "1",
+    "Net": "D1",
+    "Role_Label": "D1 SIG",
+    "PCB_X_mm": "5.50",
+    "PCB_Y_mm": "35.00",
+    "Connects_To": "J1 Pin 1 <-> J2 Pin 12 (GPIO14)"
+  },
+  {
+    "Component": "J1",
+    "Pin": "2",
+    "Net": "GND",
+    "Role_Label": "D1 GND",
+    "PCB_X_mm": "8.04",
+    "PCB_Y_mm": "35.00",
+    "Connects_To": "Shared GND copper pour (all 11 GND pins)"
+  },
+  {
+    "Component": "J1",
+    "Pin": "3",
+    "Net": "D2",
+    "Role_Label": "D2 SIG (12*)",
+    "PCB_X_mm": "10.58",
+    "PCB_Y_mm": "35.00",
+    "Connects_To": "J1 Pin 3 <-> J2 Pin 13 (GPIO12* boot pin)"
+  },
+  {
+    "Component": "J1",
+    "Pin": "4",
+    "Net": "GND",
+    "Role_Label": "D2 GND",
+    "PCB_X_mm": "13.12",
+    "PCB_Y_mm": "35.00",
+    "Connects_To": "Shared GND copper pour (all 11 GND pins)"
+  },
+  {
+    "Component": "J1",
+    "Pin": "5",
+    "Net": "D3",
+    "Role_Label": "D3 SIG",
+    "PCB_X_mm": "15.66",
+    "PCB_Y_mm": "35.00",
+    "Connects_To": "J1 Pin 5 <-> J2 Pin 15 (GPIO13)"
+  },
+  {
+    "Component": "J1",
+    "Pin": "6",
+    "Net": "GND",
+    "Role_Label": "D3 GND",
+    "PCB_X_mm": "18.20",
+    "PCB_Y_mm": "35.00",
+    "Connects_To": "Shared GND copper pour (all 11 GND pins)"
+  },
+  {
+    "Component": "J1",
+    "Pin": "7",
+    "Net": "D4",
+    "Role_Label": "D4 SIG",
+    "PCB_X_mm": "20.74",
+    "PCB_Y_mm": "35.00",
+    "Connects_To": "J1 Pin 7 <-> J2 Pin 11 (GPIO27)"
+  },
+  {
+    "Component": "J1",
+    "Pin": "8",
+    "Net": "GND",
+    "Role_Label": "D4 GND",
+    "PCB_X_mm": "23.28",
+    "PCB_Y_mm": "35.00",
+    "Connects_To": "Shared GND copper pour (all 11 GND pins)"
+  },
+  {
+    "Component": "J1",
+    "Pin": "9",
+    "Net": "D5",
+    "Role_Label": "D5 SIG",
+    "PCB_X_mm": "25.82",
+    "PCB_Y_mm": "35.00",
+    "Connects_To": "J1 Pin 9 <-> J2 Pin 10 (GPIO26)"
+  },
+  {
+    "Component": "J1",
+    "Pin": "10",
+    "Net": "GND",
+    "Role_Label": "D5 GND",
+    "PCB_X_mm": "28.36",
+    "PCB_Y_mm": "35.00",
+    "Connects_To": "Shared GND copper pour (all 11 GND pins)"
+  },
+  {
+    "Component": "J1",
+    "Pin": "11",
+    "Net": "D6",
+    "Role_Label": "D6 SIG",
+    "PCB_X_mm": "30.90",
+    "PCB_Y_mm": "35.00",
+    "Connects_To": "J1 Pin 11 <-> J2 Pin 9 (GPIO25)"
+  },
+  {
+    "Component": "J1",
+    "Pin": "12",
+    "Net": "GND",
+    "Role_Label": "D6 GND",
+    "PCB_X_mm": "33.44",
+    "PCB_Y_mm": "35.00",
+    "Connects_To": "Shared GND copper pour (all 11 GND pins)"
+  },
+  {
+    "Component": "J1",
+    "Pin": "13",
+    "Net": "SPACE",
+    "Role_Label": "SPACE SIG",
+    "PCB_X_mm": "35.98",
+    "PCB_Y_mm": "35.00",
+    "Connects_To": "J1 Pin 13 <-> J2 Pin 8 (GPIO33)"
+  },
+  {
+    "Component": "J1",
+    "Pin": "14",
+    "Net": "GND",
+    "Role_Label": "SPACE GND",
+    "PCB_X_mm": "38.52",
+    "PCB_Y_mm": "35.00",
+    "Connects_To": "Shared GND copper pour (all 11 GND pins)"
+  },
+  {
+    "Component": "J1",
+    "Pin": "15",
+    "Net": "SHIFT",
+    "Role_Label": "SHIFT SIG",
+    "PCB_X_mm": "41.06",
+    "PCB_Y_mm": "35.00",
+    "Connects_To": "J1 Pin 15 <-> J2 Pin 7 (GPIO32)"
+  },
+  {
+    "Component": "J1",
+    "Pin": "16",
+    "Net": "GND",
+    "Role_Label": "SHIFT GND",
+    "PCB_X_mm": "43.60",
+    "PCB_Y_mm": "35.00",
+    "Connects_To": "Shared GND copper pour (all 11 GND pins)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "1",
+    "Net": "NC",
+    "Role_Label": "3V3",
+    "PCB_X_mm": "11.50",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "2",
+    "Net": "NC",
+    "Role_Label": "EN",
+    "PCB_X_mm": "14.04",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "3",
+    "Net": "NC",
+    "Role_Label": "SP",
+    "PCB_X_mm": "16.58",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "4",
+    "Net": "NC",
+    "Role_Label": "SN",
+    "PCB_X_mm": "19.12",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "5",
+    "Net": "NC",
+    "Role_Label": "34",
+    "PCB_X_mm": "21.66",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "6",
+    "Net": "NC",
+    "Role_Label": "35",
+    "PCB_X_mm": "24.20",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "7",
+    "Net": "SHIFT",
+    "Role_Label": "32 (SHIFT)",
+    "PCB_X_mm": "26.74",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "J1 Pin 15 <-> J2 Pin 7 (GPIO32)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "8",
+    "Net": "SPACE",
+    "Role_Label": "33 (SPACE)",
+    "PCB_X_mm": "29.28",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "J1 Pin 13 <-> J2 Pin 8 (GPIO33)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "9",
+    "Net": "D6",
+    "Role_Label": "25 (D6)",
+    "PCB_X_mm": "31.82",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "J1 Pin 11 <-> J2 Pin 9 (GPIO25)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "10",
+    "Net": "D5",
+    "Role_Label": "26 (D5)",
+    "PCB_X_mm": "34.36",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "J1 Pin 9 <-> J2 Pin 10 (GPIO26)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "11",
+    "Net": "D4",
+    "Role_Label": "27 (D4)",
+    "PCB_X_mm": "36.90",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "J1 Pin 7 <-> J2 Pin 11 (GPIO27)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "12",
+    "Net": "D1",
+    "Role_Label": "14 (D1)",
+    "PCB_X_mm": "39.44",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "J1 Pin 1 <-> J2 Pin 12 (GPIO14)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "13",
+    "Net": "D2",
+    "Role_Label": "12* (D2 boot)",
+    "PCB_X_mm": "41.98",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "J1 Pin 3 <-> J2 Pin 13 (GPIO12* boot pin)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "14",
+    "Net": "GND",
+    "Role_Label": "GND",
+    "PCB_X_mm": "44.52",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "Shared GND copper pour (all 11 GND pins)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "15",
+    "Net": "D3",
+    "Role_Label": "13 (D3)",
+    "PCB_X_mm": "47.06",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "J1 Pin 5 <-> J2 Pin 15 (GPIO13)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "16",
+    "Net": "NC",
+    "Role_Label": "SD2",
+    "PCB_X_mm": "49.60",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "17",
+    "Net": "NC",
+    "Role_Label": "SD3",
+    "PCB_X_mm": "52.14",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "18",
+    "Net": "NC",
+    "Role_Label": "CMD",
+    "PCB_X_mm": "54.68",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J2",
+    "Pin": "19",
+    "Net": "VIN",
+    "Role_Label": "V5 (VIN)",
+    "PCB_X_mm": "57.22",
+    "PCB_Y_mm": "24.30",
+    "Connects_To": "D1 Pin 1 (Cathode/Band) <-> J2 Pin 19 (ESP32 V5)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "1",
+    "Net": "GND",
+    "Role_Label": "GND",
+    "PCB_X_mm": "11.50",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "Shared GND copper pour (all 11 GND pins)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "2",
+    "Net": "NC",
+    "Role_Label": "23",
+    "PCB_X_mm": "14.04",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "3",
+    "Net": "NC",
+    "Role_Label": "22",
+    "PCB_X_mm": "16.58",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "4",
+    "Net": "NC",
+    "Role_Label": "TXD",
+    "PCB_X_mm": "19.12",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "5",
+    "Net": "NC",
+    "Role_Label": "RXD",
+    "PCB_X_mm": "21.66",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "6",
+    "Net": "NC",
+    "Role_Label": "21",
+    "PCB_X_mm": "24.20",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "7",
+    "Net": "NC",
+    "Role_Label": "GND (NC)",
+    "PCB_X_mm": "26.74",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "8",
+    "Net": "NC",
+    "Role_Label": "19",
+    "PCB_X_mm": "29.28",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "9",
+    "Net": "NC",
+    "Role_Label": "18",
+    "PCB_X_mm": "31.82",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "10",
+    "Net": "NC",
+    "Role_Label": "5",
+    "PCB_X_mm": "34.36",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "11",
+    "Net": "NC",
+    "Role_Label": "17",
+    "PCB_X_mm": "36.90",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "12",
+    "Net": "NC",
+    "Role_Label": "16",
+    "PCB_X_mm": "39.44",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "13",
+    "Net": "NC",
+    "Role_Label": "4",
+    "PCB_X_mm": "41.98",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "14",
+    "Net": "NC",
+    "Role_Label": "0",
+    "PCB_X_mm": "44.52",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "15",
+    "Net": "NC",
+    "Role_Label": "2",
+    "PCB_X_mm": "47.06",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "16",
+    "Net": "NC",
+    "Role_Label": "15",
+    "PCB_X_mm": "49.60",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "17",
+    "Net": "NC",
+    "Role_Label": "SD1",
+    "PCB_X_mm": "52.14",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "18",
+    "Net": "NC",
+    "Role_Label": "SD0",
+    "PCB_X_mm": "54.68",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J4",
+    "Pin": "19",
+    "Net": "NC",
+    "Role_Label": "CLK",
+    "PCB_X_mm": "57.22",
+    "PCB_Y_mm": "4.00",
+    "Connects_To": "No Connect (socket holds pin mechanically, copper isolated)"
+  },
+  {
+    "Component": "J3",
+    "Pin": "1",
+    "Net": "SW_BACK",
+    "Role_Label": "SW BACK (to D1 anode)",
+    "PCB_X_mm": "49.50",
+    "PCB_Y_mm": "37.72",
+    "Connects_To": "J3 Pin 1 <-> D1 Pin 2 (Anode)"
+  },
+  {
+    "Component": "J3",
+    "Pin": "2",
+    "Net": "BAT_POS",
+    "Role_Label": "BAT+ > SW (to switch)",
+    "PCB_X_mm": "49.50",
+    "PCB_Y_mm": "35.18",
+    "Connects_To": "J3 Pin 2 <-> J3 Pin 3 (Battery + to external switch)"
+  },
+  {
+    "Component": "J3",
+    "Pin": "3",
+    "Net": "BAT_POS",
+    "Role_Label": "BAT+ (battery +)",
+    "PCB_X_mm": "49.50",
+    "PCB_Y_mm": "32.64",
+    "Connects_To": "J3 Pin 2 <-> J3 Pin 3 (Battery + to external switch)"
+  },
+  {
+    "Component": "J3",
+    "Pin": "4",
+    "Net": "GND",
+    "Role_Label": "BAT- (battery -)",
+    "PCB_X_mm": "49.50",
+    "PCB_Y_mm": "30.10",
+    "Connects_To": "Shared GND copper pour (all 11 GND pins)"
+  },
+  {
+    "Component": "D1",
+    "Pin": "1",
+    "Net": "VIN",
+    "Role_Label": "Cathode (K, band -> VIN)",
+    "PCB_X_mm": "57.22",
+    "PCB_Y_mm": "13.50",
+    "Connects_To": "D1 Pin 1 (Cathode/Band) <-> J2 Pin 19 (ESP32 V5)"
+  },
+  {
+    "Component": "D1",
+    "Pin": "2",
+    "Net": "SW_BACK",
+    "Role_Label": "Anode (A <- SW_BACK)",
+    "PCB_X_mm": "47.06",
+    "PCB_Y_mm": "13.50",
+    "Connects_To": "J3 Pin 1 <-> D1 Pin 2 (Anode)"
+  }
+]
