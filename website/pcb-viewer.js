@@ -273,6 +273,35 @@ function initPcb3dViewer() {
   document.getElementById('pcb3dZoomIn')?.addEventListener('click', () => zoomBy(0.8));
   document.getElementById('pcb3dZoomOut')?.addEventListener('click', () => zoomBy(1.25));
 
+  // KiCad 3D Appearance visibility toggles
+  const toggleMatGroup = (matNames, visible) => {
+    if (!boardRoot) return;
+    boardRoot.traverse((obj) => {
+      if (!obj.isMesh || !obj.material) return;
+      const n = (obj.material.name || '').toLowerCase();
+      if (matNames.includes(n)) obj.visible = visible;
+    });
+  };
+
+  const toggleModels = (visible) => {
+    if (!boardRoot) return;
+    boardRoot.traverse((obj) => {
+      if (!obj.isMesh || !obj.material) return;
+      const n = (obj.material.name || '').toLowerCase();
+      // Header plastics & pins (mat_0..mat_5)
+      if (['mat_0', 'mat_1', 'mat_2', 'mat_3', 'mat_4', 'mat_5'].includes(n)) {
+        obj.visible = visible;
+      }
+    });
+  };
+
+  document.getElementById('pcb3dVisModels')?.addEventListener('change', (e) => toggleModels(e.target.checked));
+  document.getElementById('pcb3dVisMask')?.addEventListener('change', (e) => toggleMatGroup(['mat_9', 'mat_10'], e.target.checked));
+  document.getElementById('pcb3dVisSilk')?.addEventListener('change', (e) => toggleMatGroup(['mat_8'], e.target.checked));
+  document.getElementById('pcb3dVisShadow')?.addEventListener('change', (e) => {
+    shadowFloor.visible = e.target.checked;
+  });
+
   // Component quick-inspect chips
   const chips = document.querySelectorAll('[data-pcb-part]');
   chips.forEach((chip) => {
@@ -423,7 +452,16 @@ function initPcb2dViewer() {
     viewport.setPointerCapture(e.pointerId);
   });
 
+  const coordEl = document.getElementById('pcb2dCoord');
   viewport.addEventListener('pointermove', (e) => {
+    if (coordEl) {
+      const rect = viewport.getBoundingClientRect();
+      const nx = (e.clientX - rect.left) / Math.max(rect.width, 1);
+      const ny = (e.clientY - rect.top) / Math.max(rect.height, 1);
+      const xMm = (nx * 66.0).toFixed(2);
+      const yMm = (ny * 41.0).toFixed(2);
+      coordEl.textContent = `X: ${xMm} mm   Y: ${yMm} mm`;
+    }
     if (!dragging) return;
     panX = e.clientX - startX;
     panY = e.clientY - startY;

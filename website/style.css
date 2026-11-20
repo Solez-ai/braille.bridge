@@ -1800,93 +1800,163 @@ body.is-loading .braille-scroll-rail {
   color: var(--midnight);
 }
 
-.pcb-viewer-box {
-  border: 1px solid rgba(0, 18, 66, 0.18);
-  border-radius: var(--radius);
+.kicad-window {
+  border: 1px solid #1d1f23;
+  border-radius: 4px;
   overflow: hidden;
-  background: #0b1222;
+  background: #26282c;
+  color: #dcdfe4;
+  box-shadow: 0 8px 24px rgba(0, 11, 41, 0.12);
 }
 
-.pcb-viewer-box + .pcb-viewer-box {
-  margin-top: 20px;
+.kicad-window + .kicad-window {
+  margin-top: 22px;
 }
 
-.pcb-viewer-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 11px 16px;
-  background: var(--midnight);
-  color: var(--white);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.pcb-viewer-title {
+.kicad-titlebar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-}
-
-.pcb-viewer-title strong {
-  font-family: var(--sans);
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--white);
-}
-
-.pcb-viewer-sub {
+  padding: 7px 12px;
+  background: #1e2024;
+  border-bottom: 1px solid #15171a;
   font-family: var(--sans);
   font-size: 12px;
-  color: var(--navy-ice);
 }
 
-.pcb-viewer-badge {
-  font-family: var(--sans);
+.kicad-title-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4678d0;
+  flex-shrink: 0;
+}
+
+.kicad-title-text {
+  font-weight: 600;
+  color: #e6e9ef;
+}
+
+.kicad-title-hint {
+  margin-left: auto;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 3px 7px;
-  border-radius: 3px;
-  background: var(--orange);
-  color: var(--white);
+  color: #8f96a3;
 }
 
-.pcb-badge-kicad {
-  background: #1d4ed8;
-}
-
-.pcb-viewer-controls {
+.kicad-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-}
-
-.pcb-ctrl-btn {
-  appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--white);
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 500;
+  align-items: center;
+  gap: 8px;
   padding: 5px 10px;
-  border-radius: 3px;
-  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+  background: #2f3237;
+  border-bottom: 1px solid #1d1f23;
 }
 
-.pcb-ctrl-btn:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.35);
+.kicad-tool-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
-.pcb-ctrl-btn.active {
-  background: var(--orange);
-  border-color: var(--orange);
-  color: var(--white);
+.kicad-tsep {
+  width: 1px;
+  height: 18px;
+  background: #464a52;
+  margin: 0 2px;
+}
+
+.kicad-tbtn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  min-width: 26px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: #d4d8df;
+  font-family: var(--sans);
+  font-size: 11.5px;
+  font-weight: 500;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.kicad-tbtn svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.kicad-tbtn:hover {
+  background: #3d4148;
+  border-color: #50555e;
+}
+
+.kicad-tbtn.active {
+  background: #3f5578;
+  border-color: #5c7cb0;
+  color: #ffffff;
+}
+
+.kicad-toolbar-readout {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: #a8b0bd;
+}
+
+.kicad-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 216px;
+  min-height: 410px;
+}
+
+.kicad-workspace-2d {
+  grid-template-columns: 32px minmax(0, 1fr) 216px;
+}
+
+.kicad-left-strip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0;
+  background: #2a2d32;
+  border-right: 1px solid #1d1f23;
+}
+
+.kicad-ltool {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 2px;
+  color: #9ba3b0;
+  border: 1px solid transparent;
+}
+
+.kicad-ltool.active {
+  background: #3f5578;
+  border-color: #5c7cb0;
+  color: #ffffff;
+}
+
+.kicad-ltool svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .pcb-viewport {
@@ -1898,7 +1968,7 @@ body.is-loading .braille-scroll-rail {
 }
 
 .pcb-viewport-3d {
-  height: 440px;
+  height: 430px;
   background: linear-gradient(180deg, #7d8ca8 0%, #bcc6d9 100%);
 }
 
@@ -1915,14 +1985,14 @@ body.is-loading .braille-scroll-rail {
   align-items: center;
   justify-content: center;
   font-family: var(--sans);
-  font-size: 13px;
-  color: var(--navy-ice);
-  background: rgba(11, 18, 34, 0.85);
+  font-size: 12.5px;
+  color: #e6e9ef;
+  background: rgba(30, 32, 36, 0.72);
   pointer-events: none;
 }
 
 .pcb-viewport-2d {
-  height: 400px;
+  height: 410px;
   background-color: #08090c;
   background-image: radial-gradient(rgba(220, 226, 238, 0.16) 1px, transparent 1px);
   background-size: 20px 20px;
@@ -1937,7 +2007,7 @@ body.is-loading .braille-scroll-rail {
   justify-content: center;
   width: 100%;
   height: 100%;
-  padding: 26px;
+  padding: 22px;
   transform-origin: center center;
   transition: transform 60ms linear;
 }
@@ -1947,82 +2017,133 @@ body.is-loading .braille-scroll-rail {
   height: 100%;
   object-fit: contain;
   pointer-events: none;
-  filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.45));
 }
 
-.pcb-viewer-foot {
+.kicad-dock {
+  background: #2b2e33;
+  border-left: 1px solid #1d1f23;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--sans);
+  font-size: 11.5px;
+}
+
+.kicad-dock-head {
+  padding: 6px 10px;
+  background: #23262a;
+  border-bottom: 1px solid #1a1c20;
+  font-weight: 600;
+  color: #e1e4ea;
+  font-size: 11.5px;
+}
+
+.kicad-dock-sec {
+  padding: 10px;
+  border-bottom: 1px solid #222428;
+}
+
+.kicad-dock-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8f96a3;
+  margin-bottom: 7px;
+}
+
+.kicad-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 2px;
+  color: #d4d8df;
+  font-size: 11.5px;
+}
+
+.kicad-check input {
+  accent-color: #4678d0;
+  margin: 0;
+}
+
+.kicad-part-list,
+.kicad-layer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kicad-part-row,
+.kicad-layer-row {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 5px 7px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: #cfd4dc;
+  font-family: var(--sans);
+  font-size: 11.5px;
+  transition: background 110ms ease;
+}
+
+.kicad-part-row:hover,
+.kicad-layer-row:hover {
+  background: #363a40;
+}
+
+.kicad-part-row.active,
+.kicad-layer-row.active {
+  background: #3b4f70;
+  border-color: #5573a3;
+  color: #ffffff;
+}
+
+.k-sw {
+  width: 10px;
+  height: 10px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.k-sw-board { background: #147a30; }
+.k-sw-hdr { background: #1c1e22; border: 1px solid #555; }
+.k-sw-gold { background: #d8b23c; }
+.k-sw-mount { background: #8f96a3; border-radius: 50%; }
+.k-sw-all { background: linear-gradient(135deg, #c83434 50%, #4d7fca 50%); }
+.k-sw-fcu { background: #c83434; }
+.k-sw-bcu { background: #4d7fca; }
+.k-sw-silk { background: #f2eda1; }
+
+.kicad-info-kv {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  font-size: 11px;
+  color: #9aa2af;
+}
+
+.kicad-info-kv b {
+  font-weight: 500;
+  color: #dce0e6;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.kicad-statusbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px 16px;
-  background: #080e1a;
-  border-top: 1px solid rgba(255, 255, 255, 0.10);
-}
-
-.pcb-inspect-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.pcb-chip {
-  appearance: none;
-  border: 1px solid rgba(175, 196, 250, 0.22);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--navy-ice);
-  font-family: var(--sans);
-  font-size: 11.5px;
-  font-weight: 500;
-  padding: 4px 9px;
-  border-radius: 3px;
-  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
-}
-
-.pcb-chip:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--white);
-}
-
-.pcb-chip.active {
-  background: rgba(255, 115, 21, 0.2);
-  border-color: var(--orange);
-  color: var(--white);
-}
-
-.pcb-kicad-legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px;
-  font-family: var(--sans);
-  font-size: 11.5px;
-  color: var(--navy-ice);
-}
-
-.pcb-kicad-legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.legend-swatch {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-}
-
-.swatch-fcu { background: #c83434; }
-.swatch-bcu { background: #4d7fca; }
-.swatch-silk { background: #f2eda1; }
-.swatch-edge { background: #d0d2cd; }
-
-.pcb-status {
+  padding: 4px 10px;
+  background: #222428;
+  border-top: 1px solid #15171a;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 11.5px;
-  color: #cbd5e1;
+  font-size: 11px;
+  color: #b4bcc8;
 }
 
 .wip-roadmap-grid {
@@ -2089,6 +2210,17 @@ body.is-loading .braille-scroll-rail {
   .wip-pcb-head {
     grid-template-columns: 1fr;
     gap: 18px;
+  }
+  .kicad-workspace,
+  .kicad-workspace-2d {
+    grid-template-columns: 1fr;
+  }
+  .kicad-left-strip {
+    display: none;
+  }
+  .kicad-dock {
+    border-left: 0;
+    border-top: 1px solid #1d1f23;
   }
   .wip-roadmap-grid {
     grid-template-columns: 1fr;
