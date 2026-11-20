@@ -1,3 +1,7 @@
+// BrailleBridge Firmware — Current Version: v2.1 (2026-11-20)
+// Features: Decode-on-release chording, standard UEB/Perkins Grade-1 (i/s/t/9 fixed),
+// BLE HID + Nordic UART Service (NUS) + 115200 baud USB Serial,
+// live DEBOUNCE:<ms> / WINDOW:<ms> / RESET_TIMING control, and Bharati Bangla.
 #include <Arduino.h>
 #include "BBKeyboard.h"
 
