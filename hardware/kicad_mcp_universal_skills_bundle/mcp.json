@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "kicad": {
+      "command": "node",
+      "args": [
+        "C:\\Users\\<YOUR_USER>\\.gemini\\tools\\KiCAD-MCP-Server\\dist\\index.js"
+      ],
+      "env": {
+        "PYTHONPATH": "C:\\Users\\<YOUR_USER>\\AppData\\Local\\Programs\\KiCad\\10.0\\bin\\Lib\\site-packages",
+        "KICAD_PYTHON": "C:\\Users\\<YOUR_USER>\\AppData\\Local\\Programs\\KiCad\\10.0\\bin\\python.exe",
+        "KICAD_CLI_PATH": "C:\\Users\\<YOUR_USER>\\AppData\\Local\\Programs\\KiCad\\10.0\\bin\\kicad-cli.exe",
+        "FREEROUTING_JAR": "C:\\Users\\<YOUR_USER>\\.kicad-mcp\\freerouting.jar",
+        "NODE_ENV": "production",
+        "LOG_LEVEL": "info"
+      }
+    }
+  }
+}
