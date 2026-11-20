@@ -14,6 +14,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Noto+Serif:wght@400;600;700;800&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link href="https://db.onlinewebfonts.com/c/7b2f4e99395dcee2673f41661274a830?family=Garet+W05+Regular" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
 </head>
 <body class="is-loading nav-pending">
 
@@ -583,11 +591,163 @@
       </div>
     </section>
 
-    <!-- ================= 05 — FIRMWARE ================= -->
+    <!-- ================= 05 — CURRENT WORK IN PROGRESS INNOVATION ================= -->
+    <section class="section section-canvas" id="wip-innovation">
+      <div class="container">
+        <div class="section-head reveal">
+          <p class="eyebrow">05 — Current Work in Progress Innovation</p>
+          <h2 class="section-title">What we are building next.</h2>
+          <p class="section-lede">
+            Moving BrailleBridge from a hand-wired classroom prototype to a commercially manufacturable
+            product — starting with a custom PCB, refined tactile keycaps, and next-generation software.
+          </p>
+        </div>
+
+        <!-- 01 — Commercial PCB (Primary Focus) -->
+        <article class="wip-pcb-card reveal">
+          <div class="wip-pcb-head">
+            <div class="wip-pcb-title-wrap">
+              <div class="wip-num-row">
+                <span class="wip-num">01</span>
+                <span class="bento-tag">Primary Focus · Commercial PCB</span>
+              </div>
+              <h3>Custom commercial PCB — BB1 Wiring Board v2</h3>
+              <p>
+                Designed in KiCad to replace manual point-to-point jumper wiring with a clean,
+                manufacturable 2-layer FR-4 carrier board. It seats a 38-pin ESP32 DevKit on dual
+                <code>1&times;19</code> sockets (exact <code>20.3 mm</code> row spacing), routes all
+                eight mechanical switches (<code>D1–D6</code>, <code>SPACE</code>, <code>SHIFT</code>)
+                with paired signal-and-ground pins on <code>J1</code>, and includes a
+                <code>1N5819</code> Schottky diode for USB/battery protection on <code>J3</code>.
+              </p>
+            </div>
+            <dl class="wip-pcb-specs">
+              <div><dt>Dimensions</dt><dd>66.0 &times; 41.0 &times; 1.2 mm</dd></div>
+              <div><dt>Stackup</dt><dd>2-Layer FR-4 (F.Cu / B.Cu)</dd></div>
+              <div><dt>Routing</dt><dd>1.00 mm power &middot; 0.30 mm signal</dd></div>
+              <div><dt>Verification</dt><dd>38 vias &middot; 12 nets &middot; 0 DRC/ERC</dd></div>
+            </dl>
+          </div>
+
+          <!-- Rectangle 1: Interactive 3D GLB Viewer -->
+          <div class="pcb-viewer-box">
+            <div class="pcb-viewer-bar">
+              <div class="pcb-viewer-title">
+                <span class="pcb-viewer-badge">3D GLB</span>
+                <strong>Interactive 3D PCB Model</strong>
+                <span class="pcb-viewer-sub">Drag to orbit &middot; Right-drag to pan &middot; Scroll to zoom &middot; Click parts to inspect</span>
+              </div>
+              <div class="pcb-viewer-controls" role="group" aria-label="3D PCB camera controls">
+                <button type="button" class="pcb-ctrl-btn active" data-pcb3d-view="iso">Iso</button>
+                <button type="button" class="pcb-ctrl-btn" data-pcb3d-view="top">Top</button>
+                <button type="button" class="pcb-ctrl-btn" data-pcb3d-view="bottom">Bottom</button>
+                <button type="button" class="pcb-ctrl-btn" id="pcb3dAutoBtn" aria-pressed="false">Auto-Rotate</button>
+                <button type="button" class="pcb-ctrl-btn" id="pcb3dZoomIn" aria-label="Zoom in 3D view">+</button>
+                <button type="button" class="pcb-ctrl-btn" id="pcb3dZoomOut" aria-label="Zoom out 3D view">&minus;</button>
+                <button type="button" class="pcb-ctrl-btn" data-pcb3d-view="reset">Reset</button>
+              </div>
+            </div>
+
+            <div class="pcb-viewport pcb-viewport-3d cursor-move" id="pcb3dViewport" aria-label="Interactive 3D view of BrailleBridge BB1 Wiring Board v2">
+              <div class="pcb-loading" id="pcb3dLoading">Loading 3D PCB model (4.9 MB)&hellip;</div>
+            </div>
+
+            <div class="pcb-viewer-foot">
+              <div class="pcb-inspect-chips" role="group" aria-label="Inspect PCB components">
+                <button type="button" class="pcb-chip active" data-pcb-part="board">Board Overview</button>
+                <button type="button" class="pcb-chip" data-pcb-part="esp32">J2 / J4 &middot; ESP32 Sockets</button>
+                <button type="button" class="pcb-chip" data-pcb-part="switches">J1 &middot; 8&times; Switch Header</button>
+                <button type="button" class="pcb-chip" data-pcb-part="power">J3 &middot; Battery &amp; Switch</button>
+                <button type="button" class="pcb-chip" data-pcb-part="diode">D1 &middot; 1N5819 Diode</button>
+                <button type="button" class="pcb-chip" data-pcb-part="mounts">H1 / H2 &middot; M2 Mounts</button>
+              </div>
+              <span class="pcb-status" id="pcb3dStatus">66.0 &times; 41.0 &times; 1.2 mm &middot; Ready to orbit &amp; inspect</span>
+            </div>
+          </div>
+
+          <!-- Rectangle 2: Interactive 2D KiCad PCB View -->
+          <div class="pcb-viewer-box">
+            <div class="pcb-viewer-bar">
+              <div class="pcb-viewer-title">
+                <span class="pcb-viewer-badge pcb-badge-kicad">2D KiCad</span>
+                <strong>2D PCB Layout View</strong>
+                <span class="pcb-viewer-sub">Drag to pan &middot; Toggle copper &amp; silkscreen layers</span>
+              </div>
+              <div class="pcb-viewer-controls" role="group" aria-label="2D KiCad layer and zoom controls">
+                <button type="button" class="pcb-ctrl-btn active" data-pcb2d-layer="all">All Layers</button>
+                <button type="button" class="pcb-ctrl-btn" data-pcb2d-layer="fcu">F.Cu (Top)</button>
+                <button type="button" class="pcb-ctrl-btn" data-pcb2d-layer="bcu">B.Cu (Bottom)</button>
+                <button type="button" class="pcb-ctrl-btn" data-pcb2d-layer="silk">Silkscreen</button>
+                <button type="button" class="pcb-ctrl-btn" id="pcb2dZoomIn" aria-label="Zoom in 2D view">+</button>
+                <button type="button" class="pcb-ctrl-btn" id="pcb2dZoomOut" aria-label="Zoom out 2D view">&minus;</button>
+                <button type="button" class="pcb-ctrl-btn" id="pcb2dReset">Fit</button>
+              </div>
+            </div>
+
+            <div class="pcb-viewport pcb-viewport-2d cursor-move" id="pcb2dViewport" aria-label="Interactive 2D KiCad PCB layout view">
+              <div class="pcb2d-stage" id="pcb2dStage">
+                <img class="pcb2d-layer" id="pcb2dImgAll" src="assets/pcb/pcb_2d_kicad.svg" alt="KiCad 2D PCB layout showing top copper, bottom copper, silkscreen, and board edge cuts" draggable="false" />
+                <img class="pcb2d-layer" id="pcb2dImgFcu" src="assets/pcb/layer_f_cu.svg" alt="KiCad top copper layer F.Cu" draggable="false" hidden />
+                <img class="pcb2d-layer" id="pcb2dImgBcu" src="assets/pcb/layer_b_cu.svg" alt="KiCad bottom copper layer B.Cu" draggable="false" hidden />
+                <img class="pcb2d-layer" id="pcb2dImgSilk" src="assets/pcb/layer_silk.svg" alt="KiCad silkscreen and board outline" draggable="false" hidden />
+              </div>
+            </div>
+
+            <div class="pcb-viewer-foot">
+              <div class="pcb-kicad-legend">
+                <span><i class="legend-swatch swatch-fcu"></i> F.Cu Top Copper</span>
+                <span><i class="legend-swatch swatch-bcu"></i> B.Cu Bottom Copper</span>
+                <span><i class="legend-swatch swatch-silk"></i> F.Silkscreen</span>
+                <span><i class="legend-swatch swatch-edge"></i> Edge.Cuts (66.0 &times; 41.0 mm)</span>
+              </div>
+              <span class="pcb-status" id="pcb2dStatus">Layer: All Layers &middot; Zoom: 100%</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- 02 & 03 — Future / Parallel Innovations -->
+        <div class="wip-roadmap-grid">
+          <article class="wip-card reveal">
+            <div class="wip-num-row">
+              <span class="wip-num">02</span>
+              <span class="bento-tag">Tactile Ergonomics</span>
+            </div>
+            <h3>Making the best-feeling keycaps for BrailleBridge.</h3>
+            <p>
+              Iterating on custom-molded and resin/FDM keycap profiles built specifically for Outemu Red
+              mechanical switches — tuning finger-dish curvature, raised Braille dot prominence, stem fit,
+              and crisp acoustic feedback so long writing and exam sessions feel effortless.
+            </p>
+          </article>
+
+          <article class="wip-card reveal">
+            <div class="wip-num-row">
+              <span class="wip-num">03</span>
+              <span class="bento-tag">Software &amp; Systems R&amp;D</span>
+            </div>
+            <h3>Better software &amp; C++ / Rust optimization.</h3>
+            <p>
+              Designing a faster, more reliable software stack and benchmarking core chording, Braille
+              dictionary translation, and serial/BLE pipelines across languages like <strong>C++</strong>
+              and <strong>Rust</strong> for broad hardware compatibility and low-latency performance.
+            </p>
+            <div class="wip-subpart">
+              <p class="wip-subpart-label">Platform Expansion</p>
+              <ul>
+                <li><strong>Android App Overhaul:</strong> Massively improving the Android companion app with faster BLE pairing, stronger TalkBack ergonomics, and reliable classroom sync.</li>
+                <li><strong>Apple Mac Support:</strong> Exploring plans for MacBooks and Mac desktops — evaluating native CoreBluetooth, USB serial support, and dedicated macOS builds.</li>
+              </ul>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 06 — FIRMWARE ================= -->
     <section class="section section-black" id="firmware">
       <div class="container">
         <div class="section-head reveal">
-          <p class="eyebrow">05 — Firmware Architecture</p>
+          <p class="eyebrow">06 — Firmware Architecture</p>
           <h2 class="section-title">Chord &rarr; character, reliably.</h2>
           <p class="section-lede">
             Written in C++ on the Arduino framework, the firmware turns six mechanical keys into a
@@ -655,7 +815,7 @@
     <section class="section section-canvas" id="demo">
       <div class="container">
         <div class="section-head reveal">
-          <p class="eyebrow">06 — Try It Yourself</p>
+          <p class="eyebrow">07 — Try It Yourself</p>
           <h2 class="section-title">Compose a chord or connect your device.</h2>
           <p class="section-lede">
             Tap dots on the virtual pad and press <strong>Type</strong> (or <kbd>Enter</kbd>), or
@@ -777,7 +937,7 @@
     <section class="section section-white" id="dictionaries">
       <div class="container">
         <div class="section-head reveal">
-          <p class="eyebrow">07 — The Dictionaries</p>
+          <p class="eyebrow">08 — The Dictionaries</p>
           <h2 class="section-title">English, Bangla — same six dots.</h2>
           <p class="section-lede">
             Because Bharati Braille maps cells to <em>sounds</em>, most Bangla chords coincide with
@@ -1018,7 +1178,7 @@
     <section class="section section-canvas" id="software">
       <div class="container">
         <div class="section-head reveal">
-          <p class="eyebrow">08 — Companion Software</p>
+          <p class="eyebrow">09 — Companion Software</p>
           <h2 class="section-title">A console any teacher can read.</h2>
           <p class="section-lede">
             Built with HTML, CSS, and JavaScript using the Web Serial API — alongside native desktop
@@ -1111,7 +1271,7 @@
     <section class="section section-white" id="engineering">
       <div class="container">
         <div class="section-head reveal">
-          <p class="eyebrow">09 — Engineering Innovations</p>
+          <p class="eyebrow">10 — Engineering Innovations</p>
           <h2 class="section-title">Small details, big difference.</h2>
         </div>
 
@@ -1144,7 +1304,7 @@
     <section class="section section-canvas" id="cost">
       <div class="container">
         <div class="section-head reveal">
-          <p class="eyebrow">10 — Affordability</p>
+          <p class="eyebrow">11 — Affordability</p>
           <h2 class="section-title">Under $15, fully built.</h2>
           <p class="section-lede">
             A fraction of mechanical braillers or commercial digital systems — with every component
@@ -1288,5 +1448,6 @@
 
   <script src="gradient-ascii.js"></script>
   <script src="script.js"></script>
+  <script type="module" src="pcb-viewer.js"></script>
 </body>
 </html>

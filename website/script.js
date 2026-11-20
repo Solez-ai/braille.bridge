@@ -293,7 +293,31 @@
   const galleryCaption = $('#galleryCaption');
 
   if (galleryTabs.length && galleryImg) {
+    // Preload and pre-decode all gallery images so tab switching is instant
+    const decodedCache = new Map();
+    const preloadImage = (src) => {
+      if (!src) return Promise.resolve();
+      if (decodedCache.has(src)) return decodedCache.get(src);
+      const p = new Promise((resolve) => {
+        const pre = new Image();
+        pre.decoding = 'async';
+        pre.src = src;
+        if (typeof pre.decode === 'function') {
+          pre.decode().then(resolve, resolve);
+        } else {
+          pre.onload = resolve;
+          pre.onerror = resolve;
+        }
+      });
+      decodedCache.set(src, p);
+      return p;
+    };
+
+    galleryTabs.forEach((t) => preloadImage(t.dataset.src));
+
+    let gallerySwitchId = 0;
     const activateGalleryTab = (tab) => {
+      const switchId = ++gallerySwitchId;
       galleryTabs.forEach((t) => {
         const active = t === tab;
         t.classList.toggle('active', active);
@@ -307,18 +331,27 @@
       if (galleryBadge) galleryBadge.textContent = nextBadge;
       if (galleryCaption) galleryCaption.textContent = nextCaption;
 
-      if (reducedMotion || galleryImg.getAttribute('src') === nextSrc) {
+      if (galleryImg.getAttribute('src') === nextSrc) {
+        galleryImg.alt = nextAlt;
+        return;
+      }
+
+      if (reducedMotion) {
         galleryImg.src = nextSrc;
         galleryImg.alt = nextAlt;
         return;
       }
 
       galleryImg.classList.add('switching');
-      setTimeout(() => {
-        galleryImg.src = nextSrc;
-        galleryImg.alt = nextAlt;
-        galleryImg.classList.remove('switching');
-      }, 150);
+      preloadImage(nextSrc).then(() => {
+        if (switchId !== gallerySwitchId) return;
+        requestAnimationFrame(() => {
+          if (switchId !== gallerySwitchId) return;
+          galleryImg.src = nextSrc;
+          galleryImg.alt = nextAlt;
+          galleryImg.classList.remove('switching');
+        });
+      });
     };
 
     galleryTabs.forEach((tab, idx) => {
