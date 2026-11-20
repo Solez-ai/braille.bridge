@@ -11,6 +11,12 @@ description: >-
 
 Use this runbook to design, verify, render, and package complete KiCad 10+ PCB projects with **zero ERC/DRC ignores** and verified netlist-to-PCB parity.
 
+## Companion Skills (Modular Suite)
+- **[kicad-setup-python-uv](../kicad-setup-python-uv/SKILL.md)**: Online installation of Python, `uv`, Node.js, and `pcbnew` bindings on Windows & Linux.
+- **[kicad-mcp-and-cli](../kicad-mcp-and-cli/SKILL.md)**: Installing KiCad, `KiCAD-MCP-Server`, `kicad-cli`, `mcp.json` configuration, and cross-platform CLI commands.
+- **[kicad-drc-clearances-subagents](../kicad-drc-clearances-subagents/SKILL.md)**: Zero-ignore ERC/DRC, clearances, netlist-to-PCB parity checks, and subagent delegation patterns.
+- **[kicad-rendering-deliverables](../kicad-rendering-deliverables/SKILL.md)**: High-res 2D/3D PCB renders, silkscreen inspection, Gerbers/JLCPCB ZIPs, STEP, and Web `.glb` packages.
+
 ## Tooling & Environment (Windows)
 - **KiCad CLI**: `C:\Users\<user>\AppData\Local\Programs\KiCad\10.0\bin\kicad-cli.exe` (or `kicad-cli` on `PATH`)
 - **KiCad Python (`pcbnew`)**: `C:\Users\<user>\AppData\Local\Programs\KiCad\10.0\bin\python.exe`
