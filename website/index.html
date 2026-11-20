@@ -546,7 +546,7 @@
                 <tr><th scope="row">Microcontroller</th><td>ESP32 Dev Module</td></tr>
                 <tr><th scope="row">Braille keys</th><td>6 &times; Outemu Red mechanical switches</td></tr>
                 <tr><th scope="row">Additional keys</th><td>Space, Shift</td></tr>
-                <tr><th scope="row">Chording window</th><td>180 ms</td></tr>
+                <tr><th scope="row">Chord timing</th><td>Decode-on-release + 15&nbsp;ms debounce (100+ WPM, live-tunable)</td></tr>
                 <tr><th scope="row">Output channels</th><td>Bluetooth HID + USB Serial</td></tr>
                 <tr><th scope="row">Languages</th><td>English, Bangla (Bharati Braille)</td></tr>
                 <tr><th scope="row">Shift functions</th><td>Caps, numbers, punctuation, math</td></tr>
@@ -820,8 +820,8 @@
             <div class="firmware-point">
               <span class="fw-num">2</span>
               <div>
-                <h4>180 ms chording window</h4>
-                <p>Fingers rarely land together. The firmware ORs every key pressed within 180&nbsp;ms into one chord — so one intent is never read as many.</p>
+                <h4>Decode-on-release (100+ WPM)</h4>
+                <p>Replaces the legacy 180&nbsp;ms timer: dots accumulate as long as any key is held and decode the instant all fingers lift, eliminating artificial lag for fast typists while preventing slow chords from splitting.</p>
               </div>
             </div>
             <div class="firmware-point">
@@ -853,7 +853,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M14 6l6 6-6 6"/></svg>
           <span class="pipe">GPIO read</span>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M14 6l6 6-6 6"/></svg>
-          <span class="pipe">180 ms window</span>
+          <span class="pipe">Decode on release (15 ms debounce)</span>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M14 6l6 6-6 6"/></svg>
           <span class="pipe">6-bit mask</span>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M14 6l6 6-6 6"/></svg>
@@ -1329,7 +1329,7 @@
         </div>
 
         <div class="eng-grid">
-          <div class="eng-card reveal"><span class="eng-num">01</span><h4>Chord buffering</h4><p>A 180 ms window absorbs fingers landing milliseconds apart.</p></div>
+          <div class="eng-card reveal"><span class="eng-num">01</span><h4>Decode-on-release chording</h4><p>Replaces the fixed 180&nbsp;ms window with 15&nbsp;ms debounce + release commit — supporting 40–70&nbsp;WPM sustained and 100+ WPM peak speeds.</p></div>
           <div class="eng-card reveal"><span class="eng-num">02</span><h4>Bitmask encoding</h4><p>Six keys collapse into one 6-bit integer — compact, constant-time comparison.</p></div>
           <div class="eng-card reveal"><span class="eng-num">03</span><h4>Dictionary-driven translation</h4><p>A new language is just new array entries — no control-flow changes.</p></div>
           <div class="eng-card reveal"><span class="eng-num">04</span><h4>Dual communication</h4><p>Bluetooth for the student, USB Serial for the teacher — simultaneous and independent.</p></div>
