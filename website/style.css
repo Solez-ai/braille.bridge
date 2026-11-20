@@ -1899,7 +1899,7 @@ body.is-loading .braille-scroll-rail {
 
 .pcb-viewport-3d {
   height: 440px;
-  background: #0b1222;
+  background: linear-gradient(180deg, #7d8ca8 0%, #bcc6d9 100%);
 }
 
 .pcb-viewport-3d canvas {
@@ -1923,11 +1923,9 @@ body.is-loading .braille-scroll-rail {
 
 .pcb-viewport-2d {
   height: 400px;
-  background-color: #101520;
-  background-image:
-    linear-gradient(to right, rgba(175, 196, 250, 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(175, 196, 250, 0.06) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-color: #08090c;
+  background-image: radial-gradient(rgba(220, 226, 238, 0.16) 1px, transparent 1px);
+  background-size: 20px 20px;
   display: flex;
   align-items: center;
   justify-content: center;

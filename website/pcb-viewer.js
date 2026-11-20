@@ -60,7 +60,21 @@ function initPcb3dViewer() {
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b1222);
+
+  // KiCad 3D Viewer–style soft slate-blue gradient backdrop
+  const bgCanvas = document.createElement('canvas');
+  bgCanvas.width = 2;
+  bgCanvas.height = 256;
+  const bgCtx = bgCanvas.getContext('2d');
+  const grad = bgCtx.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0, '#7d8ca8');
+  grad.addColorStop(0.55, '#9aa8c2');
+  grad.addColorStop(1, '#bcc6d9');
+  bgCtx.fillStyle = grad;
+  bgCtx.fillRect(0, 0, 2, 256);
+  const bgTex = new THREE.CanvasTexture(bgCanvas);
+  bgTex.colorSpace = THREE.SRGBColorSpace;
+  scene.background = bgTex;
 
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -109,10 +123,15 @@ function initPcb3dViewer() {
   controls.autoRotate = false;
   controls.autoRotateSpeed = 1.6;
 
-  // Subtle dark engineering grid under the PCB
-  const grid = new THREE.GridHelper(0.18, 18, 0x1e335c, 0x13203d);
-  grid.position.y = -0.006;
-  scene.add(grid);
+  // Soft KiCad-style shadow-catching ground plane (no fake wireframe grid)
+  const shadowFloor = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.4, 0.4),
+    new THREE.ShadowMaterial({ opacity: 0.26 })
+  );
+  shadowFloor.rotation.x = -Math.PI / 2;
+  shadowFloor.position.y = -0.004;
+  shadowFloor.receiveShadow = true;
+  scene.add(shadowFloor);
 
   let boardRoot = null;
   let boardSize = new THREE.Vector3(0.066, 0.012, 0.041);
@@ -184,7 +203,7 @@ function initPcb3dViewer() {
       });
 
       scene.add(boardRoot);
-      grid.position.y = -(boardSize.y * 0.5) - 0.002;
+      shadowFloor.position.y = -(boardSize.y * 0.5) - 0.0005;
       if (loadingEl) loadingEl.hidden = true;
     },
     undefined,
