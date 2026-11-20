@@ -306,6 +306,9 @@ class BrailleBridgeWindow(QMainWindow):
         self.teacher_name = "Teacher"
         self.school_name = "BrailleBridge Classroom"
         self.teacher_email = ""
+        # Hardware chord timing defaults (0 ms window = instant decode-on-release, 15 ms debounce)
+        self.chord_debounce_ms = 15
+        self.chord_window_ms = 0
 
         # Load persisted data
         self._load_persisted_state()
@@ -339,6 +342,11 @@ class BrailleBridgeWindow(QMainWindow):
                     self.is_dark = bool(cfg['is_dark'])
                 if 'speech_enabled' in cfg:
                     self.speech.enabled = bool(cfg['speech_enabled'])
+                if 'chord_debounce_ms' in cfg:
+                    self.chord_debounce_ms = max(5, min(50, int(cfg['chord_debounce_ms'])))
+                if 'chord_window_ms' in cfg:
+                    w = int(cfg['chord_window_ms'])
+                    self.chord_window_ms = 0 if w <= 0 else max(50, min(300, w))
         except Exception:
             pass
 
@@ -380,6 +388,8 @@ class BrailleBridgeWindow(QMainWindow):
                     'teacher_email': self.teacher_email,
                     'is_dark': self.is_dark,
                     'speech_enabled': self.speech.enabled,
+                    'chord_debounce_ms': self.chord_debounce_ms,
+                    'chord_window_ms': self.chord_window_ms,
                 }, f, ensure_ascii=False, indent=2)
         except Exception:
             pass
@@ -450,6 +460,9 @@ class BrailleBridgeWindow(QMainWindow):
                     changed = True
         if changed:
             self._rebuild_teacher_ui()
+        if event in ('open', 'reconnect') and (self.chord_debounce_ms != 15 or self.chord_window_ms != 0):
+            self.relay.send_command(f"DEBOUNCE:{self.chord_debounce_ms}", port_name)
+            self.relay.send_command(f"WINDOW:{self.chord_window_ms}", port_name)
 
     def _on_relay_data(self, port_name: str, chunk: str):
         if not chunk:
@@ -587,6 +600,15 @@ class BrailleBridgeWindow(QMainWindow):
         self.profile_btn.setFixedHeight(36)
         self.profile_btn.clicked.connect(self._open_account_dialog)
         header_layout.addWidget(self.profile_btn)
+
+        # Chord Timing / Speed Button
+        self.timing_btn = QPushButton("Timing")
+        self.timing_btn.setIconSize(QSize(15, 15))
+        self.timing_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.timing_btn.setFixedHeight(36)
+        self.timing_btn.setToolTip("Adjust live hardware debounce & chord timing (or reset to 100+ WPM decode-on-release)")
+        self.timing_btn.clicked.connect(self._open_timing_dialog)
+        header_layout.addWidget(self.timing_btn)
 
         # Theme Toggle Button
         self.theme_btn = QPushButton("Light")
@@ -1423,6 +1445,7 @@ class BrailleBridgeWindow(QMainWindow):
 
         # Crisp vector icons on all toolbar & action buttons
         self.profile_btn.setIcon(svg_icon('user', gold, 15))
+        self.timing_btn.setIcon(svg_icon('clock', fg, 15))
         self.theme_btn.setIcon(svg_icon('sun' if self.is_dark else 'moon', fg, 15))
         self.btn_scan_ble.setIcon(svg_icon('refresh', fg, 14))
         self.btn_send_to_teacher.setIcon(svg_icon('send', fg, 14))
@@ -3218,6 +3241,115 @@ class BrailleBridgeWindow(QMainWindow):
 
         btn_save.clicked.connect(_save)
         btn_row.addWidget(btn_save)
+        lay.addLayout(btn_row)
+        dlg.exec()
+
+    # ================================================================ LIVE CHORD TIMING DIALOG
+    def _open_timing_dialog(self):
+        from PyQt6.QtWidgets import QSlider
+        pal = ThemePalette.DARK if self.is_dark else ThemePalette.LIGHT
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Live Chord Timing & Speed Tuning")
+        dlg.setFixedSize(470, 390)
+        lay = QVBoxLayout(dlg)
+        lay.setContentsMargins(24, 20, 24, 20)
+        lay.setSpacing(12)
+
+        hdr = QLabel("Hardware Chord Timing")
+        hdr.setFont(ui_font(18, QFont.Weight.Bold))
+        lay.addWidget(hdr)
+
+        sub = QLabel(
+            "Tune switch debounce and chord commit timing live over Bluetooth or USB Serial. "
+            "Default uses instant decode-on-release (0 ms window) + 15 ms debounce for 100+ WPM Perkins typing."
+        )
+        sub.setProperty("muted", True)
+        sub.setWordWrap(True)
+        lay.addWidget(sub)
+
+        # Debounce slider (5..50 ms)
+        deb_lbl = QLabel(f"Switch Debounce: {self.chord_debounce_ms} ms  (default: 15 ms)")
+        deb_lbl.setFont(ui_font(11, QFont.Weight.DemiBold))
+        lay.addWidget(deb_lbl)
+
+        deb_slider = QSlider(Qt.Orientation.Horizontal)
+        deb_slider.setRange(5, 50)
+        deb_slider.setValue(self.chord_debounce_ms)
+        deb_slider.valueChanged.connect(
+            lambda v: deb_lbl.setText(f"Switch Debounce: {v} ms  (default: 15 ms)")
+        )
+        lay.addWidget(deb_slider)
+
+        # Window slider (0 = Decode on release, or 50..300 ms)
+        def _win_text(v: int) -> str:
+            if v == 0:
+                return "Chord Window: Instant on Release (0 ms — Recommended / Default)"
+            return f"Chord Window: {v} ms fixed timer (lags fast typists >{int(60000/(v*5))} WPM)"
+
+        win_lbl = QLabel(_win_text(self.chord_window_ms))
+        win_lbl.setFont(ui_font(11, QFont.Weight.DemiBold))
+        lay.addWidget(win_lbl)
+
+        win_slider = QSlider(Qt.Orientation.Horizontal)
+        win_slider.setRange(0, 300)
+        win_slider.setSingleStep(10)
+        win_slider.setPageStep(20)
+        win_slider.setValue(self.chord_window_ms)
+
+        def _on_win_change(v: int):
+            if 0 < v < 50:
+                v = 50
+                win_slider.blockSignals(True)
+                win_slider.setValue(50)
+                win_slider.blockSignals(False)
+            win_lbl.setText(_win_text(v))
+
+        win_slider.valueChanged.connect(_on_win_change)
+        lay.addWidget(win_slider)
+        lay.addStretch(1)
+
+        btn_row = QHBoxLayout()
+        btn_reset = QPushButton("Reset to Default")
+        btn_reset.setFixedHeight(36)
+        btn_reset.setToolTip("Restore decode-on-release (0 ms window) + 15 ms debounce")
+
+        def _reset():
+            deb_slider.setValue(15)
+            win_slider.setValue(0)
+            self.chord_debounce_ms = 15
+            self.chord_window_ms = 0
+            self._save_settings()
+            cnt = self.relay.send_command("RESET_TIMING")
+            self.show_toast(
+                f"Reset to Default (Decode-on-Release + 15 ms) — sent to {cnt} device(s)"
+            )
+            dlg.accept()
+
+        btn_reset.clicked.connect(_reset)
+        btn_row.addWidget(btn_reset)
+
+        btn_apply = QPushButton("Apply Live")
+        btn_apply.setFixedHeight(36)
+        btn_apply.setStyleSheet(
+            f"QPushButton {{ background-color: {pal['gold']}; color: #ffffff; "
+            f"border: 1px solid {pal['gold_dark']}; border-radius: 14px; padding: 6px 16px; font-weight: 600; }}"
+            f"QPushButton:hover {{ background-color: {pal['gold_dark']}; }}"
+        )
+
+        def _apply():
+            self.chord_debounce_ms = deb_slider.value()
+            w = win_slider.value()
+            self.chord_window_ms = 0 if w <= 0 else max(50, w)
+            self._save_settings()
+            c1 = self.relay.send_command(f"DEBOUNCE:{self.chord_debounce_ms}")
+            c2 = self.relay.send_command(f"WINDOW:{self.chord_window_ms}")
+            cnt = max(c1, c2)
+            mode_str = "Decode-on-Release" if self.chord_window_ms == 0 else f"{self.chord_window_ms} ms window"
+            self.show_toast(f"Timing applied ({self.chord_debounce_ms} ms debounce, {mode_str}) to {cnt} device(s)")
+            dlg.accept()
+
+        btn_apply.clicked.connect(_apply)
+        btn_row.addWidget(btn_apply)
         lay.addLayout(btn_row)
         dlg.exec()
 

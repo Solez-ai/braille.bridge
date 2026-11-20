@@ -154,12 +154,40 @@ void streamOut(const char* s, bool newline) {
   bleKeyboard.streamText(s, newline);
 }
 
-// Control lines arriving from the phone over NUS RX.
+// Forward declarations for timing globals used by onNusControl
+extern unsigned long debounceMs;
+extern unsigned long chordWindowMs;
+const unsigned long DEFAULT_DEBOUNCE_MS = 15;
+const unsigned long DEFAULT_WINDOW_MS = 0;  // 0 = decode immediately on release (100+ WPM)
+
+// Control lines arriving from host over BLE NUS RX or USB Serial.
 void onNusControl(const String& value) {
   String v = value; v.trim();
   if (v == "LANG:en")      { isBangla = false; streamOut("LANG:en", true); }
   else if (v == "LANG:bn") { isBangla = true;  streamOut("LANG:bn", true); }
-  else                     { streamOut("Invalid", true); }
+  else if (v.startsWith("DEBOUNCE:")) {
+    long ms = v.substring(9).toInt();
+    if (ms < 5) ms = 5;
+    if (ms > 50) ms = 50;
+    debounceMs = (unsigned long)ms;
+    String msg = "SYSTEM:DEBOUNCE=" + String(debounceMs);
+    streamOut(msg.c_str(), true);
+  }
+  else if (v.startsWith("WINDOW:")) {
+    long ms = v.substring(7).toInt();
+    if (ms <= 0) ms = 0;
+    else if (ms < 50) ms = 50;
+    else if (ms > 300) ms = 300;
+    chordWindowMs = (unsigned long)ms;
+    String msg = "SYSTEM:WINDOW=" + String(chordWindowMs);
+    streamOut(msg.c_str(), true);
+  }
+  else if (v == "RESET_TIMING") {
+    debounceMs = DEFAULT_DEBOUNCE_MS;
+    chordWindowMs = DEFAULT_WINDOW_MS;
+    streamOut("SYSTEM:TIMING_DEFAULT", true);
+  }
+  else { streamOut("Invalid", true); }
 }
 
 bool isBangla = false;
@@ -174,10 +202,9 @@ CapsMode capsMode = CAPS_OFF;
 
 // Switches bounce for several ms on press and release. Every pin goes through
 // a stability filter: a state change only becomes "real" after the raw pin
-// has read the same value for DEBOUNCE_MS. Without this, a bouncing release
-// re-opens a chord after it was committed and the same character gets typed
-// again (this was the double-letter bug).
-const unsigned long DEBOUNCE_MS = 15;
+// has read the same value for debounceMs (default 15 ms).
+unsigned long debounceMs = DEFAULT_DEBOUNCE_MS;
+unsigned long chordWindowMs = DEFAULT_WINDOW_MS;
 
 enum { P_D1, P_D2, P_D3, P_D4, P_D5, P_D6, P_SPACE, P_SHIFT, PIN_COUNT };
 
@@ -203,7 +230,7 @@ bool pressed(uint8_t idx) {
   if (now != f.raw) {
     f.raw = now;
     f.lastChange = t;
-  } else if (f.stable != f.raw && (t - f.lastChange) >= DEBOUNCE_MS) {
+  } else if (f.stable != f.raw && (t - f.lastChange) >= debounceMs) {
     f.stable = f.raw;
   }
   return f.stable;
@@ -271,6 +298,20 @@ void setup() {
 
 void loop() {
   bleKeyboard.processEvents();
+
+  // Accept live control commands over USB Serial too (e.g. DEBOUNCE:12, WINDOW:0, RESET_TIMING)
+  static String serialRxBuf = "";
+  while (Serial.available() > 0) {
+    char c = (char)Serial.read();
+    if (c == '\n' || c == '\r') {
+      if (serialRxBuf.length() > 0) {
+        onNusControl(serialRxBuf);
+        serialRxBuf = "";
+      }
+    } else if (serialRxBuf.length() < 48) {
+      serialRxBuf += c;
+    }
+  }
 
   bool d1 = dotPressed(P_D1);
   bool d2 = dotPressed(P_D2);
@@ -368,11 +409,19 @@ void loop() {
 
     if (allReleased) {
       // Full release reached: decode the complete chord (skip the second send
-      // if the stuck-key safety already decoded this chord while it was held).
+      // if timed window or stuck-key safety already decoded it while held).
       if (shiftActive) shiftTapUsed = true;
       if (!chordCommitted) processChord(currentChord);
       chordActive = false;
       currentChord = 0;
+    } else if (!chordCommitted &&
+               chordWindowMs > 0 &&
+               currentChord != 0b111000 &&
+               elapsed >= chordWindowMs) {
+      // Optional fixed chord window (disabled when chordWindowMs == 0)
+      if (shiftActive) shiftTapUsed = true;
+      processChord(currentChord);
+      chordCommitted = true;
     } else if (!chordCommitted &&
                currentChord != 0b111000 &&
                (millis() - lastChordChange) > CHORD_HOLD_MAX_MS) {

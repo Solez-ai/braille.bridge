@@ -835,6 +835,32 @@ class RelayManager:
         flush_line()
         return lines
 
+    def send_command(self, cmd: str, port_name: str | None = None) -> int:
+        """Send a control command (e.g. DEBOUNCE:15, WINDOW:0, RESET_TIMING) over BLE NUS or USB Serial."""
+        payload = cmd.strip()
+        if not payload:
+            return 0
+        with self._lock:
+            targets = [
+                (name, c) for name, c in self._conns.items()
+                if port_name is None or name == port_name
+            ]
+        sent = 0
+        for _, c in targets:
+            try:
+                if c.get('is_ble'):
+                    if self.ble.write_nus(c, payload + '\n'):
+                        sent += 1
+                else:
+                    ser = c.get('serial')
+                    if ser and ser.is_open:
+                        ser.write((payload + '\n').encode('utf-8'))
+                        ser.flush()
+                        sent += 1
+            except Exception:
+                pass
+        return sent
+
     # ------------------------------------------------------------ serial reader loop
     def _read_loop(self, port_name, conn):
         ser = conn['serial']
