@@ -13,6 +13,9 @@ class BrailleDictTest {
         assertEquals("a", BrailleDict.resolveChord(0b000001, isBangla = false, shiftActive = false))
         assertEquals("b", BrailleDict.resolveChord(0b000011, isBangla = false, shiftActive = false))
         assertEquals("c", BrailleDict.resolveChord(0b001001, isBangla = false, shiftActive = false))
+        assertEquals("i", BrailleDict.resolveChord(0b001010, isBangla = false, shiftActive = false))
+        assertEquals("s", BrailleDict.resolveChord(0b001110, isBangla = false, shiftActive = false))
+        assertEquals("t", BrailleDict.resolveChord(0b011110, isBangla = false, shiftActive = false))
         assertEquals("z", BrailleDict.resolveChord(0b110101, isBangla = false, shiftActive = false))
     }
 
@@ -42,7 +45,7 @@ class BrailleDictTest {
         assertEquals("6", BrailleDict.resolveChord(0b001011, isBangla = false, shiftActive = true))
         assertEquals("7", BrailleDict.resolveChord(0b011011, isBangla = false, shiftActive = true))
         assertEquals("8", BrailleDict.resolveChord(0b010011, isBangla = false, shiftActive = true))
-        assertEquals("9", BrailleDict.resolveChord(0b001000, isBangla = false, shiftActive = true))
+        assertEquals("9", BrailleDict.resolveChord(0b001010, isBangla = false, shiftActive = true))
         assertEquals("0", BrailleDict.resolveChord(0b011010, isBangla = false, shiftActive = true))
     }
 

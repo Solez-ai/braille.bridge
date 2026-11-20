@@ -193,12 +193,12 @@
      ============================================================ */
   const EN_DICT = {
     1: 'a', 3: 'b', 9: 'c', 25: 'd', 17: 'e', 11: 'f', 27: 'g', 19: 'h',
-    8: 'i', 26: 'j', 5: 'k', 7: 'l', 13: 'm', 29: 'n', 21: 'o', 15: 'p',
-    31: 'q', 23: 'r', 12: 's', 28: 't', 37: 'u', 39: 'v', 58: 'w', 45: 'x',
+    10: 'i', 26: 'j', 5: 'k', 7: 'l', 13: 'm', 29: 'n', 21: 'o', 15: 'p',
+    31: 'q', 23: 'r', 14: 's', 30: 't', 37: 'u', 39: 'v', 58: 'w', 45: 'x',
     61: 'y', 53: 'z'
   };
-  // Also accept standard Grade-1 I/S/T/Z chords if typed on virtual pad
-  const EN_FALLBACK = { 10: 'i', 14: 's', 30: 't', 41: 'z' };
+  // Standard Grade-1 fallback
+  const EN_FALLBACK = {};
 
   const BN_DICT = {
     1: 'অ', 28: 'আ', 10: 'ই', 20: 'ঈ', 37: 'উ', 51: 'ঊ', 17: 'এ', 12: 'ঐ', 21: 'ও', 42: 'ঔ',
@@ -219,7 +219,7 @@
   // Numbers: Shift + a-j chords → 1-0 (mirrors NUMBER_CHORDS in protocol.py & braile.ino)
   const NUM_DICT = {
     1: '1', 3: '2', 9: '3', 25: '4', 17: '5',
-    11: '6', 27: '7', 19: '8', 8: '9', 10: '9', 26: '0'
+    11: '6', 27: '7', 19: '8', 10: '9', 26: '0'
   };
 
   // Shift + math & punctuation (mirrors shiftSymbols in braile.ino)

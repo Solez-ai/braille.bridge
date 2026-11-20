@@ -32,7 +32,7 @@ const BrailleEntry brailleDict[] = {
 { 0b001011, "f", nullptr },  // dots 124
 { 0b011011, "g", "গ" },     // dots 1245 = গ
 { 0b010011, "h", "হ" },     // dots 125 = হ
-{ 0b001000, "i", "্" },     // dot 4 = hasanta (virama)
+{ 0b001000, nullptr, "্" },  // dot 4 = hasanta (virama)
 { 0b011010, "j", "জ" },     // dots 245 = জ
 { 0b000101, "k", "ক" },     // dots 13 = ক
 { 0b000111, "l", "ল" },     // dots 123 = ল
@@ -42,8 +42,8 @@ const BrailleEntry brailleDict[] = {
 { 0b001111, "p", "প" },     // dots 1234 = প
 { 0b011111, "q", "ক্ষ" },   // dots 12345 = ক্ষ
 { 0b010111, "r", "র" },     // dots 1235 = র
-{ 0b001100, "s", "ঐ" },     // dots 34 = ঐ
-{ 0b011100, "t", "আ" },     // dots 345 = আ
+{ 0b001100, nullptr, "ঐ" },  // dots 34 = ঐ
+{ 0b011100, nullptr, "আ" },  // dots 345 = আ
 { 0b100101, "u", "উ" },     // dots 136 = উ
 { 0b100111, "v", "ৱ" },     // dots 1236 = ৱ
 { 0b111010, "w", nullptr },  // dots 2456
@@ -51,10 +51,10 @@ const BrailleEntry brailleDict[] = {
 { 0b111101, "y", "য" },     // dots 13456 = য
 { 0b110101, "z", "ড়" },     // dots 1356 = ড়
 
-// Bangla-only standard cells
-{ 0b001010, nullptr, "ই" },    // dots 24
+// Bangla-only & Standard Grade-1 i / s / t cells
+{ 0b001010, "i", "ই" },       // dots 24
 { 0b010010, nullptr, "ঞ" },    // dots 25
-{ 0b001110, nullptr, "স" },    // dots 234
+{ 0b001110, "s", "স" },       // dots 234
 { 0b111111, nullptr, "ঢ" },    // dots 123456
 { 0b100001, nullptr, "ছ" },    // dots 16
 { 0b100011, nullptr, "ঘ" },    // dots 126
@@ -68,7 +68,7 @@ const BrailleEntry brailleDict[] = {
 { 0b010100, nullptr, "ঈ" },    // dots 35
 
 // Additional Bharati cells
-{ 0b011110, nullptr, "ত" },    // dots 2345
+{ 0b011110, "t", "ত" },       // dots 2345
 { 0b101000, nullptr, "খ" },    // dots 46
 { 0b101100, nullptr, "ঙ" },    // dots 346
 { 0b111110, nullptr, "ট" },    // dots 23456
@@ -99,7 +99,7 @@ const uint8_t numberChords[] = {
   0b001011,  // f → 6
   0b011011,  // g → 7
   0b010011,  // h → 8
-  0b001000,  // i → 9
+  0b001010,  // i → 9
   0b011010,  // j → 0
 };
 

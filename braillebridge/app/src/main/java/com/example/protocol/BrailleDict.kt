@@ -27,7 +27,7 @@ object BrailleDict {
         BrailleEntry(0b001011, "f", null),
         BrailleEntry(0b011011, "g", "\u0997"),
         BrailleEntry(0b010011, "h", "\u09B9"),
-        BrailleEntry(0b001000, "i", "\u09CD"),
+        BrailleEntry(0b001000, null, "\u09CD"),
         BrailleEntry(0b011010, "j", "\u099C"),
         BrailleEntry(0b000101, "k", "\u0995"),
         BrailleEntry(0b000111, "l", "\u09B2"),
@@ -37,17 +37,17 @@ object BrailleDict {
         BrailleEntry(0b001111, "p", "\u09AA"),
         BrailleEntry(0b011111, "q", "\u0995\u09CD\u09B7"),
         BrailleEntry(0b010111, "r", "\u09B0"),
-        BrailleEntry(0b001100, "s", "\u0990"),
-        BrailleEntry(0b011100, "t", "\u0986"),
+        BrailleEntry(0b001100, null, "\u0990"),
+        BrailleEntry(0b011100, null, "\u0986"),
         BrailleEntry(0b100101, "u", "\u0989"),
         BrailleEntry(0b100111, "v", "\u09F1"),
         BrailleEntry(0b111010, "w", null),
         BrailleEntry(0b101101, "x", "\u09DF"),
         BrailleEntry(0b111101, "y", "\u09AF"),
         BrailleEntry(0b110101, "z", "\u09DC"),
-        BrailleEntry(0b001010, null, "\u0987"),
+        BrailleEntry(0b001010, "i", "\u0987"),
         BrailleEntry(0b010010, null, "\u099E"),
-        BrailleEntry(0b001110, null, "\u09B8"),
+        BrailleEntry(0b001110, "s", "\u09B8"),
         BrailleEntry(0b111111, null, "\u09A2"),
         BrailleEntry(0b100001, null, "\u099B"),
         BrailleEntry(0b100011, null, "\u0998"),
@@ -59,7 +59,7 @@ object BrailleDict {
         BrailleEntry(0b110100, null, "\u099D"),
         BrailleEntry(0b101011, null, "\u09A1"),
         BrailleEntry(0b010100, null, "\u0988"),
-        BrailleEntry(0b011110, null, "\u09A4"),
+        BrailleEntry(0b011110, "t", "\u09A4"),
         BrailleEntry(0b101000, null, "\u0996"),
         BrailleEntry(0b101100, null, "\u0999"),
         BrailleEntry(0b111110, null, "\u099F"),
@@ -77,7 +77,7 @@ object BrailleDict {
 
     val numberChords = listOf(
         0b000001, 0b000011, 0b001001, 0b011001, 0b010001,
-        0b001011, 0b011011, 0b010011, 0b001000, 0b011010
+        0b001011, 0b011011, 0b010011, 0b001010, 0b011010
     )
     val numberMap = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0")
 
