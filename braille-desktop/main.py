@@ -439,16 +439,28 @@ class BrailleBridgeWindow(QMainWindow):
             self.bridge.sig_event.emit(str(port or ''), str(kind or ''))
 
     def _initial_port_scan(self):
-        ports = self.relay.list_ports()
-        self._on_relay_ports(ports)
-        # Kick off a silent background Bluetooth scan on startup so BLE devices appear automatically
-        self._scan_bluetooth_clicked(silent=True)
+        def _init_bg():
+            ports = self.relay.list_ports()
+            self.bridge.sig_ports.emit(ports)
+            self.relay.scan_bluetooth(include_all_named=True)
+            ports2 = self.relay.list_ports()
+            self.bridge.sig_ports.emit(ports2)
+
+        threading.Thread(target=_init_bg, daemon=True).start()
 
     def _on_relay_ports(self, ports: list):
         self.available_ports = ports or []
         self._refresh_port_combos()
 
     def _on_relay_event(self, port_name: str, event: str):
+        if event == 'boot_loop':
+            msg = (
+                f"ESP32 on {port_name} is resetting in a boot loop — "
+                f"check USB cable/power and ensure Dot 2 (GPIO12) is not stuck pressed."
+            )
+            self.student_conn_info.setText(msg)
+            self.show_toast(msg)
+            return
         if port_name == self.student_port:
             if event == 'close':
                 self.student_connected = False
@@ -1916,25 +1928,38 @@ class BrailleBridgeWindow(QMainWindow):
                     s['lastChord'] = CHAR_TO_CHORD.get(ch, 0)
                     break
 
-        # Trigger typing animations: 6-dot pulse + newly typed character highlight flash
+        # Trigger typing animations: 6-dot pulse + O(1) incremental text append
         self._animate_dots_for_char(ch)
-        self._just_typed_flash = True
-        self._flash_seq += 1
-        seq = self._flash_seq
-        QTimer.singleShot(280, lambda s=seq: self._clear_typed_flash(s))
-        self._refresh_student_output_text()
+        self._append_live_text_fast(ch)
 
     def _clear_typed_flash(self, seq: int):
-        if seq == self._flash_seq and self._just_typed_flash:
-            self._just_typed_flash = False
-            self._refresh_student_output_text()
+        pass
 
     def _toggle_caret_blink(self):
-        if self.current_mode != 'student':
-            return
-        self._caret_visible = not self._caret_visible
-        if self.student_chars:
-            self._refresh_student_output_text()
+        pass
+
+    def _append_live_text_fast(self, ch: str):
+        """O(1) incremental append to QTextEdit without re-parsing HTML DOM on every keystroke."""
+        text_len = len(self.student_chars)
+        words = len(''.join(x['char'] for x in self.student_chars).split()) if text_len else 0
+        self.live_out_stats.setText(f"{words} words · {text_len} chars")
+        if hasattr(self, 'bento_words_val'):
+            self.bento_words_val.setText(str(words))
+            self.bento_chars_sub.setText(f"words · {text_len} chars")
+
+        cur = self.live_text_edit.textCursor()
+        cur.movePosition(QTextCursor.MoveOperation.End)
+        cur.insertText(ch)
+        self.live_text_edit.setTextCursor(cur)
+        sb = self.live_text_edit.verticalScrollBar()
+        if sb:
+            sb.setValue(sb.maximum())
+
+        if not self.student_recent:
+            self.recent_chars_lbl.setText("No characters yet")
+        else:
+            disp = ['␣' if c == ' ' else c for c in self.student_recent]
+            self.recent_chars_lbl.setText("  ".join(disp))
 
     def _animate_dots_for_char(self, ch: str):
         if ch == ' ':
@@ -1976,8 +2001,6 @@ class BrailleBridgeWindow(QMainWindow):
         self._refresh_student_output_text()
 
     def _refresh_student_output_text(self):
-        import html as _html
-        pal = ThemePalette.DARK if self.is_dark else ThemePalette.LIGHT
         text = ''.join(x['char'] for x in self.student_chars)
         words = len(text.split()) if text.strip() else 0
         self.live_out_stats.setText(f"{words} words · {len(self.student_chars)} chars")
@@ -1988,25 +2011,7 @@ class BrailleBridgeWindow(QMainWindow):
         if not text:
             self.live_text_edit.clear()
         else:
-            caret_col = pal['gold'] if self._caret_visible else 'transparent'
-            caret_html = f"<span style='color:{caret_col}; font-weight:bold;'>|</span>"
-            if self._just_typed_flash and len(text) >= 1:
-                prefix = _html.escape(text[:-1]).replace('\n', '<br>')
-                last_c = _html.escape(text[-1]).replace('\n', '<br>')
-                if last_c == ' ':
-                    last_c = '&nbsp;'
-                flash_html = (
-                    f"<span style='background-color:{pal['gold_bg']}; color:{pal['gold']}; "
-                    f"font-weight:bold; border-radius:4px;'>{last_c}</span>"
-                )
-                self.live_text_edit.setHtml(
-                    f"<div style='line-height:1.5; color:{pal['text_primary']};'>{prefix}{flash_html}{caret_html}</div>"
-                )
-            else:
-                safe = _html.escape(text).replace('\n', '<br>')
-                self.live_text_edit.setHtml(
-                    f"<div style='line-height:1.5; color:{pal['text_primary']};'>{safe}{caret_html}</div>"
-                )
+            self.live_text_edit.setPlainText(text)
         self.live_text_edit.moveCursor(QTextCursor.MoveOperation.End)
         sb = self.live_text_edit.verticalScrollBar()
         if sb:

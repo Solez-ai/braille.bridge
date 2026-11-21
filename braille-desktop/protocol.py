@@ -329,50 +329,63 @@ SYMBOL_SPEECH = {
 
 
 class SpeechEngine:
-    """Thread-safe TTS engine using a single worker & latest-only queue (no process spam)."""
+    """Zero-lag persistent Windows SAPI TTS worker (single background process, SpeakAsyncCancelAll)."""
 
     def __init__(self):
         self.enabled = True
         self._lock = threading.Lock()
-        self._pending: tuple[str, bool] | None = None
+        self._pending: str | None = None
         self._event = threading.Event()
         self._worker_started = False
+        self._proc = None
 
     def _ensure_worker(self):
         if self._worker_started:
             return
         self._worker_started = True
 
+        def _start_ps():
+            ps_script = (
+                "Add-Type -AssemblyName System.Speech; "
+                "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
+                "$s.Rate = 2; "
+                "while ($null -ne ($line = [Console]::In.ReadLine())) { "
+                "  if ($line.Length -gt 0) { "
+                "    $s.SpeakAsyncCancelAll(); "
+                "    $null = $s.SpeakAsync($line); "
+                "  } "
+                "}"
+            )
+            return subprocess.Popen(
+                ['powershell', '-NoProfile', '-WindowStyle', 'Hidden', '-Command', ps_script],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                encoding='utf-8',
+                creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
+            )
+
         def _loop():
             while True:
                 self._event.wait()
                 while True:
                     with self._lock:
-                        item = self._pending
+                        text = self._pending
                         self._pending = None
-                        if item is None:
+                        if text is None:
                             self._event.clear()
                             break
-                    text, _ = item
-                    if not self.enabled:
+                    if not self.enabled or sys.platform != 'win32':
                         continue
-                    if sys.platform == 'win32':
-                        try:
-                            safe = text.replace("'", "''").replace('"', '')
-                            cmd = (
-                                f"Add-Type -AssemblyName System.Speech; "
-                                f"$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
-                                f"$s.Rate = 1; $s.Speak('{safe}')"
-                            )
-                            subprocess.run(
-                                ['powershell', '-NoProfile', '-WindowStyle', 'Hidden', '-Command', cmd],
-                                stdout=subprocess.DEVNULL,
-                                stderr=subprocess.DEVNULL,
-                                timeout=6,
-                                creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
-                            )
-                        except Exception:
-                            pass
+                    try:
+                        if self._proc is None or self._proc.poll() is not None:
+                            self._proc = _start_ps()
+                        if self._proc.stdin:
+                            self._proc.stdin.write(text.replace('\n', ' ') + '\n')
+                            self._proc.stdin.flush()
+                    except Exception:
+                        self._proc = None
 
         threading.Thread(target=_loop, daemon=True).start()
 
@@ -390,5 +403,5 @@ class SpeechEngine:
 
         self._ensure_worker()
         with self._lock:
-            self._pending = (clean, is_bangla)
+            self._pending = clean
             self._event.set()

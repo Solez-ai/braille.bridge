@@ -576,9 +576,6 @@ class RelayManager:
         # 2. USB Serial COM Ports
         serial_ports = self._comports_raw()
         if not serial_ports:
-            time.sleep(0.1)
-            serial_ports = self._comports_raw()
-        if not serial_ports:
             registry_names = self._registry_ports()
             if registry_names:
                 serial_ports = [
@@ -913,6 +910,10 @@ class RelayManager:
         if any(tok in stripped for tok in ('ets ', 'rst:0x', 'boot:0x', 'configsip:', 'SPIWP:', 'load:0x', 'Jul 29 2019')):
             conn['boot_suppress'] = True
             conn['boot_suppress_until'] = time.monotonic() + 1.5
+            conn['boot_hits'] = conn.get('boot_hits', 0) + 1
+            if conn['boot_hits'] == 6 and not conn.get('boot_loop_notified'):
+                conn['boot_loop_notified'] = True
+                self.emit('boot_loop', port_name, None)
             return
         if conn['boot_suppress']:
             if stripped.startswith('entry 0x') or stripped.startswith('SYSTEM:'):
@@ -939,27 +940,29 @@ class RelayManager:
 
     # ------------------------------------------------------------ monitor loop
     def _monitor_loop(self):
-        """Auto-detect plugged USB devices and scan for nearby Bluetooth devices."""
+        """Auto-detect plugged USB devices and reconnect desired BLE/USB devices without radio spam."""
         last_dev_names = None
-        cycle = 0
         while not self._monitor_stop.is_set():
             try:
-                if cycle % 2 == 0:
-                    self.scan_bluetooth()
-                cycle += 1
-
-                ports = self.list_ports()
-                port_names = {p['name'] for p in ports}
-                if port_names != last_dev_names:
-                    last_dev_names = port_names
-                    self.emit('ports', None, ports)
-
                 with self._lock:
                     wanted = [
                         (name, c)
                         for name, c in self._conns.items()
                         if c.get('desired')
                     ]
+
+                need_ble_scan = any(
+                    c.get('is_ble') and (not c.get('client') or not c['client'].is_connected)
+                    for _, c in wanted
+                )
+                if need_ble_scan:
+                    self.scan_bluetooth()
+
+                ports = self.list_ports()
+                port_names = {p['name'] for p in ports}
+                if port_names != last_dev_names:
+                    last_dev_names = port_names
+                    self.emit('ports', None, ports)
 
                 for name, c in wanted:
                     if not c.get('is_ble'):
