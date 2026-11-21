@@ -329,17 +329,58 @@ SYMBOL_SPEECH = {
 
 
 class SpeechEngine:
-    """Asynchronous cross-platform TTS engine using Windows SAPI / PowerShell."""
+    """Thread-safe TTS engine using a single worker & latest-only queue (no process spam)."""
 
     def __init__(self):
         self.enabled = True
         self._lock = threading.Lock()
+        self._pending: tuple[str, bool] | None = None
+        self._event = threading.Event()
+        self._worker_started = False
+
+    def _ensure_worker(self):
+        if self._worker_started:
+            return
+        self._worker_started = True
+
+        def _loop():
+            while True:
+                self._event.wait()
+                while True:
+                    with self._lock:
+                        item = self._pending
+                        self._pending = None
+                        if item is None:
+                            self._event.clear()
+                            break
+                    text, _ = item
+                    if not self.enabled:
+                        continue
+                    if sys.platform == 'win32':
+                        try:
+                            safe = text.replace("'", "''").replace('"', '')
+                            cmd = (
+                                f"Add-Type -AssemblyName System.Speech; "
+                                f"$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
+                                f"$s.Rate = 1; $s.Speak('{safe}')"
+                            )
+                            subprocess.run(
+                                ['powershell', '-NoProfile', '-WindowStyle', 'Hidden', '-Command', cmd],
+                                stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL,
+                                timeout=6,
+                                creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
+                            )
+                        except Exception:
+                            pass
+
+        threading.Thread(target=_loop, daemon=True).start()
 
     def speak(self, text: str, is_bangla: bool = False):
         if not self.enabled or not text:
             return
         clean = str(text).strip()
-        if not clean:
+        if not clean or len(clean) > 120:
             return
         if len(clean) == 1:
             if 'A' <= clean <= 'Z':
@@ -347,23 +388,7 @@ class SpeechEngine:
             elif clean in SYMBOL_SPEECH:
                 clean = SYMBOL_SPEECH[clean]
 
-        def _worker():
-            if sys.platform == 'win32':
-                try:
-                    safe = clean.replace("'", "''").replace('"', '')
-                    cmd = (
-                        f"Add-Type -AssemblyName System.Speech; "
-                        f"$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
-                        f"$s.Rate = 1; $s.Speak('{safe}')"
-                    )
-                    subprocess.run(
-                        ['powershell', '-NoProfile', '-WindowStyle', 'Hidden', '-Command', cmd],
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL,
-                        timeout=6,
-                        creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
-                    )
-                except Exception:
-                    pass
-
-        threading.Thread(target=_worker, daemon=True).start()
+        self._ensure_worker()
+        with self._lock:
+            self._pending = (clean, is_bangla)
+            self._event.set()

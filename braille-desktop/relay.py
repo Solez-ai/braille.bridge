@@ -667,9 +667,15 @@ class RelayManager:
                 return True
             return False
 
-        # Connect via USB Serial
+        # Connect via USB Serial (explicitly keep DTR/RTS low so CH9102/CP2102 doesn't reset ESP32)
         try:
-            ser = serial.Serial(port_name, int(baud), timeout=0.1)
+            ser = serial.Serial()
+            ser.port = port_name
+            ser.baudrate = int(baud)
+            ser.timeout = 0.1
+            ser.dtr = False
+            ser.rts = False
+            ser.open()
         except Exception:
             return False
 
@@ -879,9 +885,13 @@ class RelayManager:
                 self._forward_line(port_name, conn, line)
             if buf:
                 rest, buf = buf, ''
-                if rest.startswith('ets '):
+                if any(tok in rest for tok in ('ets ', 'rst:0x', 'boot:0x', 'configsip:', 'SPIWP:', 'load:0x', 'entry 0x', 'Jul 29 2019')):
                     conn['boot_suppress'] = True
-                if conn['boot_suppress'] or rest.startswith(BOOT_PREFIXES):
+                    conn['boot_suppress_until'] = time.monotonic() + 1.5
+                    continue
+                if conn.get('boot_suppress') or time.monotonic() < conn.get('boot_suppress_until', 0.0):
+                    continue
+                if rest.startswith(BOOT_PREFIXES) or len(rest) > 8:
                     continue
                 self.emit('data', port_name, rest)
                 self._buffer_chars(conn, rest)
@@ -900,12 +910,16 @@ class RelayManager:
         stripped = line.strip()
         if not stripped:
             return
-        if stripped.startswith('ets '):
+        if any(tok in stripped for tok in ('ets ', 'rst:0x', 'boot:0x', 'configsip:', 'SPIWP:', 'load:0x', 'Jul 29 2019')):
             conn['boot_suppress'] = True
+            conn['boot_suppress_until'] = time.monotonic() + 1.5
             return
         if conn['boot_suppress']:
             if stripped.startswith('entry 0x') or stripped.startswith('SYSTEM:'):
                 conn['boot_suppress'] = False
+                conn['boot_suppress_until'] = 0.0
+                if stripped.startswith('entry 0x'):
+                    return
             else:
                 return
         if stripped.startswith(BOOT_PREFIXES):

@@ -115,6 +115,10 @@ class RelayBridge(QObject):
     sig_data = pyqtSignal(str, str)       # port_name, chunk
     sig_ports = pyqtSignal(list)          # list of port dicts
     sig_event = pyqtSignal(str, str)      # port_name, kind ('open'|'close'|'reconnect')
+    sig_scan_done = pyqtSignal(bool)      # silent
+    sig_student_conn_done = pyqtSignal(str, bool)  # port_name, ok
+    sig_roster_conn_done = pyqtSignal(int, bool, bool, str)  # student_id, is_disconnect, ok, port_name
+    sig_sim_char = pyqtSignal(int, str, int)  # student_id, ch, chord
 
 
 class BrailleDotButton(QPushButton):
@@ -322,6 +326,10 @@ class BrailleBridgeWindow(QMainWindow):
         self.bridge.sig_data.connect(self._on_relay_data)
         self.bridge.sig_ports.connect(self._on_relay_ports)
         self.bridge.sig_event.connect(self._on_relay_event)
+        self.bridge.sig_scan_done.connect(self._on_ble_scan_finished)
+        self.bridge.sig_student_conn_done.connect(self._on_student_conn_done)
+        self.bridge.sig_roster_conn_done.connect(self._on_roster_conn_done)
+        self.bridge.sig_sim_char.connect(self._on_sim_char)
 
         self.relay = RelayManager(self._relay_emit_callback)
 
@@ -1717,7 +1725,7 @@ class BrailleBridgeWindow(QMainWindow):
             self.relay.scan_bluetooth(include_all_named=True)
             ports = self.relay.list_ports()
             self.bridge.sig_ports.emit(ports)
-            QTimer.singleShot(0, lambda: self._on_ble_scan_finished(silent=silent))
+            self.bridge.sig_scan_done.emit(silent)
 
         threading.Thread(target=_worker, daemon=True).start()
 
@@ -1768,22 +1776,23 @@ class BrailleBridgeWindow(QMainWindow):
 
         def _worker():
             ok = self.relay.open_port(port_name, baud)
-            def _done():
-                self.btn_student_connect.setEnabled(True)
-                if ok:
-                    self.student_port = port_name
-                    self.student_connected = True
-                    self._set_student_expanded(True)
-                    self._update_student_conn_ui()
-                    self.show_toast(f"Connected to {port_name}!")
-                else:
-                    err = self.relay.ble.last_error or "Check that the device is powered on and nearby."
-                    self._update_student_conn_ui()
-                    self.student_conn_info.setText(f"Failed to connect to {port_name}.\n{err}")
-                    self.show_toast(f"Could not open {port_name}.")
-            QTimer.singleShot(0, _done)
+            self.bridge.sig_student_conn_done.emit(port_name, bool(ok))
 
         threading.Thread(target=_worker, daemon=True).start()
+
+    def _on_student_conn_done(self, port_name: str, ok: bool):
+        self.btn_student_connect.setEnabled(True)
+        if ok:
+            self.student_port = port_name
+            self.student_connected = True
+            self._set_student_expanded(True)
+            self._update_student_conn_ui()
+            self.show_toast(f"Connected to {port_name}!")
+        else:
+            err = self.relay.ble.last_error or "Check that the device is powered on and nearby."
+            self._update_student_conn_ui()
+            self.student_conn_info.setText(f"Failed to connect to {port_name}.\n{err}")
+            self.show_toast(f"Could not open {port_name}.")
 
     def _update_student_conn_ui(self):
         pal = ThemePalette.DARK if self.is_dark else ThemePalette.LIGHT
@@ -2168,51 +2177,63 @@ class BrailleBridgeWindow(QMainWindow):
         if student['connected']:
             student['connecting'] = True
             self._rebuild_teacher_ui()
+            sid = student['id']
 
             def _disc():
                 self.relay.close_port(port_name)
-                def _done():
-                    student['connected'] = False
-                    student['connecting'] = False
-                    self._rebuild_teacher_ui()
-                    self.show_toast(f"Disconnected {student['name']}.")
-                QTimer.singleShot(0, _done)
+                self.bridge.sig_roster_conn_done.emit(sid, True, True, port_name)
 
             threading.Thread(target=_disc, daemon=True).start()
         else:
             student['connecting'] = True
             self._rebuild_teacher_ui()
+            sid = student['id']
 
             def _conn():
                 ok = self.relay.open_port(port_name, student['baud'])
-                def _done():
-                    student['connecting'] = False
-                    if ok:
-                        student['connected'] = True
-                        self.relay.set_assignment(student['name'], port_name)
-                        self._rebuild_teacher_ui()
-                        self.show_toast(f"Connected {student['name']} ({port_name})!")
-                    else:
-                        self._rebuild_teacher_ui()
-                        self.show_toast(f"Could not connect {student['name']} to {port_name}.")
-                QTimer.singleShot(0, _done)
+                self.bridge.sig_roster_conn_done.emit(sid, False, bool(ok), port_name)
 
             threading.Thread(target=_conn, daemon=True).start()
 
+    def _on_roster_conn_done(self, student_id: int, is_disconnect: bool, ok: bool, port_name: str):
+        student = next((s for s in self.students if s['id'] == student_id), None)
+        if not student:
+            return
+        student['connecting'] = False
+        if is_disconnect:
+            student['connected'] = False
+            self._rebuild_teacher_ui()
+            self.show_toast(f"Disconnected {student['name']}.")
+        elif ok:
+            student['connected'] = True
+            self.relay.set_assignment(student['name'], port_name)
+            self._rebuild_teacher_ui()
+            self.show_toast(f"Connected {student['name']} ({port_name})!")
+        else:
+            self._rebuild_teacher_ui()
+            self.show_toast(f"Could not connect {student['name']} to {port_name}.")
+
     def _simulate_student_typing(self, student: dict):
         sample = "Science Notes\n\nChapter 1 Motion\n\nWhat is speed? Answer: Speed is distance divided by time. 20 + 30 = 50. Remember: Check your units!"
+        sid = student['id']
 
         def _sim():
             for ch in sample:
-                now_ms = int(time.time() * 1000)
-                student['chars'].append({'char': ch, 'time': now_ms})
-                student['lastChord'] = CHAR_TO_CHORD.get(ch, 0)
-                QTimer.singleShot(0, lambda s=student: self._update_single_student_card(s))
-                QTimer.singleShot(0, self._update_teacher_stats)
+                chord = CHAR_TO_CHORD.get(ch, 0)
+                self.bridge.sig_sim_char.emit(sid, ch, chord)
                 time.sleep(0.03)
             self._save_persisted_roster()
 
         threading.Thread(target=_sim, daemon=True).start()
+
+    def _on_sim_char(self, student_id: int, ch: str, chord: int):
+        student = next((s for s in self.students if s['id'] == student_id), None)
+        if not student:
+            return
+        student['chars'].append({'char': ch, 'time': int(time.time() * 1000)})
+        student['lastChord'] = chord
+        self._update_single_student_card(student)
+        self._update_teacher_stats()
 
     def _clear_single_student(self, student: dict):
         student['chars'].clear()
