@@ -1920,10 +1920,7 @@ class BrailleBridgeWindow(QMainWindow):
 
         # Speech feedback
         if ch == ' ':
-            full_txt = ''.join(x['char'] for x in self.student_chars).strip()
-            words = full_txt.split()
-            if words:
-                self.speech.speak(words[-1], self.is_bangla)
+            self.speech.speak('space', self.is_bangla)
         else:
             self.speech.speak(ch, self.is_bangla)
 
@@ -3388,6 +3385,8 @@ class BrailleBridgeWindow(QMainWindow):
 
     # ================================================================ KEYBOARD SHORTCUTS & BLE KEYBOARD CAPTURE
     def keyPressEvent(self, event: QKeyEvent):
+        if event.isAutoRepeat():
+            return
         focused = QApplication.focusWidget()
         if isinstance(focused, QLineEdit):
             super().keyPressEvent(event)

@@ -329,7 +329,7 @@ SYMBOL_SPEECH = {
 
 
 class SpeechEngine:
-    """Zero-lag persistent Windows SAPI TTS worker (single background process, SpeakAsyncCancelAll)."""
+    """Zero-lag persistent Windows SAPI TTS worker (synchronous Speak + dedup guard)."""
 
     def __init__(self):
         self.enabled = True
@@ -338,6 +338,8 @@ class SpeechEngine:
         self._event = threading.Event()
         self._worker_started = False
         self._proc = None
+        self._last_text = ''
+        self._last_ts = 0.0
 
     def _ensure_worker(self):
         if self._worker_started:
@@ -348,11 +350,10 @@ class SpeechEngine:
             ps_script = (
                 "Add-Type -AssemblyName System.Speech; "
                 "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
-                "$s.Rate = 2; "
+                "$s.Rate = 3; "
                 "while ($null -ne ($line = [Console]::In.ReadLine())) { "
                 "  if ($line.Length -gt 0) { "
-                "    $s.SpeakAsyncCancelAll(); "
-                "    $null = $s.SpeakAsync($line); "
+                "    $s.Speak($line); "
                 "  } "
                 "}"
             )
@@ -392,7 +393,7 @@ class SpeechEngine:
     def speak(self, text: str, is_bangla: bool = False):
         if not self.enabled or not text:
             return
-        clean = str(text).strip()
+        clean = 'space' if text == ' ' else str(text).strip()
         if not clean or len(clean) > 120:
             return
         if len(clean) == 1:
@@ -401,7 +402,13 @@ class SpeechEngine:
             elif clean in SYMBOL_SPEECH:
                 clean = SYMBOL_SPEECH[clean]
 
-        self._ensure_worker()
+        now = __import__('time').monotonic()
         with self._lock:
+            if clean == self._last_text and (now - self._last_ts) < 0.15:
+                return
+            self._last_text = clean
+            self._last_ts = now
             self._pending = clean
             self._event.set()
+
+        self._ensure_worker()
