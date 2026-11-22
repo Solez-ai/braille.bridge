@@ -319,11 +319,13 @@ class BrailleBridgeWindow(QMainWindow):
 
         # Build UI
         self._build_ui()
-        # Prevent QPushButtons / read-only widgets from stealing Spacebar clicks
-        for btn in self.findChildren(QPushButton):
-            btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        # Prevent buttons/dropdowns/scrollareas from stealing Spacebar or Enter clicks
+        from PyQt6.QtWidgets import QComboBox, QCheckBox, QScrollArea
+        for w in self.findChildren((QPushButton, QComboBox, QCheckBox, QScrollArea)):
+            w.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         if hasattr(self, 'live_text_edit'):
             self.live_text_edit.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self._apply_theme()
 
         # Initialize RelayManager with thread-safe signal bridge
@@ -3407,6 +3409,7 @@ class BrailleBridgeWindow(QMainWindow):
             # When connected via USB Serial or BLE NUS, ignore OS HID keystrokes so
             # BLE HID + Serial/NUS never double-type the same character.
             if self.student_connected and self.student_port != "KEYBOARD":
+                event.accept()
                 return
             if key == Qt.Key.Key_Backspace:
                 self._student_backspace()
