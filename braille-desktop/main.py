@@ -319,6 +319,11 @@ class BrailleBridgeWindow(QMainWindow):
 
         # Build UI
         self._build_ui()
+        # Prevent QPushButtons / read-only widgets from stealing Spacebar clicks
+        for btn in self.findChildren(QPushButton):
+            btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        if hasattr(self, 'live_text_edit'):
+            self.live_text_edit.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self._apply_theme()
 
         # Initialize RelayManager with thread-safe signal bridge
@@ -3399,6 +3404,10 @@ class BrailleBridgeWindow(QMainWindow):
             return
 
         if self.current_mode == 'student':
+            # When connected via USB Serial or BLE NUS, ignore OS HID keystrokes so
+            # BLE HID + Serial/NUS never double-type the same character.
+            if self.student_connected and self.student_port != "KEYBOARD":
+                return
             if key == Qt.Key.Key_Backspace:
                 self._student_backspace()
                 return
