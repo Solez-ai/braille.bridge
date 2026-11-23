@@ -329,12 +329,13 @@ SYMBOL_SPEECH = {
 
 
 class SpeechEngine:
-    """Zero-lag persistent Windows SAPI TTS worker (synchronous Speak + dedup guard)."""
+    """Zero-lag persistent Windows SAPI TTS worker with PCM software Sound Booster (100%-300%)."""
 
     def __init__(self):
         self.enabled = True
+        self.boost_pct = 200  # Default 200% (2x software gain over SAPI 100%)
         self._lock = threading.Lock()
-        self._pending: str | None = None
+        self._pending: tuple[str, int] | None = None
         self._event = threading.Event()
         self._worker_started = False
         self._proc = None
@@ -351,9 +352,39 @@ class SpeechEngine:
                 "Add-Type -AssemblyName System.Speech; "
                 "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
                 "$s.Rate = 3; "
+                "$s.Volume = 100; "
                 "while ($null -ne ($line = [Console]::In.ReadLine())) { "
-                "  if ($line.Length -gt 0) { "
-                "    $s.Speak($line); "
+                "  $sep = $line.IndexOf('|'); "
+                "  if ($sep -lt 1) { continue } "
+                "  $boost = [int]$line.Substring(0, $sep); "
+                "  $txt = $line.Substring($sep + 1); "
+                "  if ($txt.Length -le 0) { continue } "
+                "  if ($boost -le 100) { "
+                "    $s.Volume = [Math]::Max(10, $boost); "
+                "    $s.SetOutputToDefaultAudioDevice(); "
+                "    $s.Speak($txt); "
+                "  } else { "
+                "    $s.Volume = 100; "
+                "    $ms = New-Object System.IO.MemoryStream; "
+                "    $s.SetOutputToWaveStream($ms); "
+                "    $s.Speak($txt); "
+                "    $bytes = $ms.ToArray(); "
+                "    $ms.Dispose(); "
+                "    if ($bytes.Length -gt 44) { "
+                "      $gain = $boost / 100.0; "
+                "      for ($i = 44; $i -lt ($bytes.Length - 1); $i += 2) { "
+                "        $sample = [BitConverter]::ToInt16($bytes, $i); "
+                "        $amp = [int][Math]::Round($sample * $gain); "
+                "        if ($amp -gt 32767) { $amp = 32767 } elseif ($amp -lt -32768) { $amp = -32768 } "
+                "        $bytes[$i] = $amp -band 0xFF; "
+                "        $bytes[$i + 1] = ($amp -shr 8) -band 0xFF; "
+                "      } "
+                "      $playMs = New-Object System.IO.MemoryStream(,$bytes); "
+                "      $sp = New-Object System.Media.SoundPlayer($playMs); "
+                "      $sp.PlaySync(); "
+                "      $sp.Dispose(); "
+                "      $playMs.Dispose(); "
+                "    } "
                 "  } "
                 "}"
             )
@@ -372,18 +403,20 @@ class SpeechEngine:
                 self._event.wait()
                 while True:
                     with self._lock:
-                        text = self._pending
+                        item = self._pending
                         self._pending = None
-                        if text is None:
+                        if item is None:
                             self._event.clear()
                             break
+                    text, boost = item
                     if not self.enabled or sys.platform != 'win32':
                         continue
                     try:
                         if self._proc is None or self._proc.poll() is not None:
                             self._proc = _start_ps()
                         if self._proc.stdin:
-                            self._proc.stdin.write(text.replace('\n', ' ') + '\n')
+                            clean_line = text.replace('\n', ' ').replace('|', ' ')
+                            self._proc.stdin.write(f"{boost}|{clean_line}\n")
                             self._proc.stdin.flush()
                     except Exception:
                         self._proc = None
@@ -408,7 +441,7 @@ class SpeechEngine:
                 return
             self._last_text = clean
             self._last_ts = now
-            self._pending = clean
+            self._pending = (clean, int(self.boost_pct))
             self._event.set()
 
         self._ensure_worker()

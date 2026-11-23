@@ -357,6 +357,8 @@ class BrailleBridgeWindow(QMainWindow):
                     self.is_dark = bool(cfg['is_dark'])
                 if 'speech_enabled' in cfg:
                     self.speech.enabled = bool(cfg['speech_enabled'])
+                if 'sound_boost_pct' in cfg:
+                    self.speech.boost_pct = max(100, min(300, int(cfg['sound_boost_pct'])))
                 if 'chord_debounce_ms' in cfg:
                     self.chord_debounce_ms = max(5, min(50, int(cfg['chord_debounce_ms'])))
                 if 'chord_window_ms' in cfg:
@@ -403,6 +405,7 @@ class BrailleBridgeWindow(QMainWindow):
                     'teacher_email': self.teacher_email,
                     'is_dark': self.is_dark,
                     'speech_enabled': self.speech.enabled,
+                    'sound_boost_pct': self.speech.boost_pct,
                     'chord_debounce_ms': self.chord_debounce_ms,
                     'chord_window_ms': self.chord_window_ms,
                 }, f, ensure_ascii=False, indent=2)
@@ -918,6 +921,14 @@ class BrailleBridgeWindow(QMainWindow):
         self.btn_student_sound_toggle.setFixedHeight(32)
         self.btn_student_sound_toggle.clicked.connect(self._toggle_speech)
         ba_btns.addWidget(self.btn_student_sound_toggle)
+
+        # Software Sound Booster button (100% -> 150% -> 200% -> 250% -> 300%)
+        self.btn_sound_boost = QPushButton(f"Boost {self.speech.boost_pct}%")
+        self.btn_sound_boost.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_sound_boost.setFixedHeight(32)
+        self.btn_sound_boost.setToolTip("Amplify speech volume (100% to 300%)")
+        self.btn_sound_boost.clicked.connect(self._cycle_sound_boost)
+        ba_btns.addWidget(self.btn_sound_boost)
 
         # Expand / Maximize Student View button
         self.btn_expand_student_view = QPushButton("Expand")
@@ -2029,7 +2040,19 @@ class BrailleBridgeWindow(QMainWindow):
 
     def _toggle_speech(self):
         self.speech.enabled = not self.speech.enabled
+        self._save_settings()
         self._update_student_indicators()
+
+    def _cycle_sound_boost(self):
+        steps = [100, 150, 200, 250, 300]
+        cur = self.speech.boost_pct
+        nxt = next((v for v in steps if v > cur), steps[0])
+        self.speech.boost_pct = nxt
+        self._save_settings()
+        self._update_student_indicators()
+        self.show_toast(f"Sound Booster set to {nxt}%")
+        if self.speech.enabled:
+            self.speech.speak(f"boost {nxt} percent")
 
     def _toggle_language(self):
         self.is_bangla = not self.is_bangla
@@ -2095,6 +2118,16 @@ class BrailleBridgeWindow(QMainWindow):
             self.btn_student_sound_toggle.setStyleSheet(
                 f"background-color: {pal['bg_surface']}; color: {muted}; "
                 f"border: 1px solid {pal['border']}; border-radius: 10px; padding: 4px 12px; font-weight: 600;"
+            )
+        if hasattr(self, 'btn_sound_boost'):
+            bp = self.speech.boost_pct
+            self.btn_sound_boost.setText(f"Boost {bp}%")
+            boosted = bp > 100
+            self.btn_sound_boost.setStyleSheet(
+                f"background-color: {pal['gold_bg'] if boosted else pal['bg_surface']}; "
+                f"color: {pal['gold'] if boosted else muted}; "
+                f"border: {'1.5px solid ' + pal['gold'] if boosted else '1px solid ' + pal['border']}; "
+                f"border-radius: 10px; padding: 4px 10px; font-weight: {'bold' if boosted else '600'};"
             )
 
     def _translate_student_live(self):
