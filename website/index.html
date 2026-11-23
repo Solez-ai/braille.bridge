@@ -14,14 +14,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Noto+Serif:wght@400;600;700;800&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link href="https://db.onlinewebfonts.com/c/7b2f4e99395dcee2673f41661274a830?family=Garet+W05+Regular" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
-      }
-    }
-  </script>
 </head>
 <body class="is-loading nav-pending">
 
@@ -629,66 +621,59 @@
             </dl>
           </div>
 
-          <!-- Rectangle 1: KiCad 3D Viewer -->
+          <!-- Rectangle 1: KiCad 3D Raytraced Views -->
           <div class="kicad-window">
             <div class="kicad-titlebar">
               <span class="kicad-title-dot" aria-hidden="true"></span>
-              <span class="kicad-title-text">bb1_wiring_board_v2.kicad_pcb &mdash; 3D Viewer</span>
-              <span class="kicad-title-hint">Drag: Orbit &middot; Right-drag: Pan &middot; Scroll: Zoom &middot; Click: Inspect</span>
+              <span class="kicad-title-text">bb1_wiring_board_v2.kicad_pcb &mdash; 3D Viewer (Raytraced Renders)</span>
+              <span class="kicad-title-hint">Switch angle in toolbar or Appearance panel</span>
             </div>
 
-            <div class="kicad-toolbar" role="toolbar" aria-label="3D Viewer toolbar">
+            <div class="kicad-toolbar" role="toolbar" aria-label="3D PCB render angles">
               <div class="kicad-tool-group">
-                <button type="button" class="kicad-tbtn" id="pcb3dZoomIn" title="Zoom in">
-                  <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14M7 5v4M5 7h4"/></svg>
-                </button>
-                <button type="button" class="kicad-tbtn" id="pcb3dZoomOut" title="Zoom out">
-                  <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14M5 7h4"/></svg>
-                </button>
-                <button type="button" class="kicad-tbtn" data-pcb3d-view="reset" title="Reset view">
-                  <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6V3h3M13 6V3h-3M3 10v3h3M13 10v3h-3"/></svg>
-                </button>
+                <button type="button" class="kicad-tbtn kicad-tbtn-txt active" data-pcb3d-angle="iso">Isometric</button>
+                <button type="button" class="kicad-tbtn kicad-tbtn-txt" data-pcb3d-angle="top">Top (Z)</button>
+                <button type="button" class="kicad-tbtn kicad-tbtn-txt" data-pcb3d-angle="bottom">Bottom (-Z)</button>
+                <button type="button" class="kicad-tbtn kicad-tbtn-txt" data-pcb3d-angle="esp32">ESP32 Clearance</button>
               </div>
               <span class="kicad-tsep" aria-hidden="true"></span>
-              <div class="kicad-tool-group">
-                <button type="button" class="kicad-tbtn kicad-tbtn-txt active" data-pcb3d-view="iso">Iso</button>
-                <button type="button" class="kicad-tbtn kicad-tbtn-txt" data-pcb3d-view="top">Top (Z)</button>
-                <button type="button" class="kicad-tbtn kicad-tbtn-txt" data-pcb3d-view="bottom">Bottom (-Z)</button>
-                <button type="button" class="kicad-tbtn kicad-tbtn-txt" id="pcb3dAutoBtn" aria-pressed="false">Orbit</button>
-              </div>
+              <span class="kicad-toolbar-readout">KiCad Raytracer &middot; 66.0 &times; 41.0 &times; 1.2 mm</span>
             </div>
 
             <div class="kicad-workspace">
-              <div class="pcb-viewport pcb-viewport-3d cursor-move" id="pcb3dViewport" aria-label="Interactive 3D view of BrailleBridge BB1 Wiring Board v2">
-                <div class="pcb-loading" id="pcb3dLoading">Loading 3D PCB model (4.9 MB)&hellip;</div>
+              <div class="pcb-viewport pcb-viewport-3d-img" id="pcb3dViewport">
+                <img
+                  id="pcb3dRenderImg"
+                  class="pcb3d-render-img"
+                  src="assets/pcb/view_iso_3d.png"
+                  alt="KiCad 3D raytraced isometric render of BrailleBridge BB1 Wiring Board v2"
+                />
               </div>
 
-              <aside class="kicad-dock" aria-label="3D Appearance panel">
-                <div class="kicad-dock-head">Appearance</div>
+              <aside class="kicad-dock" aria-label="3D Render Views">
+                <div class="kicad-dock-head">3D Views</div>
                 <div class="kicad-dock-sec">
-                  <div class="kicad-dock-label">Visibility</div>
-                  <label class="kicad-check"><input type="checkbox" id="pcb3dVisModels" checked /><span>3D Models (Headers / D1)</span></label>
-                  <label class="kicad-check"><input type="checkbox" id="pcb3dVisMask" checked /><span>Solder Mask (Green)</span></label>
-                  <label class="kicad-check"><input type="checkbox" id="pcb3dVisSilk" checked /><span>Silkscreen</span></label>
-                  <label class="kicad-check"><input type="checkbox" id="pcb3dVisShadow" checked /><span>Ground Shadow</span></label>
+                  <div class="kicad-dock-label">Camera Presets</div>
+                  <div class="kicad-part-list" role="group" aria-label="3D render camera presets">
+                    <button type="button" class="kicad-part-row active" data-pcb3d-angle="iso"><i class="k-sw k-sw-board"></i>Isometric 3D</button>
+                    <button type="button" class="kicad-part-row" data-pcb3d-angle="top"><i class="k-sw k-sw-silk"></i>Top View (F.Cu)</button>
+                    <button type="button" class="kicad-part-row" data-pcb3d-angle="bottom"><i class="k-sw k-sw-gold"></i>Bottom View (B.Cu)</button>
+                    <button type="button" class="kicad-part-row" data-pcb3d-angle="esp32"><i class="k-sw k-sw-hdr"></i>ESP32 Clearance</button>
+                  </div>
                 </div>
                 <div class="kicad-dock-sec">
-                  <div class="kicad-dock-label">Inspect Component</div>
-                  <div class="kicad-part-list" role="group" aria-label="Inspect PCB components">
-                    <button type="button" class="kicad-part-row active" data-pcb-part="board"><i class="k-sw k-sw-board"></i>Board Overview</button>
-                    <button type="button" class="kicad-part-row" data-pcb-part="esp32"><i class="k-sw k-sw-hdr"></i>J2, J4 &middot; ESP32 1&times;19</button>
-                    <button type="button" class="kicad-part-row" data-pcb-part="switches"><i class="k-sw k-sw-gold"></i>J1 &middot; Switch 1&times;16</button>
-                    <button type="button" class="kicad-part-row" data-pcb-part="power"><i class="k-sw k-sw-gold"></i>J3 &middot; Power 1&times;4</button>
-                    <button type="button" class="kicad-part-row" data-pcb-part="diode"><i class="k-sw k-sw-hdr"></i>D1 &middot; 1N5819</button>
-                    <button type="button" class="kicad-part-row" data-pcb-part="mounts"><i class="k-sw k-sw-mount"></i>H1, H2 &middot; M2 Mounts</button>
-                  </div>
+                  <div class="kicad-dock-label">Board Specs</div>
+                  <div class="kicad-info-kv"><span>Size</span><b>66.0 &times; 41.0 mm</b></div>
+                  <div class="kicad-info-kv"><span>ESP32</span><b>20.3 mm spacing</b></div>
+                  <div class="kicad-info-kv"><span>Diode</span><b>D1 1N5819</b></div>
+                  <div class="kicad-info-kv"><span>DRC/ERC</span><b>0 errors</b></div>
                 </div>
               </aside>
             </div>
 
             <div class="kicad-statusbar">
-              <span class="kicad-status-main" id="pcb3dStatus">66.0 &times; 41.0 &times; 1.2 mm &middot; Ready to orbit &amp; inspect</span>
-              <span class="kicad-status-meta">Projection: Perspective &middot; Units: mm</span>
+              <span class="kicad-status-main" id="pcb3dStatus">Isometric 3D &middot; J2/J4 ESP32 sockets, J1 8&times; switch header, J3 power header, D1 1N5819</span>
+              <span class="kicad-status-meta">KiCad 3D Raytracer &middot; Units: mm</span>
             </div>
           </div>
 
@@ -1501,6 +1486,6 @@
 
   <script src="gradient-ascii.js"></script>
   <script src="script.js"></script>
-  <script type="module" src="pcb-viewer.js"></script>
+  <script src="pcb-viewer.js"></script>
 </body>
 </html>
