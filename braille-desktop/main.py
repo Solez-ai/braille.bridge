@@ -65,48 +65,54 @@ def get_initials(name: str) -> str:
 
 
 class ThemePalette:
-    """Design system tokens matching BrailleBridge Dark & Warm Cream Light modes."""
+    """Official BrailleBridge design tokens — Midnight Navy primary, Cream/White paper, Bridge Orange accents."""
 
     DARK = {
-        'bg_window': '#141416',
-        'bg_panel': '#1d1d1f',
-        'bg_card': '#232325',
-        'bg_surface': '#2a2a2d',
-        'bg_hover': '#333336',
-        'border': '#343438',
-        'text_primary': '#f5f5f7',
-        'text_secondary': '#a1a1a6',
-        'text_muted': '#71717a',
-        'gold': '#d29a4a',
-        'gold_light': '#e3b877',
-        'gold_dark': '#a97c34',
-        'gold_bg': '#2e2518',
-        'red': '#e05252',
-        'green': '#4fbf6a',
-        'blue': '#5b8ee0',
-        'teal': '#4ac8b8',
-        'purple': '#8a6ad4',
+        'bg_window': '#000B29',
+        'bg_desk': '#00081F',
+        'bg_panel': '#001242',
+        'bg_card': '#0A1D4E',
+        'bg_surface': '#0F2764',
+        'bg_hover': '#16337D',
+        'border': '#1E3A7A',
+        'navy': '#0A2463',
+        'navy_dark': '#001242',
+        'text_primary': '#FFFDF9',
+        'text_secondary': '#CBD5E1',
+        'text_muted': '#94A3B8',
+        'gold': '#FF7315',
+        'gold_light': '#FF944D',
+        'gold_dark': '#E05E06',
+        'gold_bg': '#2B180A',
+        'red': '#EF4444',
+        'green': '#22C55E',
+        'blue': '#60A5FA',
+        'teal': '#2DD4BF',
+        'purple': '#A78BFA',
     }
 
     LIGHT = {
-        'bg_window': '#f7f5f0',
-        'bg_panel': '#ffffff',
-        'bg_card': '#faf8f3',
-        'bg_surface': '#efece6',
-        'bg_hover': '#e4e0d8',
-        'border': '#d0ccc4',
-        'text_primary': '#1d1d1f',
-        'text_secondary': '#55555c',
-        'text_muted': '#827e77',
-        'gold': '#b58d3d',
-        'gold_light': '#f3e8d2',
-        'gold_dark': '#7a5918',
-        'gold_bg': '#f3e8d2',
-        'red': '#d44242',
-        'green': '#2e9e49',
-        'blue': '#2563eb',
-        'teal': '#0d9488',
-        'purple': '#7c3aed',
+        'bg_window': '#FAF6F0',
+        'bg_desk': '#EDF1FA',
+        'bg_panel': '#FFFDF9',
+        'bg_card': '#FFFDF9',
+        'bg_surface': '#F3ECE1',
+        'bg_hover': '#E7EBF5',
+        'border': '#D0D8EA',
+        'navy': '#001242',
+        'navy_dark': '#000B29',
+        'text_primary': '#001242',
+        'text_secondary': '#334155',
+        'text_muted': '#64748B',
+        'gold': '#FF7315',
+        'gold_light': '#FFE5D3',
+        'gold_dark': '#E05E06',
+        'gold_bg': '#FFF0E5',
+        'red': '#DC2626',
+        'green': '#16A34A',
+        'blue': '#0A2463',
+        'teal': '#0D9488',
+        'purple': '#6D28D9',
     }
 
 
@@ -290,6 +296,8 @@ class BrailleBridgeWindow(QMainWindow):
         # Teacher roster state
         self.students = []             # list of student dicts
         self.student_id_seq = 1
+        self.active_teacher_student_id = None
+        self.braille_pad_visible = False
         self.available_ports = []
 
         # Logs state (persisted per-student log records)
@@ -609,7 +617,7 @@ class BrailleBridgeWindow(QMainWindow):
         modes = [
             ('student', 'Student'),
             ('teacher', 'Teacher'),
-            ('logs', 'Logs'),
+            ('logs', 'Exports'),
             ('learn', 'Learn'),
         ]
         for key, label in modes:
@@ -683,83 +691,142 @@ class BrailleBridgeWindow(QMainWindow):
         self.toast_lbl.hide()
         self.root_layout.addWidget(self.toast_lbl)
 
-    # ---------------------------------------------------------------- VIEW 1: STUDENT
+    # ---------------------------------------------------------------- VIEW 1: STUDENT (Microsoft Word Document Workspace)
     def _build_student_view(self) -> QWidget:
         page = QWidget()
-        self.student_main_layout = QHBoxLayout(page)
-        self.student_main_layout.setContentsMargins(0, 0, 0, 0)
-        self.student_main_layout.setSpacing(16)
+        root = QVBoxLayout(page)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(10)
 
-        # Left column: Connection Card + 6-Dot Braille Pad Card
-        self.student_left_panel = QWidget()
-        self.student_left_panel.setFixedWidth(368)
-        left_layout = QVBoxLayout(self.student_left_panel)
-        left_layout.setContentsMargins(0, 0, 0, 0)
-        left_layout.setSpacing(12)
+        # 1. Word-style Top Ribbon (Connection + Audio + Script + Document Actions)
+        ribbon = QFrame()
+        ribbon.setProperty("card", True)
+        rib_lay = QVBoxLayout(ribbon)
+        rib_lay.setContentsMargins(14, 10, 14, 10)
+        rib_lay.setSpacing(8)
 
-        # 1) Connection Card
-        conn_card = QFrame()
-        conn_card.setProperty("card", True)
-        conn_lay = QVBoxLayout(conn_card)
-        conn_lay.setContentsMargins(16, 14, 16, 14)
-        conn_lay.setSpacing(10)
+        # Row 1: Device & Connection
+        row1 = QHBoxLayout()
+        row1.setSpacing(8)
 
-        conn_title = SectionHeader("bluetooth", "BLUETOOTH & SERIAL CONNECTION")
-        self._section_headers.append(conn_title)
-        conn_lay.addWidget(conn_title)
-
-        port_row = QHBoxLayout()
         self.student_port_combo = QComboBox()
-        self.student_port_combo.setMinimumHeight(34)
-        port_row.addWidget(self.student_port_combo, 1)
+        self.student_port_combo.setMinimumWidth(220)
+        self.student_port_combo.setFixedHeight(32)
+        row1.addWidget(self.student_port_combo, 1)
 
         self.btn_scan_ble = QPushButton("Scan BLE")
         self.btn_scan_ble.setIconSize(QSize(14, 14))
         self.btn_scan_ble.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_scan_ble.setFixedHeight(34)
+        self.btn_scan_ble.setFixedHeight(32)
         self.btn_scan_ble.clicked.connect(self._scan_bluetooth_clicked)
-        port_row.addWidget(self.btn_scan_ble)
-        conn_lay.addLayout(port_row)
+        row1.addWidget(self.btn_scan_ble)
 
-        baud_row = QHBoxLayout()
-        baud_lbl = QLabel("Baud Rate:")
-        baud_lbl.setProperty("muted", True)
-        baud_row.addWidget(baud_lbl)
         self.student_baud_combo = QComboBox()
         for b in ["115200", "9600", "57600", "38400"]:
             self.student_baud_combo.addItem(f"{b} baud", int(b))
         self.student_baud_combo.setFixedHeight(32)
-        baud_row.addWidget(self.student_baud_combo, 1)
-        conn_lay.addLayout(baud_row)
+        row1.addWidget(self.student_baud_combo)
 
         self.btn_student_connect = QPushButton("Connect Device")
-        self.btn_student_connect.setIconSize(QSize(15, 15))
+        self.btn_student_connect.setIconSize(QSize(14, 14))
         self.btn_student_connect.setProperty("primary", True)
         self.btn_student_connect.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_student_connect.setFixedHeight(38)
+        self.btn_student_connect.setFixedHeight(32)
         self.btn_student_connect.clicked.connect(self._toggle_student_connection)
-        conn_lay.addWidget(self.btn_student_connect)
+        row1.addWidget(self.btn_student_connect)
 
-        self.btn_send_to_teacher = QPushButton("Send to Teacher Roster")
+        self.btn_send_to_teacher = QPushButton("Mirror to Teacher")
         self.btn_send_to_teacher.setIconSize(QSize(14, 14))
         self.btn_send_to_teacher.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_send_to_teacher.setFixedHeight(34)
+        self.btn_send_to_teacher.setFixedHeight(32)
         self.btn_send_to_teacher.clicked.connect(self._send_to_teacher_clicked)
-        conn_lay.addWidget(self.btn_send_to_teacher)
+        row1.addWidget(self.btn_send_to_teacher)
 
-        self.student_conn_info = QLabel(
-            "Ready to connect over Bluetooth LE (Nordic UART),\n"
-            "Paired Bluetooth Keyboard, or USB Serial."
-        )
-        self.student_conn_info.setWordWrap(True)
-        self.student_conn_info.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
-        self.student_conn_info.setProperty("infoBox", True)
-        conn_lay.addWidget(self.student_conn_info)
+        self.student_conn_info = QLabel("Ready · BLE / USB / Keyboard")
+        self.student_conn_info.setProperty("muted", True)
+        row1.addWidget(self.student_conn_info)
+        rib_lay.addLayout(row1)
 
-        conn_card.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
-        left_layout.addWidget(conn_card)
+        # Row 2: Audio, Script, Braille Pad Drawer Toggle, Document Actions
+        row2 = QHBoxLayout()
+        row2.setSpacing(8)
 
-        # 2) 6-Dot Braille Cell Card
+        self.btn_student_sound_toggle = QPushButton("Sound ON")
+        self.btn_student_sound_toggle.setIconSize(QSize(14, 14))
+        self.btn_student_sound_toggle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_student_sound_toggle.setFixedHeight(30)
+        self.btn_student_sound_toggle.clicked.connect(self._toggle_speech)
+        row2.addWidget(self.btn_student_sound_toggle)
+
+        self.btn_sound_boost = QPushButton(f"Boost {self.speech.boost_pct}%")
+        self.btn_sound_boost.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_sound_boost.setFixedHeight(30)
+        self.btn_sound_boost.setToolTip("Amplify speech volume (100% to 300%)")
+        self.btn_sound_boost.clicked.connect(self._cycle_sound_boost)
+        row2.addWidget(self.btn_sound_boost)
+
+        self.btn_ind_lang = QPushButton("English")
+        self.btn_ind_lang.setIconSize(QSize(13, 13))
+        self.btn_ind_lang.setFixedHeight(30)
+        self.btn_ind_lang.clicked.connect(self._toggle_language)
+        row2.addWidget(self.btn_ind_lang)
+
+        self.btn_ind_caps = QPushButton("Caps OFF")
+        self.btn_ind_caps.setFixedHeight(30)
+        self.btn_ind_caps.clicked.connect(self._cycle_caps_mode)
+        row2.addWidget(self.btn_ind_caps)
+
+        self.btn_ind_shift = QPushButton("Shift")
+        self.btn_ind_shift.setIconSize(QSize(13, 13))
+        self.btn_ind_shift.setFixedHeight(30)
+        self.btn_ind_shift.clicked.connect(self._toggle_shift)
+        row2.addWidget(self.btn_ind_shift)
+
+        row2.addStretch(1)
+
+        self.btn_toggle_pad = QPushButton("Braille Pad")
+        self.btn_toggle_pad.setIconSize(QSize(14, 14))
+        self.btn_toggle_pad.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_toggle_pad.setFixedHeight(30)
+        self.btn_toggle_pad.clicked.connect(self._toggle_braille_pad_drawer)
+        row2.addWidget(self.btn_toggle_pad)
+
+        self.btn_expand_student_view = QPushButton("Zoom")
+        self.btn_expand_student_view.setIconSize(QSize(14, 14))
+        self.btn_expand_student_view.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_expand_student_view.setFixedHeight(30)
+        self.btn_expand_student_view.clicked.connect(self._toggle_student_full_expand)
+        row2.addWidget(self.btn_expand_student_view)
+
+        self.btn_student_export_all = QPushButton("Save to Exports")
+        self.btn_student_export_all.setIconSize(QSize(14, 14))
+        self.btn_student_export_all.setProperty("primary", True)
+        self.btn_student_export_all.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_student_export_all.setFixedHeight(30)
+        self.btn_student_export_all.clicked.connect(self.export_all_to_logs)
+        row2.addWidget(self.btn_student_export_all)
+
+        self.btn_student_clear = QPushButton("Clear")
+        self.btn_student_clear.setIconSize(QSize(14, 14))
+        self.btn_student_clear.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_student_clear.setFixedHeight(30)
+        self.btn_student_clear.clicked.connect(self._clear_student_display)
+        row2.addWidget(self.btn_student_clear)
+
+        rib_lay.addLayout(row2)
+        root.addWidget(ribbon)
+
+        # 2. Document Body: Optional Left Braille Pad Drawer + Centered Word Paper Sheet
+        body_row = QHBoxLayout()
+        body_row.setContentsMargins(0, 0, 0, 0)
+        body_row.setSpacing(14)
+
+        self.student_left_panel = QWidget()
+        self.student_left_panel.setFixedWidth(310)
+        left_layout = QVBoxLayout(self.student_left_panel)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setSpacing(10)
+
         cell_card = QFrame()
         cell_card.setProperty("card", True)
         cell_lay = QVBoxLayout(cell_card)
@@ -767,23 +834,18 @@ class BrailleBridgeWindow(QMainWindow):
         cell_lay.setSpacing(10)
 
         cell_hdr = QHBoxLayout()
-        cell_hdr.setContentsMargins(0, 0, 0, 0)
-        cell_title = SectionHeader("braille", "6-DOT BRAILLE CELL")
-        cell_title.setFixedHeight(22)
+        cell_title = SectionHeader("braille", "6-DOT BRAILLE PAD")
         self._section_headers.append(cell_title)
         cell_hdr.addWidget(cell_title)
         cell_hdr.addStretch(1)
-        self.chord_preview_lbl = QLabel("Pattern: None  ->  -")
-        self.chord_preview_lbl.setFixedHeight(22)
-        self.chord_preview_lbl.setFont(ui_font(10, QFont.Weight.Bold))
-        cell_hdr.addWidget(self.chord_preview_lbl)
         cell_lay.addLayout(cell_hdr)
 
-        cell_lay.addStretch(1)
+        self.chord_preview_lbl = QLabel("Pattern: None  ->  -")
+        self.chord_preview_lbl.setFont(ui_font(10, QFont.Weight.Bold))
+        cell_lay.addWidget(self.chord_preview_lbl)
 
-        # 2x3 Grid of Dot Buttons (1,2,3 left; 4,5,6 right)
         dots_grid = QGridLayout()
-        dots_grid.setHorizontalSpacing(28)
+        dots_grid.setHorizontalSpacing(24)
         dots_grid.setVerticalSpacing(12)
         self.dot_buttons = {}
         for d in range(1, 7):
@@ -800,293 +862,162 @@ class BrailleBridgeWindow(QMainWindow):
         dots_wrap.addStretch(1)
         cell_lay.addLayout(dots_wrap)
 
-        cell_lay.addStretch(1)
-
-        # Commit / Space / Backspace buttons
         act_row = QHBoxLayout()
         act_row.setSpacing(6)
         self.btn_commit_chord = QPushButton("Commit")
         self.btn_commit_chord.setIconSize(QSize(14, 14))
         self.btn_commit_chord.setProperty("primary", True)
-        self.btn_commit_chord.setFixedHeight(36)
+        self.btn_commit_chord.setFixedHeight(34)
         self.btn_commit_chord.clicked.connect(self._commit_student_chord)
         act_row.addWidget(self.btn_commit_chord)
 
         self.btn_space_chord = QPushButton("Space")
-        self.btn_space_chord.setFixedHeight(36)
+        self.btn_space_chord.setFixedHeight(34)
         self.btn_space_chord.clicked.connect(self._add_student_space)
         act_row.addWidget(self.btn_space_chord)
 
         self.btn_bksp_chord = QPushButton("Bksp")
         self.btn_bksp_chord.setIconSize(QSize(14, 14))
-        self.btn_bksp_chord.setFixedHeight(36)
+        self.btn_bksp_chord.setFixedHeight(34)
         self.btn_bksp_chord.clicked.connect(self._student_backspace)
         act_row.addWidget(self.btn_bksp_chord)
         cell_lay.addLayout(act_row)
 
-        # Mode Indicators Row (Speech | Language | Caps | Shift)
-        ind_row = QHBoxLayout()
-        ind_row.setSpacing(6)
         self.btn_ind_speech = QPushButton("Speech ON")
-        self.btn_ind_speech.setIconSize(QSize(13, 13))
-        self.btn_ind_speech.setFixedHeight(30)
-        self.btn_ind_speech.clicked.connect(self._toggle_speech)
-        ind_row.addWidget(self.btn_ind_speech)
+        self.btn_ind_speech.hide()
 
-        self.btn_ind_lang = QPushButton("English")
-        self.btn_ind_lang.setIconSize(QSize(13, 13))
-        self.btn_ind_lang.setFixedHeight(30)
-        self.btn_ind_lang.clicked.connect(self._toggle_language)
-        ind_row.addWidget(self.btn_ind_lang)
+        left_layout.addWidget(cell_card)
+        left_layout.addStretch(1)
+        self.student_left_panel.hide()
+        body_row.addWidget(self.student_left_panel)
 
-        self.btn_ind_caps = QPushButton("Caps OFF")
-        self.btn_ind_caps.setFixedHeight(30)
-        self.btn_ind_caps.clicked.connect(self._cycle_caps_mode)
-        ind_row.addWidget(self.btn_ind_caps)
+        # Centered Word Desk + Paper Sheet
+        desk = QFrame()
+        desk.setProperty("desk", True)
+        desk_lay = QHBoxLayout(desk)
+        desk_lay.setContentsMargins(24, 18, 24, 18)
+        desk_lay.addStretch(1)
 
-        self.btn_ind_shift = QPushButton("Shift")
-        self.btn_ind_shift.setIconSize(QSize(13, 13))
-        self.btn_ind_shift.setFixedHeight(30)
-        self.btn_ind_shift.clicked.connect(self._toggle_shift)
-        ind_row.addWidget(self.btn_ind_shift)
-        cell_lay.addLayout(ind_row)
-
-        left_layout.addWidget(cell_card, 1)
-        self.student_main_layout.addWidget(self.student_left_panel)
-
-        # Right column: Bento KPI Header Row + Expandable Live Output Card + Recent Characters Card
-        self.student_right_panel = QWidget()
-        right_layout = QVBoxLayout(self.student_right_panel)
-        right_layout.setContentsMargins(0, 0, 0, 0)
-        right_layout.setSpacing(14)
-
-        # Bento Grid Top Row: 3 Modular Bento Tiles (Words/Chars Hero, Active Script/Case, Audio & View)
-        bento_top_row = QHBoxLayout()
-        bento_top_row.setSpacing(14)
-
-        bento_words_tile = QFrame()
-        bento_words_tile.setProperty("bentoHero", True)
-        bw_lay = QVBoxLayout(bento_words_tile)
-        bw_lay.setContentsMargins(18, 12, 18, 12)
-        bw_lay.setSpacing(2)
-        bw_lbl = QLabel("LIVE SESSION OUTPUT")
-        bw_lbl.setProperty("overline", True)
-        bw_lay.addWidget(bw_lbl)
-        bw_num_row = QHBoxLayout()
-        bw_num_row.setSpacing(8)
-        self.bento_words_val = QLabel("0")
-        self.bento_words_val.setFont(ui_font(22, QFont.Weight.Bold))
-        bw_num_row.addWidget(self.bento_words_val)
-        self.bento_chars_sub = QLabel("words · 0 chars")
-        self.bento_chars_sub.setProperty("muted", True)
-        bw_num_row.addWidget(self.bento_chars_sub)
-        bw_num_row.addStretch(1)
-        bw_lay.addLayout(bw_num_row)
-        bento_top_row.addWidget(bento_words_tile, 2)
-
-        bento_mode_tile = QFrame()
-        bento_mode_tile.setProperty("card", True)
-        bm_lay = QVBoxLayout(bento_mode_tile)
-        bm_lay.setContentsMargins(18, 12, 18, 12)
-        bm_lay.setSpacing(2)
-        bm_lbl = QLabel("ACTIVE SCRIPT")
-        bm_lbl.setProperty("overline", True)
-        bm_lay.addWidget(bm_lbl)
-        bm_val_row = QHBoxLayout()
-        bm_val_row.setSpacing(8)
-        self.bento_lang_val = QLabel("EN")
-        self.bento_lang_val.setFont(ui_font(20, QFont.Weight.Bold))
-        bm_val_row.addWidget(self.bento_lang_val)
-        self.bento_case_sub = QLabel("Lowercase")
-        self.bento_case_sub.setProperty("muted", True)
-        bm_val_row.addWidget(self.bento_case_sub)
-        bm_val_row.addStretch(1)
-        bm_lay.addLayout(bm_val_row)
-        bento_top_row.addWidget(bento_mode_tile, 2)
-
-        bento_audio_tile = QFrame()
-        bento_audio_tile.setProperty("card", True)
-        ba_lay = QVBoxLayout(bento_audio_tile)
-        ba_lay.setContentsMargins(16, 12, 16, 12)
-        ba_lay.setSpacing(6)
-        ba_lbl = QLabel("AUDIO & VIEW")
-        ba_lbl.setProperty("overline", True)
-        ba_lay.addWidget(ba_lbl)
-        ba_btns = QHBoxLayout()
-        ba_btns.setSpacing(8)
-        # Prominent Sound ON / OFF toggle button right in the Student View main menu
-        self.btn_student_sound_toggle = QPushButton("Sound ON")
-        self.btn_student_sound_toggle.setIconSize(QSize(14, 14))
-        self.btn_student_sound_toggle.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_student_sound_toggle.setFixedHeight(32)
-        self.btn_student_sound_toggle.clicked.connect(self._toggle_speech)
-        ba_btns.addWidget(self.btn_student_sound_toggle)
-
-        # Software Sound Booster button (100% -> 150% -> 200% -> 250% -> 300%)
-        self.btn_sound_boost = QPushButton(f"Boost {self.speech.boost_pct}%")
-        self.btn_sound_boost.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_sound_boost.setFixedHeight(32)
-        self.btn_sound_boost.setToolTip("Amplify speech volume (100% to 300%)")
-        self.btn_sound_boost.clicked.connect(self._cycle_sound_boost)
-        ba_btns.addWidget(self.btn_sound_boost)
-
-        # Expand / Maximize Student View button
-        self.btn_expand_student_view = QPushButton("Expand")
-        self.btn_expand_student_view.setIconSize(QSize(14, 14))
-        self.btn_expand_student_view.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_expand_student_view.setFixedHeight(32)
-        self.btn_expand_student_view.clicked.connect(self._toggle_student_full_expand)
-        ba_btns.addWidget(self.btn_expand_student_view)
-        ba_lay.addLayout(ba_btns)
-        bento_top_row.addWidget(bento_audio_tile, 2)
-
-        right_layout.addLayout(bento_top_row)
-
-        # Live Output Card (Expands dramatically when connected or expanded!)
         self.live_output_card = QFrame()
-        self.live_output_card.setProperty("card", True)
+        self.live_output_card.setProperty("paper", True)
+        self.live_output_card.setMinimumWidth(620)
+        self.live_output_card.setMaximumWidth(860)
         out_lay = QVBoxLayout(self.live_output_card)
-        out_lay.setContentsMargins(20, 16, 20, 16)
+        out_lay.setContentsMargins(46, 30, 46, 22)
         out_lay.setSpacing(12)
 
-        out_hdr = QHBoxLayout()
-        self.live_out_title = SectionHeader("eye", "LIVE OUTPUT")
+        # Document Header inside paper
+        doc_hdr = QHBoxLayout()
+        self.live_out_title = SectionHeader("file_text", "STUDENT DOCUMENT")
         self._section_headers.append(self.live_out_title)
-        out_hdr.addWidget(self.live_out_title)
+        doc_hdr.addWidget(self.live_out_title)
+        doc_hdr.addStretch(1)
+
+        self.bento_lang_val = QLabel("EN")
+        self.bento_lang_val.setFont(ui_font(11, QFont.Weight.Bold))
+        doc_hdr.addWidget(self.bento_lang_val)
+
+        self.bento_case_sub = QLabel("Lowercase")
+        self.bento_case_sub.setProperty("muted", True)
+        doc_hdr.addWidget(self.bento_case_sub)
 
         self.live_out_stats = QLabel("0 words · 0 chars")
         self.live_out_stats.setProperty("muted", True)
-        out_hdr.addWidget(self.live_out_stats)
-        out_hdr.addStretch(1)
+        doc_hdr.addWidget(self.live_out_stats)
+        out_lay.addLayout(doc_hdr)
 
-        # Export All button right inside Student View
-        self.btn_student_export_all = QPushButton("Export All to Logs")
-        self.btn_student_export_all.setIconSize(QSize(14, 14))
-        self.btn_student_export_all.setProperty("primary", True)
-        self.btn_student_export_all.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_student_export_all.setFixedHeight(32)
-        self.btn_student_export_all.clicked.connect(self.export_all_to_logs)
-        out_hdr.addWidget(self.btn_student_export_all)
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setProperty("hairline", True)
+        out_lay.addWidget(sep)
 
-        self.btn_student_clear = QPushButton("Clear")
-        self.btn_student_clear.setIconSize(QSize(14, 14))
-        self.btn_student_clear.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_student_clear.setFixedHeight(32)
-        self.btn_student_clear.clicked.connect(self._clear_student_display)
-        out_hdr.addWidget(self.btn_student_clear)
-
-        out_lay.addLayout(out_hdr)
-
-        # Large Live Output Text Display
+        # Main Word-Style Paper Text Canvas
         self.live_text_edit = QTextEdit()
         self.live_text_edit.setReadOnly(True)
-        self.live_text_edit.setPlaceholderText("Braille output will appear here as words and sentences...")
-        self.live_text_edit.setFont(ui_font(20))
-        self.live_text_edit.setMinimumHeight(280)
+        self.live_text_edit.setProperty("paperEditor", True)
+        self.live_text_edit.setPlaceholderText("Start typing on your BrailleBridge device — your document appears here...")
+        self.live_text_edit.setFont(ui_font(19))
         out_lay.addWidget(self.live_text_edit, 1)
 
-        # Google Translate Bar inside Live Output
+        # Bottom Document Footer (Recent chars + Translate)
+        self.recent_card = QFrame()
+        self.recent_card.setProperty("subCard", True)
+        rec_lay = QHBoxLayout(self.recent_card)
+        rec_lay.setContentsMargins(12, 8, 12, 8)
+        rec_lay.setSpacing(10)
+        self.recent_chars_lbl = QLabel("No characters yet")
+        self.recent_chars_lbl.setFont(QFont("Cascadia Code", 11))
+        rec_lay.addWidget(self.recent_chars_lbl, 1)
+        out_lay.addWidget(self.recent_card)
+
         trans_row = QHBoxLayout()
-        trans_row.setSpacing(10)
-        self.student_trans_status = QLabel("Translate live output into any language:")
+        trans_row.setSpacing(8)
+        self.student_trans_status = QLabel("Translate document:")
         self.student_trans_status.setProperty("muted", True)
         trans_row.addWidget(self.student_trans_status, 1)
 
         self.student_trans_combo = QComboBox()
         for code, name in TRANSLATE_LANGUAGES:
             self.student_trans_combo.addItem(name, code)
-        self.student_trans_combo.setFixedHeight(32)
+        self.student_trans_combo.setFixedHeight(30)
         trans_row.addWidget(self.student_trans_combo)
 
         self.btn_student_translate = QPushButton("Translate")
         self.btn_student_translate.setIconSize(QSize(14, 14))
-        self.btn_student_translate.setFixedHeight(32)
+        self.btn_student_translate.setFixedHeight(30)
         self.btn_student_translate.clicked.connect(self._translate_student_live)
         trans_row.addWidget(self.btn_student_translate)
         out_lay.addLayout(trans_row)
 
-        right_layout.addWidget(self.live_output_card, 1)
+        desk_lay.addWidget(self.live_output_card, 8)
+        desk_lay.addStretch(1)
+        body_row.addWidget(desk, 1)
 
-        # Recent Characters Card
-        self.recent_card = QFrame()
-        self.recent_card.setProperty("card", True)
-        rec_lay = QVBoxLayout(self.recent_card)
-        rec_lay.setContentsMargins(16, 12, 16, 12)
-        rec_lay.setSpacing(6)
-
-        rec_title = SectionHeader("clock", "RECENT CHARACTERS")
-        self._section_headers.append(rec_title)
-        rec_lay.addWidget(rec_title)
-
-        self.recent_chars_lbl = QLabel("No characters yet")
-        self.recent_chars_lbl.setWordWrap(True)
-        self.recent_chars_lbl.setFont(QFont("Cascadia Code", 12))
-        rec_lay.addWidget(self.recent_chars_lbl)
-
-        right_layout.addWidget(self.recent_card)
-        self.student_main_layout.addWidget(self.student_right_panel, 1)
-
+        root.addLayout(body_row, 1)
         return page
 
-    # ---------------------------------------------------------------- VIEW 2: TEACHER
+    # ---------------------------------------------------------------- VIEW 2: TEACHER (Student Document Tabs + Paper)
     def _build_teacher_view(self) -> QWidget:
         page = QWidget()
-        layout = QHBoxLayout(page)
+        layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(16)
+        layout.setSpacing(10)
 
-        # Left Panel: Class Roster + Add Student Form
-        left_card = QFrame()
-        left_card.setProperty("card", True)
-        left_card.setFixedWidth(330)
-        left_lay = QVBoxLayout(left_card)
-        left_lay.setContentsMargins(16, 14, 16, 14)
-        left_lay.setSpacing(10)
+        # 1. Teacher Top Ribbon: Inline Add Student + Class Actions
+        ribbon = QFrame()
+        ribbon.setProperty("card", True)
+        rib_lay = QVBoxLayout(ribbon)
+        rib_lay.setContentsMargins(14, 10, 14, 10)
+        rib_lay.setSpacing(8)
 
-        roster_hdr = QHBoxLayout()
-        r_title = SectionHeader("users", "CLASSROOM ROSTER")
-        self._section_headers.append(r_title)
-        roster_hdr.addWidget(r_title)
-        roster_hdr.addStretch(1)
-        self.btn_roster_scan = QPushButton("Scan Bluetooth")
-        self.btn_roster_scan.setIconSize(QSize(13, 13))
-        self.btn_roster_scan.setFixedHeight(28)
-        self.btn_roster_scan.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_roster_scan.clicked.connect(self._scan_bluetooth_clicked)
-        roster_hdr.addWidget(self.btn_roster_scan)
-        left_lay.addLayout(roster_hdr)
-
-        # Add Student Form Box
-        add_box = QFrame()
-        add_box.setProperty("subCard", True)
-        add_lay = QVBoxLayout(add_box)
-        add_lay.setContentsMargins(12, 10, 12, 10)
-        add_lay.setSpacing(8)
+        row_add = QHBoxLayout()
+        row_add.setSpacing(8)
 
         self.input_student_name = QLineEdit()
-        self.input_student_name.setPlaceholderText("Student Name (e.g. Sarah Ahmed)")
-        self.input_student_name.setFixedHeight(34)
+        self.input_student_name.setPlaceholderText("New Student Name (e.g. Sarah Ahmed)")
+        self.input_student_name.setMinimumWidth(180)
+        self.input_student_name.setFixedHeight(32)
         self.input_student_name.returnPressed.connect(self._add_student_from_form)
-        add_lay.addWidget(self.input_student_name)
+        row_add.addWidget(self.input_student_name, 2)
 
         self.teacher_conn_type_combo = QComboBox()
-        self.teacher_conn_type_combo.addItem("Bluetooth LE (BrailleBridge)", "ble")
-        self.teacher_conn_type_combo.addItem("USB Serial (COM Port)", "usb")
-        self.teacher_conn_type_combo.addItem("Assign Device Later", "later")
-        self.teacher_conn_type_combo.setFixedHeight(34)
+        self.teacher_conn_type_combo.addItem("Bluetooth LE", "ble")
+        self.teacher_conn_type_combo.addItem("USB Serial", "usb")
+        self.teacher_conn_type_combo.addItem("Assign Later", "later")
+        self.teacher_conn_type_combo.setFixedHeight(32)
         self.teacher_conn_type_combo.currentIndexChanged.connect(self._refresh_port_combos)
-        add_lay.addWidget(self.teacher_conn_type_combo)
+        row_add.addWidget(self.teacher_conn_type_combo)
 
         self.teacher_port_combo = QComboBox()
-        self.teacher_port_combo.setFixedHeight(34)
-        add_lay.addWidget(self.teacher_port_combo)
+        self.teacher_port_combo.setMinimumWidth(180)
+        self.teacher_port_combo.setFixedHeight(32)
+        row_add.addWidget(self.teacher_port_combo, 2)
 
-        row_baud_add = QHBoxLayout()
         self.teacher_baud_combo = QComboBox()
         for b in ["115200", "9600", "57600", "38400"]:
-            self.teacher_baud_combo.addItem(f"{b} baud", int(b))
+            self.teacher_baud_combo.addItem(f"{b}", int(b))
         self.teacher_baud_combo.setFixedHeight(32)
-        row_baud_add.addWidget(self.teacher_baud_combo, 1)
+        row_add.addWidget(self.teacher_baud_combo)
 
         self.btn_add_student = QPushButton("Add Student")
         self.btn_add_student.setIconSize(QSize(14, 14))
@@ -1094,71 +1025,149 @@ class BrailleBridgeWindow(QMainWindow):
         self.btn_add_student.setFixedHeight(32)
         self.btn_add_student.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.btn_add_student.clicked.connect(self._add_student_from_form)
-        row_baud_add.addWidget(self.btn_add_student)
-        add_lay.addLayout(row_baud_add)
+        row_add.addWidget(self.btn_add_student)
 
-        left_lay.addWidget(add_box)
+        self.btn_roster_scan = QPushButton("Scan BLE")
+        self.btn_roster_scan.setIconSize(QSize(13, 13))
+        self.btn_roster_scan.setFixedHeight(32)
+        self.btn_roster_scan.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_roster_scan.clicked.connect(self._scan_bluetooth_clicked)
+        row_add.addWidget(self.btn_roster_scan)
+        rib_lay.addLayout(row_add)
 
-        # Scrollable Student Roster List
-        self.roster_scroll = QScrollArea()
-        self.roster_scroll.setWidgetResizable(True)
-        self.roster_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self.roster_list_widget = QWidget()
-        self.roster_list_widget.setObjectName("RosterListWidget")
-        self.roster_list_layout = QVBoxLayout(self.roster_list_widget)
-        self.roster_list_layout.setContentsMargins(0, 0, 0, 0)
-        self.roster_list_layout.setSpacing(8)
-        self.roster_list_layout.addStretch(1)
-        self.roster_scroll.setWidget(self.roster_list_widget)
-        left_lay.addWidget(self.roster_scroll, 1)
-
-        layout.addWidget(left_card)
-
-        # Right Panel: Teacher Toolbar + Student Feed Cards Grid
-        right_col = QVBoxLayout()
-        right_col.setContentsMargins(0, 0, 0, 0)
-        right_col.setSpacing(12)
-
-        toolbar_card = QFrame()
-        toolbar_card.setProperty("card", True)
-        tb_lay = QHBoxLayout(toolbar_card)
-        tb_lay.setContentsMargins(16, 10, 16, 10)
-
+        row_meta = QHBoxLayout()
+        row_meta.setSpacing(8)
         self.teacher_stats_lbl = QLabel("0 students  ·  0 total characters")
-        self.teacher_stats_lbl.setFont(ui_font(11, QFont.Weight.DemiBold))
-        tb_lay.addWidget(self.teacher_stats_lbl)
-        tb_lay.addStretch(1)
+        self.teacher_stats_lbl.setFont(ui_font(10, QFont.Weight.DemiBold))
+        row_meta.addWidget(self.teacher_stats_lbl)
+        row_meta.addStretch(1)
 
-        self.btn_teacher_export_all = QPushButton("Export All")
+        self.btn_teacher_export_all = QPushButton("Export All to Exports")
         self.btn_teacher_export_all.setIconSize(QSize(14, 14))
         self.btn_teacher_export_all.setProperty("primary", True)
         self.btn_teacher_export_all.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_teacher_export_all.setFixedHeight(34)
+        self.btn_teacher_export_all.setFixedHeight(30)
         self.btn_teacher_export_all.clicked.connect(self.export_all_to_logs)
-        tb_lay.addWidget(self.btn_teacher_export_all)
+        row_meta.addWidget(self.btn_teacher_export_all)
 
         self.btn_teacher_clear_all = QPushButton("Clear All")
         self.btn_teacher_clear_all.setIconSize(QSize(14, 14))
         self.btn_teacher_clear_all.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_teacher_clear_all.setFixedHeight(34)
+        self.btn_teacher_clear_all.setFixedHeight(30)
         self.btn_teacher_clear_all.clicked.connect(self._clear_all_teacher_feeds)
-        tb_lay.addWidget(self.btn_teacher_clear_all)
+        row_meta.addWidget(self.btn_teacher_clear_all)
+        rib_lay.addLayout(row_meta)
 
-        right_col.addWidget(toolbar_card)
+        layout.addWidget(ribbon)
 
-        # Scrollable Feed Grid
+        # 2. Horizontal Student Document Tab Bar (Switch between each student's document!)
+        self.teacher_tabs_bar = QFrame()
+        self.teacher_tabs_bar.setProperty("card", True)
+        tabs_outer = QHBoxLayout(self.teacher_tabs_bar)
+        tabs_outer.setContentsMargins(10, 6, 10, 6)
+        tabs_outer.setSpacing(6)
+
+        self.teacher_tabs_scroll = QScrollArea()
+        self.teacher_tabs_scroll.setWidgetResizable(True)
+        self.teacher_tabs_scroll.setFixedHeight(44)
+        self.teacher_tabs_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.teacher_tabs_container = QWidget()
+        self.teacher_tabs_layout = QHBoxLayout(self.teacher_tabs_container)
+        self.teacher_tabs_layout.setContentsMargins(0, 0, 0, 0)
+        self.teacher_tabs_layout.setSpacing(6)
+        self.teacher_tabs_layout.addStretch(1)
+        self.teacher_tabs_scroll.setWidget(self.teacher_tabs_container)
+        tabs_outer.addWidget(self.teacher_tabs_scroll, 1)
+        layout.addWidget(self.teacher_tabs_bar)
+
+        # 3. Centered Microsoft Word-Style Active Student Document Desk
+        desk = QFrame()
+        desk.setProperty("desk", True)
+        desk_lay = QHBoxLayout(desk)
+        desk_lay.setContentsMargins(24, 18, 24, 18)
+        desk_lay.addStretch(1)
+
+        self.teacher_paper = QFrame()
+        self.teacher_paper.setProperty("paper", True)
+        self.teacher_paper.setMinimumWidth(640)
+        self.teacher_paper.setMaximumWidth(860)
+        tp_lay = QVBoxLayout(self.teacher_paper)
+        tp_lay.setContentsMargins(46, 26, 46, 24)
+        tp_lay.setSpacing(12)
+
+        # Active Student Document Header + Controls
+        self.teacher_doc_hdr = QWidget()
+        td_hdr = QHBoxLayout(self.teacher_doc_hdr)
+        td_hdr.setContentsMargins(0, 0, 0, 0)
+        td_hdr.setSpacing(10)
+
+        self.td_avatar = QLabel("ST")
+        self.td_avatar.setFixedSize(36, 36)
+        self.td_avatar.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        td_hdr.addWidget(self.td_avatar)
+
+        td_meta = QVBoxLayout()
+        td_meta.setSpacing(1)
+        self.td_name_lbl = QLabel("No Student Selected")
+        self.td_name_lbl.setFont(ui_font(15, QFont.Weight.Bold))
+        self.td_sub_lbl = QLabel("Add a student above to start monitoring their document")
+        self.td_sub_lbl.setProperty("muted", True)
+        td_meta.addWidget(self.td_name_lbl)
+        td_meta.addWidget(self.td_sub_lbl)
+        td_hdr.addLayout(td_meta, 1)
+
+        self.td_mini_cell = MiniBrailleCell(0, 0.72, self.is_dark)
+        td_hdr.addWidget(self.td_mini_cell)
+
+        self.td_btn_conn = QPushButton("Connect")
+        self.td_btn_conn.setFixedHeight(30)
+        self.td_btn_conn.clicked.connect(self._td_toggle_conn)
+        td_hdr.addWidget(self.td_btn_conn)
+
+        self.td_btn_test = QPushButton("Test")
+        self.td_btn_test.setFixedHeight(30)
+        self.td_btn_test.clicked.connect(self._td_test)
+        td_hdr.addWidget(self.td_btn_test)
+
+        self.td_btn_export = QPushButton("Export")
+        self.td_btn_export.setProperty("primary", True)
+        self.td_btn_export.setFixedHeight(30)
+        self.td_btn_export.clicked.connect(self._td_export)
+        td_hdr.addWidget(self.td_btn_export)
+
+        self.td_btn_clear = QPushButton("Clear")
+        self.td_btn_clear.setFixedHeight(30)
+        self.td_btn_clear.clicked.connect(self._td_clear)
+        td_hdr.addWidget(self.td_btn_clear)
+
+        self.td_btn_remove = QPushButton("Remove")
+        self.td_btn_remove.setFixedHeight(30)
+        self.td_btn_remove.clicked.connect(self._td_remove)
+        td_hdr.addWidget(self.td_btn_remove)
+
+        tp_lay.addWidget(self.teacher_doc_hdr)
+
+        sep2 = QFrame()
+        sep2.setFrameShape(QFrame.Shape.HLine)
+        sep2.setProperty("hairline", True)
+        tp_lay.addWidget(sep2)
+
+        self.teacher_doc_edit = QTextEdit()
+        self.teacher_doc_edit.setReadOnly(True)
+        self.teacher_doc_edit.setProperty("paperEditor", True)
+        self.teacher_doc_edit.setPlaceholderText("Add a student above, connect their BrailleBridge, and their live document appears here...")
+        self.teacher_doc_edit.setFont(ui_font(18))
+        tp_lay.addWidget(self.teacher_doc_edit, 1)
+
+        desk_lay.addWidget(self.teacher_paper, 8)
+        desk_lay.addStretch(1)
+        layout.addWidget(desk, 1)
+
+        # Keep hidden dummy containers so legacy helpers never fail
+        self.roster_scroll = QScrollArea()
+        self.roster_scroll.hide()
         self.feed_scroll = QScrollArea()
-        self.feed_scroll.setWidgetResizable(True)
-        self.feed_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self.feed_container = QWidget()
-        self.feed_grid_layout = QGridLayout(self.feed_container)
-        self.feed_grid_layout.setContentsMargins(0, 0, 0, 0)
-        self.feed_grid_layout.setSpacing(14)
-        self.feed_grid_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self.feed_scroll.setWidget(self.feed_container)
-        right_col.addWidget(self.feed_scroll, 1)
-
-        layout.addLayout(right_col, 1)
+        self.feed_scroll.hide()
         return page
 
     # ---------------------------------------------------------------- VIEW 3: LOGS (Replaces Exam View!)
@@ -1216,11 +1225,19 @@ class BrailleBridgeWindow(QMainWindow):
 
         layout.addWidget(left_card)
 
-        # Right Main Area: Smart Conditionally Formatted Document Reader
+        # Right Main Area: Word-Style Desk + Centered Paper Document Reader
+        desk = QFrame()
+        desk.setProperty("desk", True)
+        desk_lay = QHBoxLayout(desk)
+        desk_lay.setContentsMargins(24, 16, 24, 16)
+        desk_lay.addStretch(1)
+
         right_card = QFrame()
-        right_card.setProperty("card", True)
+        right_card.setProperty("paper", True)
+        right_card.setMinimumWidth(580)
+        right_card.setMaximumWidth(840)
         right_lay = QVBoxLayout(right_card)
-        right_lay.setContentsMargins(22, 18, 22, 18)
+        right_lay.setContentsMargins(42, 26, 42, 24)
         right_lay.setSpacing(12)
 
         # Document Reader Top Bar
@@ -1282,7 +1299,9 @@ class BrailleBridgeWindow(QMainWindow):
         self.log_doc_scroll.setWidget(self.log_doc_container)
         right_lay.addWidget(self.log_doc_scroll, 1)
 
-        layout.addWidget(right_card, 1)
+        desk_lay.addWidget(right_card, 8)
+        desk_lay.addStretch(1)
+        layout.addWidget(desk, 1)
         return page
 
     # ---------------------------------------------------------------- VIEW 4: LEARN
@@ -1453,9 +1472,9 @@ class BrailleBridgeWindow(QMainWindow):
         gold = pal['gold']
         btn_fg = '#ffffff'
 
-        self.logo_badge.setPixmap(svg_pixmap('braille', '#141416' if self.is_dark else '#ffffff', 22))
+        self.logo_badge.setPixmap(svg_pixmap('braille', '#ffffff', 22))
         self.logo_badge.setStyleSheet(
-            f"background-color: {gold}; border-radius: 8px;"
+            f"background-color: {pal['navy']}; border: 2px solid {gold}; border-radius: 8px;"
         )
         self.brand_label.setText(
             f"<span style='color:{fg};'>Braille</span>"
@@ -1468,17 +1487,17 @@ class BrailleBridgeWindow(QMainWindow):
         for key, btn in self.nav_buttons.items():
             icon_name = self._nav_icon_names[key]
             if key == self.current_mode:
-                btn.setIcon(svg_icon(icon_name, gold, 15))
+                btn.setIcon(svg_icon(icon_name, '#ffffff', 15))
                 btn.setStyleSheet(
-                    f"background-color: {pal['gold_bg']}; color: {gold}; "
-                    f"border: 1px solid {gold}; border-radius: 14px; "
+                    f"background-color: {pal['navy']}; color: #ffffff; "
+                    f"border-bottom: 2.5px solid {gold}; border-radius: 10px; "
                     f"padding: 4px 16px; font-weight: bold;"
                 )
             else:
                 btn.setIcon(svg_icon(icon_name, fg_muted, 15))
                 btn.setStyleSheet(
                     f"background-color: transparent; color: {fg_muted}; "
-                    f"border: none; border-radius: 14px; padding: 4px 16px;"
+                    f"border: none; border-radius: 10px; padding: 4px 16px;"
                 )
 
         # Crisp vector icons on all toolbar & action buttons
@@ -1489,6 +1508,8 @@ class BrailleBridgeWindow(QMainWindow):
         self.btn_send_to_teacher.setIcon(svg_icon('send', fg, 14))
         self.btn_commit_chord.setIcon(svg_icon('return_key', btn_fg, 14))
         self.btn_bksp_chord.setIcon(svg_icon('delete', fg, 14))
+        if hasattr(self, 'btn_toggle_pad'):
+            self.btn_toggle_pad.setIcon(svg_icon('braille', gold if self.braille_pad_visible else fg, 14))
         self.btn_expand_student_view.setIcon(
             svg_icon('minimize' if self.student_output_expanded else 'expand', fg, 14)
         )
@@ -1522,22 +1543,38 @@ class BrailleBridgeWindow(QMainWindow):
             QFrame#HeaderFrame, QFrame[card="true"] {{
                 background-color: {pal['bg_panel']};
                 border: 1px solid {pal['border']};
-                border-radius: 20px;
+                border-radius: 14px;
+            }}
+            QFrame[desk="true"] {{
+                background-color: {pal['bg_desk']};
+                border: 1px solid {pal['border']};
+                border-radius: 14px;
+            }}
+            QFrame[paper="true"] {{
+                background-color: {pal['bg_card']};
+                border: 1px solid {pal['border']};
+                border-top: 3px solid {pal['navy']};
+                border-radius: 6px;
+            }}
+            QFrame[hairline="true"] {{
+                background-color: {pal['border']};
+                max-height: 1px;
+                border: none;
             }}
             QFrame[bentoHero="true"] {{
                 background-color: {pal['gold_bg']};
                 border: 1px solid {pal['gold']};
-                border-radius: 20px;
+                border-radius: 14px;
             }}
             QFrame[subCard="true"] {{
                 background-color: {pal['bg_surface']};
                 border: 1px solid {pal['border']};
-                border-radius: 16px;
+                border-radius: 10px;
             }}
             QFrame#NavContainer {{
                 background-color: {pal['bg_surface']};
                 border: 1px solid {pal['border']};
-                border-radius: 18px;
+                border-radius: 12px;
             }}
             QLabel {{
                 background: transparent;
@@ -1557,7 +1594,7 @@ class BrailleBridgeWindow(QMainWindow):
                 background-color: {pal['bg_surface']};
                 color: {pal['text_secondary']};
                 border: 1px solid {pal['border']};
-                border-radius: 14px;
+                border-radius: 10px;
                 padding: 8px 12px;
                 font-size: 12px;
             }}
@@ -1565,28 +1602,36 @@ class BrailleBridgeWindow(QMainWindow):
                 background-color: {pal['bg_surface']};
                 color: {pal['text_primary']};
                 border: 1px solid {pal['border']};
-                border-radius: 14px;
-                padding: 6px 14px;
+                border-radius: 10px;
+                padding: 5px 12px;
                 font-weight: 600;
             }}
             QPushButton:hover {{
                 background-color: {pal['bg_hover']};
             }}
             QPushButton[primary="true"] {{
-                background-color: {pal['gold']};
+                background-color: {pal['navy']};
                 color: #ffffff;
-                border: 1px solid {pal['gold_dark']};
-                border-radius: 14px;
+                border: 1px solid {pal['navy_dark']};
+                border-radius: 10px;
             }}
             QPushButton[primary="true"]:hover {{
-                background-color: {pal['gold_dark']};
+                background-color: {gold};
+                border-color: {pal['gold_dark']};
             }}
             QLineEdit, QComboBox, QTextEdit {{
                 background-color: {pal['bg_surface']};
                 color: {pal['text_primary']};
                 border: 1px solid {pal['border']};
-                border-radius: 14px;
-                padding: 6px 12px;
+                border-radius: 10px;
+                padding: 5px 10px;
+            }}
+            QTextEdit[paperEditor="true"] {{
+                background-color: transparent;
+                color: {pal['text_primary']};
+                border: none;
+                border-radius: 0px;
+                padding: 8px 2px;
             }}
             QComboBox::drop-down {{
                 border: none;
@@ -1598,16 +1643,16 @@ class BrailleBridgeWindow(QMainWindow):
                 background-color: {pal['bg_panel']};
                 color: {pal['text_primary']};
                 border: 1px solid {pal['border']};
-                border-radius: 14px;
+                border-radius: 10px;
                 selection-background-color: {pal['gold_bg']};
                 selection-color: {pal['gold']};
                 outline: 0;
                 padding: 6px;
             }}
             QComboBox QAbstractItemView::item {{
-                min-height: 30px;
+                min-height: 28px;
                 padding: 4px 12px;
-                border-radius: 10px;
+                border-radius: 8px;
                 color: {pal['text_primary']};
                 background-color: {pal['bg_panel']};
             }}
@@ -1615,9 +1660,6 @@ class BrailleBridgeWindow(QMainWindow):
             QComboBox QAbstractItemView::item:hover {{
                 background-color: {pal['gold_bg']};
                 color: {pal['gold']};
-            }}
-            QTextEdit {{
-                padding: 16px;
             }}
             QScrollArea, QScrollArea > QWidget > QWidget {{
                 background-color: transparent;
@@ -1637,12 +1679,12 @@ class BrailleBridgeWindow(QMainWindow):
             }}
         """
         self.setStyleSheet(qss)
-        for sa in (self.roster_scroll, self.logs_students_scroll, self.log_doc_scroll, self.decoder_scroll):
+        for sa in (self.logs_students_scroll, self.log_doc_scroll, self.decoder_scroll, self.teacher_tabs_scroll):
             sa.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             sa.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-            sa.setStyleSheet(f"QScrollArea {{ background-color: {pal['bg_panel']}; border: none; }}")
+            sa.setStyleSheet("QScrollArea { background-color: transparent; border: none; }")
             if sa.viewport():
-                sa.viewport().setStyleSheet(f"background-color: {pal['bg_panel']};")
+                sa.viewport().setStyleSheet("background-color: transparent;")
         self.feed_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.feed_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.feed_scroll.setStyleSheet(f"QScrollArea {{ background-color: {pal['bg_window']}; border: none; }}")
@@ -1849,24 +1891,26 @@ class BrailleBridgeWindow(QMainWindow):
                 f"background-color: {pal['gold']}; color: #ffffff; border-radius: 10px; font-weight: bold;"
             )
 
+    def _toggle_braille_pad_drawer(self):
+        self.braille_pad_visible = not self.braille_pad_visible
+        self.student_left_panel.setVisible(self.braille_pad_visible)
+        self._apply_theme()
+
     def _toggle_student_full_expand(self):
         self._set_student_expanded(not self.student_output_expanded)
 
     def _set_student_expanded(self, expanded: bool):
         pal = ThemePalette.DARK if self.is_dark else ThemePalette.LIGHT
         self.student_output_expanded = expanded
-        self.student_left_panel.setFixedWidth(340)
         if expanded:
-            self.live_text_edit.setFont(ui_font(26))
-            self.live_text_edit.setMinimumHeight(480)
+            self.live_text_edit.setFont(ui_font(24))
             self.recent_card.hide()
-            self.btn_expand_student_view.setText("Standard View")
+            self.btn_expand_student_view.setText("Normal")
             self.btn_expand_student_view.setIcon(svg_icon('minimize', pal['text_primary'], 14))
         else:
-            self.live_text_edit.setFont(ui_font(20))
-            self.live_text_edit.setMinimumHeight(280)
+            self.live_text_edit.setFont(ui_font(19))
             self.recent_card.show()
-            self.btn_expand_student_view.setText("Expand Full View")
+            self.btn_expand_student_view.setText("Zoom")
             self.btn_expand_student_view.setIcon(svg_icon('expand', pal['text_primary'], 14))
 
     def _toggle_student_dot(self, dot_idx: int):
@@ -2306,199 +2350,136 @@ class BrailleBridgeWindow(QMainWindow):
         total_chars = sum(len(s['chars']) for s in self.students)
         self.teacher_stats_lbl.setText(f"{len(self.students)} students  ·  {total_chars} total characters")
 
+    def _active_teacher_student(self):
+        if not self.students:
+            self.active_teacher_student_id = None
+            return None
+        st = next((s for s in self.students if s['id'] == self.active_teacher_student_id), None)
+        if st is None:
+            st = self.students[0]
+            self.active_teacher_student_id = st['id']
+        return st
+
+    def _select_teacher_student(self, student_id: int):
+        self.active_teacher_student_id = student_id
+        self._rebuild_teacher_ui()
+
+    def _td_toggle_conn(self):
+        st = self._active_teacher_student()
+        if st:
+            self._toggle_roster_student_conn(st)
+
+    def _td_test(self):
+        st = self._active_teacher_student()
+        if st:
+            self._simulate_student_typing(st)
+
+    def _td_export(self):
+        st = self._active_teacher_student()
+        if st:
+            self.export_single_student_to_logs(st)
+
+    def _td_clear(self):
+        st = self._active_teacher_student()
+        if st:
+            self._clear_single_student(st)
+
+    def _td_remove(self):
+        st = self._active_teacher_student()
+        if st:
+            self._remove_single_student(st)
+
     def _update_single_student_card(self, student: dict):
-        lbl = student.get('_text_lbl')
-        cnt = student.get('_count_lbl')
-        mini = student.get('_mini_cell')
-        if lbl is not None:
-            txt = ''.join(x['char'] for x in student['chars']).replace('\n\n', ' · ')
-            lbl.setText(txt if txt else "Waiting for student input...")
-        if cnt is not None:
-            cnt.setText(f"{len(student['chars'])} chars")
-        if mini is not None:
-            mini.set_chord(student.get('lastChord', 0))
+        tab_btn = student.get('_tab_btn')
+        if tab_btn is not None:
+            dot = "●" if student['connected'] else "○"
+            tab_btn.setText(f"{dot}  {student['name']}  ({len(student['chars'])})")
+        active = self._active_teacher_student()
+        if active and active['id'] == student['id'] and hasattr(self, 'teacher_doc_edit'):
+            txt = ''.join(x['char'] for x in student['chars'])
+            self.teacher_doc_edit.setPlainText(txt)
+            self.teacher_doc_edit.moveCursor(QTextCursor.MoveOperation.End)
+            self.td_mini_cell.set_chord(student.get('lastChord', 0))
+            st_lbl = "Online" if student['connected'] else "Offline"
+            self.td_sub_lbl.setText(
+                f"{student['connType'].upper()} · {student.get('portName') or 'Unassigned'} · {st_lbl} · {len(student['chars'])} chars"
+            )
 
     def _rebuild_teacher_ui(self):
         pal = ThemePalette.DARK if self.is_dark else ThemePalette.LIGHT
         self._update_teacher_stats()
 
-        # 1. Rebuild Roster List
-        while self.roster_list_layout.count():
-            item = self.roster_list_layout.takeAt(0)
+        # 1. Rebuild Horizontal Student Document Tab Bar
+        while self.teacher_tabs_layout.count():
+            item = self.teacher_tabs_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
 
+        active = self._active_teacher_student()
         if not self.students:
-            empty_lbl = QLabel("No students in roster yet.\nAdd a student above.")
-            empty_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            empty_lbl.setProperty("muted", True)
-            self.roster_list_layout.addWidget(empty_lbl)
-        else:
-            for s in self.students:
-                row_f = QFrame()
-                row_f.setProperty("subCard", True)
-                r_lay = QHBoxLayout(row_f)
-                r_lay.setContentsMargins(10, 8, 10, 8)
+            empty_tab = QLabel("No student documents yet — add a student above.")
+            empty_tab.setProperty("muted", True)
+            self.teacher_tabs_layout.addWidget(empty_tab)
+            self.teacher_tabs_layout.addStretch(1)
 
-                av = QLabel(get_initials(s['name']))
-                av.setFixedSize(32, 32)
-                av.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                av.setStyleSheet(
-                    f"background-color: {s['color']}; color: #ffffff; border-radius: 16px; font-weight: bold;"
-                )
-                r_lay.addWidget(av)
-
-                info_col = QVBoxLayout()
-                n_lbl = QLabel(s['name'])
-                n_lbl.setFont(ui_font(10, QFont.Weight.Bold))
-                m_lbl = QLabel(f"{s['connType'].upper()} · {s.get('portName') or 'Unassigned'}")
-                m_lbl.setProperty("muted", True)
-                info_col.addWidget(n_lbl)
-                info_col.addWidget(m_lbl)
-                r_lay.addLayout(info_col, 1)
-
-                if not s.get('mirror'):
-                    c_label = "..." if s.get('connecting') else ("Disconnect" if s['connected'] else "Connect")
-                    c_btn = QPushButton(c_label)
-                    c_btn.setEnabled(not s.get('connecting'))
-                    c_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-                    c_btn.setFixedHeight(28)
-                    c_btn.clicked.connect(lambda checked, st=s: self._toggle_roster_student_conn(st))
-                    r_lay.addWidget(c_btn)
-
-                self.roster_list_layout.addWidget(row_f)
-
-        self.roster_list_layout.addStretch(1)
-
-        # 2. Rebuild Student Feed Grid
-        while self.feed_grid_layout.count():
-            item = self.feed_grid_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-
-        if not self.students:
-            empty_feed = QLabel("Welcome to Teacher Mode\nAdd students on the left to monitor their BrailleBridge devices.")
-            empty_feed.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            empty_feed.setFont(ui_font(15))
-            self.feed_grid_layout.addWidget(empty_feed, 0, 0)
+            self.teacher_doc_hdr.setVisible(False)
+            self.teacher_doc_edit.clear()
+            self.teacher_doc_edit.setPlaceholderText(
+                "Add a student above, connect their BrailleBridge over Bluetooth or USB, and their live document will appear here."
+            )
             return
 
-        for idx, s in enumerate(self.students):
-            card = QFrame()
-            card.setProperty("card", True)
-            card.setMaximumHeight(290)
-            c_lay = QVBoxLayout(card)
-            c_lay.setContentsMargins(16, 14, 16, 14)
-            c_lay.setSpacing(10)
+        self.teacher_doc_hdr.setVisible(True)
+        for s in self.students:
+            is_active = active and active['id'] == s['id']
+            dot = "●" if s['connected'] else "○"
+            btn = QPushButton(f"{dot}  {s['name']}  ({len(s['chars'])})")
+            btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            btn.setFixedHeight(32)
+            if is_active:
+                btn.setStyleSheet(
+                    f"QPushButton {{ background-color: {pal['navy']}; color: #ffffff; "
+                    f"border: 1px solid {pal['navy']}; border-bottom: 3px solid {pal['gold']}; "
+                    f"border-radius: 8px; padding: 4px 14px; font-weight: bold; }}"
+                )
+            else:
+                btn.setStyleSheet(
+                    f"QPushButton {{ background-color: {pal['bg_surface']}; color: {pal['text_primary']}; "
+                    f"border: 1px solid {pal['border']}; border-radius: 8px; padding: 4px 12px; }}"
+                    f"QPushButton:hover {{ background-color: {pal['bg_hover']}; }}"
+                )
+            btn.clicked.connect(lambda checked, sid=s['id']: self._select_teacher_student(sid))
+            self.teacher_tabs_layout.addWidget(btn)
+            s['_tab_btn'] = btn
+        self.teacher_tabs_layout.addStretch(1)
 
-            top_r = QHBoxLayout()
-            top_r.setSpacing(10)
-            top_r.setAlignment(Qt.AlignmentFlag.AlignVCenter)
-            av = QLabel(get_initials(s['name']))
-            av.setFixedSize(36, 36)
-            av.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            av.setStyleSheet(
-                f"background-color: {s['color']}; color: #ffffff; border-radius: 18px; font-weight: bold;"
-            )
-            top_r.addWidget(av)
+        # 2. Populate Active Student's Word Paper Sheet
+        self.td_avatar.setText(get_initials(active['name']))
+        self.td_avatar.setStyleSheet(
+            f"background-color: {pal['navy']}; color: #ffffff; border: 2px solid {pal['gold']}; "
+            f"border-radius: 18px; font-weight: bold;"
+        )
+        self.td_name_lbl.setText(active['name'])
+        st_lbl = "Online" if active['connected'] else "Offline"
+        self.td_sub_lbl.setText(
+            f"{active['connType'].upper()} · {active.get('portName') or 'Unassigned'} · {st_lbl} · {len(active['chars'])} chars"
+        )
+        self.td_mini_cell.set_theme(self.is_dark)
+        self.td_mini_cell.set_chord(active.get('lastChord', 0))
 
-            meta_col = QVBoxLayout()
-            meta_col.setContentsMargins(0, 0, 0, 0)
-            meta_col.setSpacing(2)
-            nm = QLabel(s['name'])
-            nm.setFont(ui_font(13, QFont.Weight.Bold))
-            sub_row = QHBoxLayout()
-            sub_row.setContentsMargins(0, 0, 0, 0)
-            sub_row.setSpacing(6)
-            sub = QLabel(f"{s['connType'].upper()} · {s['baud']} baud")
-            sub.setProperty("muted", True)
-            sub_row.addWidget(sub)
-            sdot = StatusDot(pal['green'] if s['connected'] else pal['text_muted'], 7)
-            sub_row.addWidget(sdot)
-            stxt = QLabel("Online" if s['connected'] else "Offline")
-            stxt.setStyleSheet(f"color: {pal['green'] if s['connected'] else pal['text_muted']}; font-size: 11px; font-weight: 600;")
-            sub_row.addWidget(stxt)
-            sub_row.addStretch(1)
-            meta_col.addWidget(nm)
-            meta_col.addLayout(sub_row)
-            top_r.addLayout(meta_col, 1)
+        self.td_btn_conn.setVisible(not active.get('mirror'))
+        self.td_btn_conn.setEnabled(not active.get('connecting'))
+        self.td_btn_conn.setText(
+            "..." if active.get('connecting') else ("Disconnect" if active['connected'] else "Connect")
+        )
+        self.td_btn_test.setIcon(svg_icon('play', pal['text_primary'], 13))
+        self.td_btn_export.setIcon(svg_icon('upload', '#ffffff', 13))
+        self.td_btn_remove.setIcon(svg_icon('trash', pal['red'], 13))
 
-            c_lay.addLayout(top_r, 0)
-
-            txt_str = ''.join(x['char'] for x in s['chars']).replace('\n\n', ' · ')
-            txt_lbl = QLabel(txt_str if txt_str else "Waiting for student input...")
-            txt_lbl.setWordWrap(True)
-            txt_lbl.setFont(ui_font(13))
-            txt_lbl.setMinimumHeight(90)
-            txt_lbl.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-            txt_lbl.setStyleSheet(
-                f"background-color: {pal['bg_surface']}; border-radius: 14px; padding: 12px;"
-            )
-            c_lay.addWidget(txt_lbl, 1)
-            s['_text_lbl'] = txt_lbl
-
-            bot_r = QHBoxLayout()
-            mini = MiniBrailleCell(s.get('lastChord', 0), size_scale=0.75, is_dark=self.is_dark)
-            bot_r.addWidget(mini)
-            s['_mini_cell'] = mini
-
-            cnt_lbl = QLabel(f"{len(s['chars'])} chars")
-            cnt_lbl.setProperty("muted", True)
-            bot_r.addWidget(cnt_lbl)
-            s['_count_lbl'] = cnt_lbl
-            bot_r.addStretch(1)
-
-            btn_exp_modal = QPushButton("Expand")
-            btn_exp_modal.setIcon(svg_icon('expand', pal['text_primary'], 13))
-            btn_exp_modal.setIconSize(QSize(13, 13))
-            btn_exp_modal.setFixedHeight(28)
-            btn_exp_modal.clicked.connect(lambda checked, st=s: self._open_expand_student_dialog(st))
-            bot_r.addWidget(btn_exp_modal)
-
-            btn_test = QPushButton("Test")
-            btn_test.setIcon(svg_icon('play', pal['text_primary'], 13))
-            btn_test.setIconSize(QSize(13, 13))
-            btn_test.setFixedHeight(28)
-            btn_test.clicked.connect(lambda checked, st=s: self._simulate_student_typing(st))
-            bot_r.addWidget(btn_test)
-
-            btn_export = QPushButton("Export")
-            btn_export.setIcon(svg_icon('upload', '#ffffff', 13))
-            btn_export.setIconSize(QSize(13, 13))
-            btn_export.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-            btn_export.setStyleSheet(
-                f"QPushButton {{ background-color: {pal['gold']}; color: #ffffff; "
-                f"border: 1px solid {pal['gold_dark']}; border-radius: 14px; padding: 4px 12px; font-weight: 600; }}"
-                f"QPushButton:hover {{ background-color: {pal['gold_dark']}; }}"
-            )
-            btn_export.setFixedHeight(28)
-            btn_export.clicked.connect(lambda checked, st=s: self.export_single_student_to_logs(st))
-            bot_r.addWidget(btn_export)
-
-            btn_clr = QPushButton("Clear")
-            btn_clr.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-            btn_clr.setFixedHeight(28)
-            btn_clr.clicked.connect(lambda checked, st=s: self._clear_single_student(st))
-            bot_r.addWidget(btn_clr)
-
-            btn_del = QPushButton()
-            btn_del.setIcon(svg_icon('trash', pal['red'], 13))
-            btn_del.setIconSize(QSize(13, 13))
-            btn_del.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-            btn_del.setToolTip("Remove Student")
-            btn_del.setFixedSize(28, 28)
-            btn_del.setStyleSheet(
-                f"QPushButton {{ background-color: {pal['bg_surface']}; border: 1px solid {pal['border']}; border-radius: 14px; padding: 0px; }}"
-                f"QPushButton:hover {{ background-color: {pal['bg_hover']}; border-color: {pal['red']}; }}"
-            )
-            btn_del.clicked.connect(lambda checked, st=s: self._remove_single_student(st))
-            bot_r.addWidget(btn_del)
-
-            c_lay.addLayout(bot_r)
-
-            row_idx = idx // 2
-            col_idx = idx % 2
-            self.feed_grid_layout.addWidget(card, row_idx, col_idx)
+        txt = ''.join(x['char'] for x in active['chars'])
+        self.teacher_doc_edit.setPlainText(txt)
+        self.teacher_doc_edit.moveCursor(QTextCursor.MoveOperation.End)
 
     def _open_expand_student_dialog(self, student: dict):
         """Large 92%-viewport Live Expanded Student View Modal."""
