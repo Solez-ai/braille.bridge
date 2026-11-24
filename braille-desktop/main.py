@@ -1685,20 +1685,16 @@ class BrailleBridgeWindow(QMainWindow):
             sa.setStyleSheet("QScrollArea { background-color: transparent; border: none; }")
             if sa.viewport():
                 sa.viewport().setStyleSheet("background-color: transparent;")
-        self.feed_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.feed_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.feed_scroll.setStyleSheet(f"QScrollArea {{ background-color: {pal['bg_window']}; border: none; }}")
-        if self.feed_scroll.viewport():
-            self.feed_scroll.viewport().setStyleSheet(f"background-color: {pal['bg_window']};")
         self.live_text_edit.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.live_text_edit.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        for container in (self.roster_list_widget, self.logs_students_widget, self.log_doc_container, self.decoder_container):
+        self.teacher_doc_edit.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.teacher_doc_edit.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        for container in (self.teacher_tabs_container, self.logs_students_widget, self.log_doc_container, self.decoder_container):
             obj = container.objectName()
             if obj:
-                container.setStyleSheet(f"QWidget#{obj} {{ background-color: {pal['bg_panel']}; }}")
+                container.setStyleSheet(f"QWidget#{obj} {{ background-color: transparent; }}")
             else:
-                container.setStyleSheet(f"background-color: {pal['bg_panel']};")
-        self.feed_container.setStyleSheet(f"background-color: {pal['bg_window']};")
+                container.setStyleSheet("background-color: transparent;")
         self.theme_btn.setText("Light" if self.is_dark else "Dark")
         self._refresh_port_combos()
         self._update_student_indicators()
