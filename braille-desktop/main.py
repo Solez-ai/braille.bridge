@@ -134,7 +134,7 @@ class BrailleDotButton(QPushButton):
         super().__init__(parent)
         self.dot_number = dot_number
         self.is_active = False
-        self.is_dark = True
+        self.is_dark = False
         self._pulse_scale = 1.0
         self._anim = QVariantAnimation(self)
         self._anim.setDuration(240)
@@ -195,7 +195,7 @@ class BrailleDotButton(QPushButton):
 class MiniBrailleCell(QWidget):
     """Compact 6-dot Braille cell indicator for Student Feed Cards and Chord Trainer."""
 
-    def __init__(self, chord: int = 0, size_scale: float = 1.0, is_dark: bool = True, parent=None):
+    def __init__(self, chord: int = 0, size_scale: float = 1.0, is_dark: bool = False, parent=None):
         super().__init__(parent)
         self.chord = chord
         self.scale = size_scale
@@ -267,8 +267,8 @@ class BrailleBridgeWindow(QMainWindow):
         self.resize(1420, 900)
         self.setMinimumSize(1040, 680)
 
-        # State
-        self.is_dark = True
+        # State (Light mode only)
+        self.is_dark = False
         self.current_mode = 'student'  # 'student' | 'teacher' | 'logs' | 'learn'
         self.speech = SpeechEngine()
 
@@ -361,8 +361,7 @@ class BrailleBridgeWindow(QMainWindow):
                 self.teacher_name = cfg.get('teacher_name', 'Teacher') or 'Teacher'
                 self.school_name = cfg.get('school_name', 'BrailleBridge Classroom') or 'BrailleBridge Classroom'
                 self.teacher_email = cfg.get('teacher_email', '') or ''
-                if 'is_dark' in cfg:
-                    self.is_dark = bool(cfg['is_dark'])
+                self.is_dark = False
                 if 'speech_enabled' in cfg:
                     self.speech.enabled = bool(cfg['speech_enabled'])
                 if 'sound_boost_pct' in cfg:
@@ -647,14 +646,6 @@ class BrailleBridgeWindow(QMainWindow):
         self.timing_btn.setToolTip("Adjust live hardware debounce & chord timing (or reset to 100+ WPM decode-on-release)")
         self.timing_btn.clicked.connect(self._open_timing_dialog)
         header_layout.addWidget(self.timing_btn)
-
-        # Theme Toggle Button
-        self.theme_btn = QPushButton("Light")
-        self.theme_btn.setIconSize(QSize(15, 15))
-        self.theme_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.theme_btn.setFixedHeight(36)
-        self.theme_btn.clicked.connect(self.toggle_theme)
-        header_layout.addWidget(self.theme_btn)
 
         # Connection Status Pill
         conn_pill = QWidget()
@@ -1444,21 +1435,12 @@ class BrailleBridgeWindow(QMainWindow):
         self._apply_theme()
 
     def toggle_theme(self):
-        self.is_dark = not self.is_dark
-        self.theme_btn.setText("Light" if self.is_dark else "Dark")
-        for btn in self.dot_buttons.values():
-            btn.set_theme(self.is_dark)
+        self.is_dark = False
         self._apply_theme()
-        self._save_settings()
-        if self.current_mode == 'teacher':
-            self._rebuild_teacher_ui()
-        elif self.current_mode == 'logs':
-            self._rebuild_logs_ui()
-        elif self.current_mode == 'learn':
-            self._update_chord_trainer()
 
     def _apply_theme(self):
-        pal = ThemePalette.DARK if self.is_dark else ThemePalette.LIGHT
+        self.is_dark = False
+        pal = ThemePalette.LIGHT
         fg = pal['text_primary']
         fg_muted = pal['text_secondary']
         gold = pal['gold']
@@ -1466,7 +1448,7 @@ class BrailleBridgeWindow(QMainWindow):
 
         self.logo_badge.setPixmap(svg_pixmap('braille', '#ffffff', 22))
         self.logo_badge.setStyleSheet(
-            f"background-color: {pal['navy']}; border: 2px solid {gold}; border-radius: 8px;"
+            f"background-color: {pal['navy']}; border: 2px solid {gold}; border-radius: 6px;"
         )
         self.brand_label.setText(
             f"<span style='color:{fg};'>Braille</span>"
@@ -1482,20 +1464,19 @@ class BrailleBridgeWindow(QMainWindow):
                 btn.setIcon(svg_icon(icon_name, '#ffffff', 15))
                 btn.setStyleSheet(
                     f"background-color: {pal['navy']}; color: #ffffff; "
-                    f"border-bottom: 2.5px solid {gold}; border-radius: 10px; "
+                    f"border-bottom: 2.5px solid {gold}; border-radius: 4px; "
                     f"padding: 4px 16px; font-weight: bold;"
                 )
             else:
                 btn.setIcon(svg_icon(icon_name, fg_muted, 15))
                 btn.setStyleSheet(
                     f"background-color: transparent; color: {fg_muted}; "
-                    f"border: none; border-radius: 10px; padding: 4px 16px;"
+                    f"border: none; border-radius: 4px; padding: 4px 16px;"
                 )
 
         # Crisp vector icons on all toolbar & action buttons
         self.profile_btn.setIcon(svg_icon('user', gold, 15))
         self.timing_btn.setIcon(svg_icon('clock', fg, 15))
-        self.theme_btn.setIcon(svg_icon('sun' if self.is_dark else 'moon', fg, 15))
         self.btn_scan_ble.setIcon(svg_icon('refresh', fg, 14))
         self.btn_send_to_teacher.setIcon(svg_icon('send', fg, 14))
         self.btn_commit_chord.setIcon(svg_icon('return_key', btn_fg, 14))
@@ -1688,7 +1669,6 @@ class BrailleBridgeWindow(QMainWindow):
                 container.setStyleSheet(f"QWidget#{obj} {{ background-color: transparent; }}")
             else:
                 container.setStyleSheet("background-color: transparent;")
-        self.theme_btn.setText("Light" if self.is_dark else "Dark")
         self._refresh_port_combos()
         self._update_student_indicators()
         self._update_student_conn_ui()
