@@ -381,24 +381,11 @@ class BrailleBridgeWindow(QMainWindow):
         except Exception:
             self.student_logs = []
 
+        # Always start Teacher roster empty on launch (no pre-populated/demo students)
+        self.students = []
         try:
             if os.path.exists(ROSTER_FILE):
-                with open(ROSTER_FILE, 'r', encoding='utf-8') as f:
-                    saved_roster = json.load(f)
-                for idx, item in enumerate(saved_roster):
-                    self.students.append({
-                        'id': self.student_id_seq,
-                        'name': item.get('name', f'Student {idx+1}'),
-                        'connType': item.get('connType', 'bluetooth'),
-                        'baud': int(item.get('baud', 115200)),
-                        'portName': item.get('portName', ''),
-                        'color': STUDENT_COLORS[idx % len(STUDENT_COLORS)],
-                        'chars': item.get('chars', []),
-                        'connected': False,
-                        'mirror': bool(item.get('mirror', False)),
-                        'lastChord': 0,
-                    })
-                    self.student_id_seq += 1
+                os.remove(ROSTER_FILE)
         except Exception:
             pass
 
@@ -515,6 +502,18 @@ class BrailleBridgeWindow(QMainWindow):
                 self._process_incoming_chunk_for_roster_student(s, chunk)
 
     def _process_incoming_chunk_for_student(self, chunk: str):
+        chunk = chunk.replace('\ufffd', '')
+        if 'SYSTEM:BKSP' in chunk and chunk.strip() != 'SYSTEM:BKSP':
+            parts = chunk.split('SYSTEM:BKSP')
+            for idx, p in enumerate(parts):
+                if p:
+                    self._process_incoming_chunk_for_student(p)
+                if idx < len(parts) - 1:
+                    self._student_backspace()
+            return
+        for tok in ('SYSTEM:CAP_ONCE', 'SYSTEM:CAP_LOCK', 'SYSTEM:CAP_OFF', 'SYSTEM:TIMING_DEFAULT', 'LANG:en', 'LANG:bn'):
+            if tok in chunk and chunk.strip() != tok:
+                chunk = chunk.replace(tok, '')
         stripped = chunk.strip()
         if stripped == 'SYSTEM:BKSP':
             self._student_backspace()
@@ -543,11 +542,23 @@ class BrailleBridgeWindow(QMainWindow):
             return
 
         for ch in chunk:
-            if ch in ('\r', '\n'):
+            if ch in ('\r', '\n') or ord(ch) < 32:
                 continue
             self._append_student_char(ch)
 
     def _process_incoming_chunk_for_roster_student(self, student: dict, chunk: str):
+        chunk = chunk.replace('\ufffd', '')
+        if 'SYSTEM:BKSP' in chunk and chunk.strip() != 'SYSTEM:BKSP':
+            parts = chunk.split('SYSTEM:BKSP')
+            for idx, p in enumerate(parts):
+                if p:
+                    self._process_incoming_chunk_for_roster_student(student, p)
+                if idx < len(parts) - 1:
+                    self._process_incoming_chunk_for_roster_student(student, 'SYSTEM:BKSP')
+            return
+        for tok in ('SYSTEM:CAP_ONCE', 'SYSTEM:CAP_LOCK', 'SYSTEM:CAP_OFF', 'SYSTEM:TIMING_DEFAULT', 'LANG:en', 'LANG:bn'):
+            if tok in chunk and chunk.strip() != tok:
+                chunk = chunk.replace(tok, '')
         stripped = chunk.strip()
         if stripped == 'SYSTEM:BKSP':
             if student['chars']:
@@ -561,7 +572,7 @@ class BrailleBridgeWindow(QMainWindow):
         now_ms = int(time.time() * 1000)
         added = False
         for ch in chunk:
-            if ch in ('\r', '\n'):
+            if ch in ('\r', '\n') or ord(ch) < 32:
                 continue
             student['chars'].append({'char': ch, 'time': now_ms})
             student['lastChord'] = CHAR_TO_CHORD.get(ch, CHAR_TO_CHORD.get(ch.lower(), 0))

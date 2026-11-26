@@ -183,7 +183,7 @@ void loop() {
 
   // Handle beginner self-correction (wrong chord -> pause -> backspace -> pause -> right chord)
   if (typoPhase == TYPO_WAIT_BEFORE_BKSP) {
-    sendRaw("SYSTEM:BKSP", true);
+    sendRaw("\nSYSTEM:BKSP", true);
     typoPhase = TYPO_WAIT_AFTER_BKSP;
     nextActionMs = now + random(680, 1020);
     return;
@@ -202,11 +202,6 @@ void loop() {
   }
 
   typoPhase = TYPO_NONE;
-
-  // If uppercase, emit Dot-6 capital indicator first
-  if (ch >= 'A' && ch <= 'Z') {
-    sendRaw("SYSTEM:CAP_ONCE", true);
-  }
 
   char out[2] = { ch, '\0' };
   sendRaw(out, false);

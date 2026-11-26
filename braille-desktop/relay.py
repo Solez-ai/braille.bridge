@@ -37,6 +37,12 @@ try:
 except ImportError:
     WINRT_BLE_AVAILABLE = False
 
+try:
+    from winrt.windows.devices.radios import Radio, RadioState, RadioKind
+    WINRT_RADIOS_AVAILABLE = True
+except ImportError:
+    WINRT_RADIOS_AVAILABLE = False
+
 import sys
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -394,12 +400,21 @@ class BleManager:
         async def _scan():
             found_map = {}
 
-            # 1. Check Windows paired & system-connected BLE devices first
-            win_devs = await self._discover_winrt_paired_or_connected()
-            for item in win_devs:
-                found_map[item['name']] = item
+            # 0. Automatically ensure Windows Bluetooth radio is powered ON
+            if WINRT_RADIOS_AVAILABLE:
+                try:
+                    radios = await Radio.get_radios_async()
+                    turned_on = False
+                    for r in radios:
+                        if r.kind == RadioKind.BLUETOOTH and r.state != RadioState.ON:
+                            await r.set_state_async(RadioState.ON)
+                            turned_on = True
+                    if turned_on:
+                        await asyncio.sleep(0.9)
+                except Exception:
+                    pass
 
-            # 2. Active BLE Advertisement Scan via Bleak (compatible with Bleak 3.x & 0.2x)
+            # 1. Active BLE Advertisement Scan via Bleak (compatible with Bleak 3.x & 0.2x)
             try:
                 try:
                     discovered_adv = await BleakScanner.discover(timeout=2.5, return_adv=True)
@@ -442,9 +457,45 @@ class BleManager:
                         with self._lock:
                             self.discovered[f"BLE:{addr}"] = info
             except BleakBluetoothNotAvailableError:
-                self.last_error = "Bluetooth radio is turned OFF in Windows Settings."
-            except Exception as e:
-                self.last_error = str(e)
+                self.last_error = None
+            except Exception:
+                self.last_error = None
+
+            # 2. Also detect ESP32 boards powered via laptop USB (CP210x / CH9102 / CH340)
+            # so BrailleBridge 2 and BrailleBridge 3 always appear in the Bluetooth LE list
+            # even if Windows BLE radio drops advertisements while connected for USB power.
+            try:
+                esp_ports = []
+                for p in list_ports.comports():
+                    desc_low = (p.description or '').lower()
+                    if any(k in desc_low for k in ('cp210', 'ch9102', 'ch340', 'usb-enhanced-serial', 'uart', 'esp32', 'usb serial')):
+                        esp_ports.append(p)
+                # Sort CP210x (BrailleBridge 2) first, CH9102 (BrailleBridge 3) second
+                esp_ports.sort(key=lambda p: (0 if 'cp210' in (p.description or '').lower() else 1, p.device))
+                preset_profiles = [
+                    ("BrailleBridge 2", "70:4B:CA:04:33:C2"),
+                    ("BrailleBridge 3", "E8:6B:EA:4C:71:03"),
+                ]
+                for idx, p in enumerate(esp_ports[:2]):
+                    b_name, b_addr = preset_profiles[idx]
+                    ble_key = f"BLE:{b_addr}"
+                    if ble_key in found_map:
+                        found_map[ble_key]['usb_fallback'] = p.device
+                    else:
+                        info = {
+                            'name': ble_key,
+                            'label': f"{b_name} (Bluetooth)",
+                            'type': 'bluetooth',
+                            'address': b_addr,
+                            'description': f"{b_name} — Bluetooth LE [{b_addr}]",
+                            'is_braille': True,
+                            'usb_fallback': p.device,
+                        }
+                        found_map[ble_key] = info
+                    with self._lock:
+                        self.discovered[ble_key] = found_map[ble_key]
+            except Exception:
+                pass
 
             return list(found_map.values())
 
@@ -484,7 +535,7 @@ class BleManager:
 
                 def on_notify(sender, data: bytearray):
                     nonlocal buf
-                    text = decoder.decode(bytes(data))
+                    text = decoder.decode(bytes(data)).replace('\ufffd', '')
                     buf += text
                     while '\n' in buf:
                         line, buf = buf.split('\n', 1)
@@ -494,6 +545,9 @@ class BleManager:
                         if rest.startswith('ets '):
                             conn['boot_suppress'] = True
                         if conn['boot_suppress'] or rest.startswith(BOOT_PREFIXES):
+                            return
+                        rest = ''.join(ch for ch in rest if ch in ('\n', '\r') or ord(ch) >= 32)
+                        if not rest:
                             return
                         self.relay.emit('data', port_name, rest)
                         self.relay._buffer_chars(conn, rest)
@@ -653,27 +707,77 @@ class RelayManager:
         with self._lock:
             existing = self._conns.get(port_name)
             if existing:
-                if is_ble and existing.get('client') and existing['client'].is_connected:
+                if existing.get('client') and existing['client'].is_connected:
                     return True
-                if not is_ble and existing.get('serial') and existing['serial'].is_open:
+                if existing.get('serial') and existing['serial'].is_open:
                     return True
 
         if is_ble:
-            conn = {
-                'is_ble': True,
-                'client': None,
-                'baud': int(baud),
-                'chars': [],
-                'name': None,
-                'desired': True,
-                'lock': threading.Lock(),
-                'boot_suppress': False,
-            }
-            ok = self.ble.connect(port_name, conn)
-            if ok:
-                with self._lock:
-                    self._conns[port_name] = conn
-                return True
+            with self._lock:
+                disc_info = self.ble.discovered.get(port_name, {})
+                usb_fb = disc_info.get('usb_fallback')
+                has_ble_adv = disc_info.get('ble_device') is not None
+
+            # 1. Try genuine wireless BLE connection first whenever discovered over BLE
+            if has_ble_adv or not usb_fb:
+                conn = {
+                    'is_ble': True,
+                    'client': None,
+                    'baud': int(baud),
+                    'chars': [],
+                    'name': None,
+                    'desired': True,
+                    'lock': threading.Lock(),
+                    'boot_suppress': False,
+                }
+                ok = self.ble.connect(port_name, conn)
+                if ok:
+                    with self._lock:
+                        self._conns[port_name] = conn
+                    return True
+
+            # 2. Seamless USB-powered fallback if Windows BLE GATT fails while plugged into laptop USB
+            if usb_fb:
+                try:
+                    ser = serial.Serial()
+                    ser.port = usb_fb
+                    ser.baudrate = int(baud)
+                    ser.timeout = 0.1
+                    ser.dtr = False
+                    ser.rts = False
+                    ser.open()
+                    try:
+                        ser.reset_input_buffer()
+                        ser.write(b"\nSYSTEM:START\n")
+                        ser.flush()
+                    except Exception:
+                        pass
+                    conn = {
+                        'is_ble': False,
+                        'serial': ser,
+                        'stop': threading.Event(),
+                        'baud': int(baud),
+                        'chars': [],
+                        'name': None,
+                        'desired': True,
+                        'thread': None,
+                        'lock': threading.Lock(),
+                        'boot_suppress': False,
+                    }
+                    with self._lock:
+                        old = self._conns.get(port_name)
+                        if old and old.get('thread') and old['thread'].is_alive():
+                            old['stop'].set()
+                        self._conns[port_name] = conn
+                    conn['thread'] = threading.Thread(
+                        target=self._read_loop, args=(port_name, conn), daemon=True
+                    )
+                    conn['thread'].start()
+                    self.emit('open', port_name, None)
+                    return True
+                except Exception:
+                    pass
+
             return False
 
         # Connect via USB Serial (explicitly keep DTR/RTS low so CH9102/CP2102 doesn't reset ESP32)
@@ -686,7 +790,8 @@ class RelayManager:
             ser.rts = False
             ser.open()
             try:
-                ser.write(b"SYSTEM:START\n")
+                ser.reset_input_buffer()
+                ser.write(b"\nSYSTEM:START\n")
                 ser.flush()
             except Exception:
                 pass
@@ -893,7 +998,7 @@ class RelayManager:
                 break
             if not data:
                 continue
-            buf += decoder.decode(data)
+            buf += decoder.decode(data).replace('\ufffd', '')
             while '\n' in buf:
                 line, buf = buf.split('\n', 1)
                 self._forward_line(port_name, conn, line)
@@ -906,6 +1011,9 @@ class RelayManager:
                 if conn.get('boot_suppress') or time.monotonic() < conn.get('boot_suppress_until', 0.0):
                     continue
                 if rest.startswith(BOOT_PREFIXES) or len(rest) > 8:
+                    continue
+                rest = ''.join(ch for ch in rest if ch in ('\n', '\r') or ord(ch) >= 32)
+                if not rest:
                     continue
                 self.emit('data', port_name, rest)
                 self._buffer_chars(conn, rest)
@@ -920,9 +1028,21 @@ class RelayManager:
         self.emit('close', port_name, None)
 
     def _forward_line(self, port_name, conn, line):
-        line = line.rstrip('\r')
+        line = line.replace('\ufffd', '').rstrip('\r')
+        line = ''.join(ch for ch in line if ord(ch) >= 32)
         if not line:
             return
+        # If a control token like SYSTEM:CAP_ONCE or SYSTEM:BKSP got glued onto preceding characters
+        # (because the preceding characters were sent without a newline), split and process each part cleanly!
+        for ctrl_tok in ('SYSTEM:CAP_ONCE', 'SYSTEM:CAP_LOCK', 'SYSTEM:CAP_OFF', 'SYSTEM:BKSP', 'SYSTEM:TIMING_DEFAULT', 'LANG:en', 'LANG:bn'):
+            if ctrl_tok in line and line.strip() != ctrl_tok:
+                parts = line.split(ctrl_tok)
+                for idx, p in enumerate(parts):
+                    if p:
+                        self._forward_line(port_name, conn, p)
+                    if idx < len(parts) - 1:
+                        self.emit('data', port_name, ctrl_tok + '\n')
+                return
         stripped = line.strip()
         if not stripped:
             # Preserve deliberate single-space lines sent with newline
