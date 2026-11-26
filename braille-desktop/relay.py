@@ -308,6 +308,7 @@ class BleManager:
         self.discovered = {}   # address -> info dict
         self.last_error = None
         self._lock = threading.Lock()
+        self._op_lock = threading.Lock()
         self._loop = None
         self._thread = None
 
@@ -435,6 +436,7 @@ class BleManager:
                             'address': addr,
                             'description': f"{display_name} — Bluetooth LE [{addr}]{rssi_str}",
                             'is_braille': is_braille,
+                            'ble_device': d,
                         }
                         found_map[f"BLE:{addr}"] = info
                         with self._lock:
@@ -446,7 +448,8 @@ class BleManager:
 
             return list(found_map.values())
 
-        res = self.run_coro(_scan(), timeout=6.0)
+        with self._op_lock:
+            res = self.run_coro(_scan(), timeout=7.0)
         return res or []
 
     def get_known_devices(self):
@@ -459,6 +462,9 @@ class BleManager:
             return False
 
         addr = port_name[4:] if port_name.startswith('BLE:') else port_name
+        with self._lock:
+            cached_info = self.discovered.get(f"BLE:{addr}") or self.discovered.get(port_name) or {}
+            target_dev = cached_info.get('ble_device') or addr
 
         async def _connect():
             try:
@@ -468,8 +474,8 @@ class BleManager:
                     self.relay.emit('close', port_name, None)
                     self.relay._save_log(port_name, conn)
 
-                client = BleakClient(addr, disconnected_callback=on_disconnect)
-                await client.connect(timeout=10.0)
+                client = BleakClient(target_dev, disconnected_callback=on_disconnect)
+                await client.connect(timeout=12.0)
                 if not client.is_connected:
                     return False
 
@@ -494,6 +500,11 @@ class BleManager:
 
                 await client.start_notify(NUS_TX_UUID, on_notify)
 
+                try:
+                    await client.write_gatt_char(NUS_RX_UUID, b"SYSTEM:START\n", response=False)
+                except Exception:
+                    pass
+
                 with conn['lock']:
                     conn['client'] = client
                     conn['decoder'] = decoder
@@ -504,7 +515,8 @@ class BleManager:
                 self.last_error = str(e)
                 return False
 
-        res = self.run_coro(_connect(), timeout=14.0)
+        with self._op_lock:
+            res = self.run_coro(_connect(), timeout=16.0)
         return bool(res)
 
     def write_nus(self, conn, text: str):
@@ -673,6 +685,11 @@ class RelayManager:
             ser.dtr = False
             ser.rts = False
             ser.open()
+            try:
+                ser.write(b"SYSTEM:START\n")
+                ser.flush()
+            except Exception:
+                pass
         except Exception:
             return False
 
@@ -904,8 +921,13 @@ class RelayManager:
 
     def _forward_line(self, port_name, conn, line):
         line = line.rstrip('\r')
+        if not line:
+            return
         stripped = line.strip()
         if not stripped:
+            # Preserve deliberate single-space lines sent with newline
+            self.emit('data', port_name, line)
+            self._buffer_chars(conn, line)
             return
         if any(tok in stripped for tok in ('ets ', 'rst:0x', 'boot:0x', 'configsip:', 'SPIWP:', 'load:0x', 'Jul 29 2019')):
             conn['boot_suppress'] = True

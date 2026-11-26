@@ -564,7 +564,7 @@ class BrailleBridgeWindow(QMainWindow):
             if ch in ('\r', '\n'):
                 continue
             student['chars'].append({'char': ch, 'time': now_ms})
-            student['lastChord'] = CHAR_TO_CHORD.get(ch, 0)
+            student['lastChord'] = CHAR_TO_CHORD.get(ch, CHAR_TO_CHORD.get(ch.lower(), 0))
             added = True
         if added:
             self._update_single_student_card(student)
@@ -2196,12 +2196,25 @@ class BrailleBridgeWindow(QMainWindow):
         }
         self.student_id_seq += 1
         self.students.append(st)
+        self.active_teacher_student_id = st['id']
         if port_name:
             self.relay.set_assignment(name, port_name)
         self.input_student_name.clear()
         self._save_persisted_roster()
         self._rebuild_teacher_ui()
-        self.show_toast(f"Added {name} to classroom roster.")
+
+        # Advance combo to next unassigned device so adding multiple students is seamless
+        used_ports = {s.get('portName') for s in self.students if s.get('portName')}
+        for idx in range(self.teacher_port_combo.count()):
+            cand = self.teacher_port_combo.itemData(idx)
+            if cand and cand not in used_ports:
+                self.teacher_port_combo.setCurrentIndex(idx)
+                break
+
+        if port_name:
+            self._toggle_roster_student_conn(st)
+        else:
+            self.show_toast(f"Added {name} to classroom roster.")
 
     def _toggle_roster_student_conn(self, student: dict):
         if student.get('connecting'):
@@ -2282,6 +2295,8 @@ class BrailleBridgeWindow(QMainWindow):
         student['lastChord'] = 0
         self._save_persisted_roster()
         self._rebuild_teacher_ui()
+        if student.get('connected') and student.get('portName'):
+            self.relay.send_command("SYSTEM:START", student['portName'])
 
     def _remove_single_student(self, student: dict):
         port_to_close = student.get('portName') if student.get('connected') else None
