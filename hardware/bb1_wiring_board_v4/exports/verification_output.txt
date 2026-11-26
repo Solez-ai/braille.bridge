@@ -1,0 +1,22 @@
+=== BB1 WIRING BOARD v4 VERIFICATION REPORT ===
+Board dimensions             : 66.0 x 52.0 x 1.2 mm (2-Layer FR-4, HASL lead-free)
+J5 Pin Order (CONFIRMED)     : pin 1 = VIN, pin 2 = GND, pin 3 = VOUT, pin 4 = EN (NC)
+Total component pins checked : 71 (NC pins: 30, Connected pins: 41)
+Netlist & PCB parity mismatches: 0
+Active copper nets (15)      : ['BAT_POS', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'DIODE_IN', 'GND', 'MOD_IN', 'SHIFT', 'SPACE', 'SW_BACK', 'V5_MOD', 'VIN']
+GND connected pins (12)     : [('J1', '10'), ('J1', '12'), ('J1', '14'), ('J1', '16'), ('J1', '2'), ('J1', '4'), ('J1', '6'), ('J1', '8'), ('J2', '14'), ('J3', '4'), ('J4', '1'), ('J5', '2')]
+SW_BACK pins (3)             : [('D2', '2'), ('J3', '1'), ('JP1', '1')]
+MOD_IN pins (2)              : [('D2', '1'), ('J5', '1')]
+V5_MOD pins (2)              : [('J5', '3'), ('JP1', '3')]
+DIODE_IN pins (2)            : [('D1', '2'), ('JP1', '2')]
+VIN pins (2)                 : [('D1', '1'), ('J2', '19')]
+BAT_POS pins (2)             : [('J3', '2'), ('J3', '3')]
+ESP32_ROW_SPACING_MM         : 20.300 mm (target 20.300 mm)
+J5 keep-out to ESP32 outline : 16.55 mm (req >= 3.0 mm)
+J5 keep-out to J1 male pins  : 7.10 mm
+J5 keep-out to J3 male pins  : 34.00 mm
+Min power track width        : 1.00 mm (req >= 1.00 mm)
+Min signal track width       : 0.30 mm
+Vias total                   : 31 (4 signal vias + 27 GND stitching vias)
+Required v4 silkscreen check : ALL PRESENT (>= 1.20 mm)
+VERIFICATION_ALL_PASS

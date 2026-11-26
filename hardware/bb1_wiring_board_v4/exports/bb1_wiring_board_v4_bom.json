@@ -1,0 +1,58 @@
+[
+  {
+    "Designator": "D1, D2",
+    "Qty": "2",
+    "Value_Part": "1N5819",
+    "Package_Footprint": "Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal",
+    "Description": "40V 1A Schottky Barrier Diode (D1: band to VIN; D2: band to module)",
+    "DNP": "No"
+  },
+  {
+    "Designator": "J1",
+    "Qty": "1",
+    "Value_Part": "Conn_01x16_Pin",
+    "Package_Footprint": "Connector_PinHeader_2.54mm:PinHeader_1x16_P2.54mm_Vertical",
+    "Description": "2.54mm 1x16 vertical male pin header (8x SIG+GND switch pairs)",
+    "DNP": "No"
+  },
+  {
+    "Designator": "J2, J4",
+    "Qty": "2",
+    "Value_Part": "ESP32_38Pin_RowA / RowB (1x19 Female Socket)",
+    "Package_Footprint": "Connector_PinSocket_2.54mm:PinSocket_1x19_P2.54mm_Vertical",
+    "Description": "2.54mm 1x19 vertical female socket header for 38-pin ESP32 DevKit (20.3mm row spacing)",
+    "DNP": "No"
+  },
+  {
+    "Designator": "J3",
+    "Qty": "1",
+    "Value_Part": "Conn_01x04_Pin",
+    "Package_Footprint": "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical",
+    "Description": "2.54mm 1x04 vertical male pin header (BAT-, BAT+, BAT+>SW, SW BACK)",
+    "DNP": "No"
+  },
+  {
+    "Designator": "J5",
+    "Qty": "1",
+    "Value_Part": "1x04 Female Socket (for Pololu S9V11F5 5V Buck-Boost)",
+    "Package_Footprint": "Connector_PinSocket_2.54mm:PinSocket_1x04_P2.54mm_Vertical",
+    "Description": "2.54mm 1x04 vertical female socket (pin 1=VIN, 2=GND, 3=VOUT, 4=EN); plug-in 5V module",
+    "DNP": "No"
+  },
+  {
+    "Designator": "JP1",
+    "Qty": "1",
+    "Value_Part": "Conn_01x03_Pin + 1x 2.54mm Jumper Cap (Shunt)",
+    "Package_Footprint": "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical",
+    "Description": "2.54mm 1x03 vertical male header + 1x shunt cap (1-2: AA direct; 2-3: 5V module)",
+    "DNP": "No"
+  },
+  {
+    "Designator": "H1, H2",
+    "Qty": "2",
+    "Value_Part": "MountingHole_2.2mm_M2",
+    "Package_Footprint": "MountingHole:MountingHole_2.2mm_M2",
+    "Description": "M2 unplated mounting hole (2.2mm drill, 5mm copper keepout)",
+    "DNP": "Mechanical"
+  }
+]

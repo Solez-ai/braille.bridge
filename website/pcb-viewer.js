@@ -4,23 +4,23 @@
   const PCB_3D_VIEWS = {
     iso: {
       src: 'assets/pcb/view_iso_3d.png',
-      alt: 'KiCad 3D raytraced isometric render of BrailleBridge BB1 Wiring Board v2',
-      status: 'Isometric 3D · J2/J4 ESP32 sockets, J1 8× switch header, J3 power header, D1 1N5819'
+      alt: 'KiCad 3D raytraced isometric render of BrailleBridge BB1 Wiring Board v4 with plug-in 5V buck-boost socket J5 and JP1 jumper',
+      status: 'Isometric 3D · J2/J4 ESP32, J1 8× switch, J3 power, J5 5V buck-boost socket, JP1 selector, D1/D2 1N5819'
     },
     top: {
       src: 'assets/pcb/view_top_3d.png',
-      alt: 'KiCad 3D raytraced top view of BrailleBridge BB1 Wiring Board v2',
-      status: 'Top (Z) · F.Cu silkscreen, 12* boot pin note, D1 1N5819 polarity, J1/J3 pin labels'
+      alt: 'KiCad 3D raytraced top view of BrailleBridge BB1 Wiring Board v4',
+      status: 'Top (Z) · F.Cu silkscreen, J5 5V module keep-out, JP1 1-2 AA / 2-3 5V module, D1/D2 1N5819 polarity'
     },
     bottom: {
       src: 'assets/pcb/view_bottom_3d.png',
-      alt: 'KiCad 3D raytraced bottom view of BrailleBridge BB1 Wiring Board v2',
-      status: 'Bottom (-Z) · B.Cu copper tracks, 1.00 mm VIN trace, 34 GND stitching vias'
+      alt: 'KiCad 3D raytraced bottom view of BrailleBridge BB1 Wiring Board v4',
+      status: 'Bottom (-Z) · B.Cu copper tracks, 1.00 mm V5_MOD & DIODE_IN power rails, 27 GND stitching vias'
     },
     esp32: {
       src: 'assets/pcb/view_esp32_3d.png',
-      alt: 'KiCad 3D raytraced ESP32 DevKit clearance render on BrailleBridge BB1 Wiring Board v2',
-      status: 'ESP32 Clearance · 38-pin DevKit seated on J2/J4 (20.300 mm row spacing, >= 4.55 mm clearance)'
+      alt: 'KiCad 3D mechanical clearance render of ESP32 DevKit and Pololu S9V11F5 5V buck-boost module on BB1 Wiring Board v4',
+      status: 'ESP32 + 5V Module Clearance · 38-pin DevKit on J2/J4 + Pololu S9V11F5 on J5 (16.55 mm keep-out clearance)'
     }
   };
 
@@ -113,7 +113,7 @@
         const rect = viewport.getBoundingClientRect();
         const nx = (e.clientX - rect.left) / Math.max(rect.width, 1);
         const ny = (e.clientY - rect.top) / Math.max(rect.height, 1);
-        coordEl.textContent = `X: ${(nx * 66.0).toFixed(2)} mm   Y: ${(ny * 41.0).toFixed(2)} mm`;
+        coordEl.textContent = `X: ${(nx * 66.0).toFixed(2)} mm   Y: ${(ny * 52.0).toFixed(2)} mm`;
       }
       if (!dragging) return;
       panX = e.clientX - startX;

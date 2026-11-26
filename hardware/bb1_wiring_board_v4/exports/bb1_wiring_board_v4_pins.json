@@ -1,0 +1,570 @@
+[
+  {
+    "Reference": "D1",
+    "Pin": "1",
+    "Function": "K_1",
+    "Net": "VIN",
+    "X_mm": "57.22",
+    "Y_mm": "13.50"
+  },
+  {
+    "Reference": "D1",
+    "Pin": "2",
+    "Function": "A_2",
+    "Net": "DIODE_IN",
+    "X_mm": "47.06",
+    "Y_mm": "13.50"
+  },
+  {
+    "Reference": "D2",
+    "Pin": "1",
+    "Function": "K_1",
+    "Net": "MOD_IN",
+    "X_mm": "19.90",
+    "Y_mm": "46.00"
+  },
+  {
+    "Reference": "D2",
+    "Pin": "2",
+    "Function": "A_2",
+    "Net": "SW_BACK",
+    "X_mm": "30.06",
+    "Y_mm": "46.00"
+  },
+  {
+    "Reference": "H1",
+    "Pin": "",
+    "Function": "",
+    "Net": "NC",
+    "X_mm": "4.00",
+    "Y_mm": "4.50"
+  },
+  {
+    "Reference": "H2",
+    "Pin": "",
+    "Function": "",
+    "Net": "NC",
+    "X_mm": "62.00",
+    "Y_mm": "48.00"
+  },
+  {
+    "Reference": "J1",
+    "Pin": "1",
+    "Function": "Pin_1_1",
+    "Net": "D1",
+    "X_mm": "5.50",
+    "Y_mm": "35.00"
+  },
+  {
+    "Reference": "J1",
+    "Pin": "2",
+    "Function": "Pin_2_2",
+    "Net": "GND",
+    "X_mm": "8.04",
+    "Y_mm": "35.00"
+  },
+  {
+    "Reference": "J1",
+    "Pin": "3",
+    "Function": "Pin_3_3",
+    "Net": "D2",
+    "X_mm": "10.58",
+    "Y_mm": "35.00"
+  },
+  {
+    "Reference": "J1",
+    "Pin": "4",
+    "Function": "Pin_4_4",
+    "Net": "GND",
+    "X_mm": "13.12",
+    "Y_mm": "35.00"
+  },
+  {
+    "Reference": "J1",
+    "Pin": "5",
+    "Function": "Pin_5_5",
+    "Net": "D3",
+    "X_mm": "15.66",
+    "Y_mm": "35.00"
+  },
+  {
+    "Reference": "J1",
+    "Pin": "6",
+    "Function": "Pin_6_6",
+    "Net": "GND",
+    "X_mm": "18.20",
+    "Y_mm": "35.00"
+  },
+  {
+    "Reference": "J1",
+    "Pin": "7",
+    "Function": "Pin_7_7",
+    "Net": "D4",
+    "X_mm": "20.74",
+    "Y_mm": "35.00"
+  },
+  {
+    "Reference": "J1",
+    "Pin": "8",
+    "Function": "Pin_8_8",
+    "Net": "GND",
+    "X_mm": "23.28",
+    "Y_mm": "35.00"
+  },
+  {
+    "Reference": "J1",
+    "Pin": "9",
+    "Function": "Pin_9_9",
+    "Net": "D5",
+    "X_mm": "25.82",
+    "Y_mm": "35.00"
+  },
+  {
+    "Reference": "J1",
+    "Pin": "10",
+    "Function": "Pin_10_10",
+    "Net": "GND",
+    "X_mm": "28.36",
+    "Y_mm": "35.00"
+  },
+  {
+    "Reference": "J1",
+    "Pin": "11",
+    "Function": "Pin_11_11",
+    "Net": "D6",
+    "X_mm": "30.90",
+    "Y_mm": "35.00"
+  },
+  {
+    "Reference": "J1",
+    "Pin": "12",
+    "Function": "Pin_12_12",
+    "Net": "GND",
+    "X_mm": "33.44",
+    "Y_mm": "35.00"
+  },
+  {
+    "Reference": "J1",
+    "Pin": "13",
+    "Function": "Pin_13_13",
+    "Net": "SPACE",
+    "X_mm": "35.98",
+    "Y_mm": "35.00"
+  },
+  {
+    "Reference": "J1",
+    "Pin": "14",
+    "Function": "Pin_14_14",
+    "Net": "GND",
+    "X_mm": "38.52",
+    "Y_mm": "35.00"
+  },
+  {
+    "Reference": "J1",
+    "Pin": "15",
+    "Function": "Pin_15_15",
+    "Net": "SHIFT",
+    "X_mm": "41.06",
+    "Y_mm": "35.00"
+  },
+  {
+    "Reference": "J1",
+    "Pin": "16",
+    "Function": "Pin_16_16",
+    "Net": "GND",
+    "X_mm": "43.60",
+    "Y_mm": "35.00"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "1",
+    "Function": "3V3_1",
+    "Net": "NC",
+    "X_mm": "11.50",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "2",
+    "Function": "EN_2",
+    "Net": "NC",
+    "X_mm": "14.04",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "3",
+    "Function": "SP_3",
+    "Net": "NC",
+    "X_mm": "16.58",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "4",
+    "Function": "SN_4",
+    "Net": "NC",
+    "X_mm": "19.12",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "5",
+    "Function": "GPIO34_5",
+    "Net": "NC",
+    "X_mm": "21.66",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "6",
+    "Function": "GPIO35_6",
+    "Net": "NC",
+    "X_mm": "24.20",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "7",
+    "Function": "GPIO32_7",
+    "Net": "SHIFT",
+    "X_mm": "26.74",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "8",
+    "Function": "GPIO33_8",
+    "Net": "SPACE",
+    "X_mm": "29.28",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "9",
+    "Function": "GPIO25_9",
+    "Net": "D6",
+    "X_mm": "31.82",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "10",
+    "Function": "GPIO26_10",
+    "Net": "D5",
+    "X_mm": "34.36",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "11",
+    "Function": "GPIO27_11",
+    "Net": "D4",
+    "X_mm": "36.90",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "12",
+    "Function": "GPIO14_12",
+    "Net": "D1",
+    "X_mm": "39.44",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "13",
+    "Function": "GPIO12_13",
+    "Net": "D2",
+    "X_mm": "41.98",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "14",
+    "Function": "GND_14",
+    "Net": "GND",
+    "X_mm": "44.52",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "15",
+    "Function": "GPIO13_15",
+    "Net": "D3",
+    "X_mm": "47.06",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "16",
+    "Function": "SD2_16",
+    "Net": "NC",
+    "X_mm": "49.60",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "17",
+    "Function": "SD3_17",
+    "Net": "NC",
+    "X_mm": "52.14",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "18",
+    "Function": "CMD_18",
+    "Net": "NC",
+    "X_mm": "54.68",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J2",
+    "Pin": "19",
+    "Function": "V5_19",
+    "Net": "VIN",
+    "X_mm": "57.22",
+    "Y_mm": "24.30"
+  },
+  {
+    "Reference": "J3",
+    "Pin": "1",
+    "Function": "Pin_1_1",
+    "Net": "SW_BACK",
+    "X_mm": "49.50",
+    "Y_mm": "37.72"
+  },
+  {
+    "Reference": "J3",
+    "Pin": "2",
+    "Function": "Pin_2_2",
+    "Net": "BAT_POS",
+    "X_mm": "49.50",
+    "Y_mm": "35.18"
+  },
+  {
+    "Reference": "J3",
+    "Pin": "3",
+    "Function": "Pin_3_3",
+    "Net": "BAT_POS",
+    "X_mm": "49.50",
+    "Y_mm": "32.64"
+  },
+  {
+    "Reference": "J3",
+    "Pin": "4",
+    "Function": "Pin_4_4",
+    "Net": "GND",
+    "X_mm": "49.50",
+    "Y_mm": "30.10"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "1",
+    "Function": "GND_1",
+    "Net": "GND",
+    "X_mm": "11.50",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "2",
+    "Function": "GPIO23_2",
+    "Net": "NC",
+    "X_mm": "14.04",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "3",
+    "Function": "GPIO22_3",
+    "Net": "NC",
+    "X_mm": "16.58",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "4",
+    "Function": "TXD_4",
+    "Net": "NC",
+    "X_mm": "19.12",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "5",
+    "Function": "RXD_5",
+    "Net": "NC",
+    "X_mm": "21.66",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "6",
+    "Function": "GPIO21_6",
+    "Net": "NC",
+    "X_mm": "24.20",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "7",
+    "Function": "GND_7",
+    "Net": "NC",
+    "X_mm": "26.74",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "8",
+    "Function": "GPIO19_8",
+    "Net": "NC",
+    "X_mm": "29.28",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "9",
+    "Function": "GPIO18_9",
+    "Net": "NC",
+    "X_mm": "31.82",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "10",
+    "Function": "GPIO5_10",
+    "Net": "NC",
+    "X_mm": "34.36",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "11",
+    "Function": "GPIO17_11",
+    "Net": "NC",
+    "X_mm": "36.90",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "12",
+    "Function": "GPIO16_12",
+    "Net": "NC",
+    "X_mm": "39.44",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "13",
+    "Function": "GPIO4_13",
+    "Net": "NC",
+    "X_mm": "41.98",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "14",
+    "Function": "GPIO0_14",
+    "Net": "NC",
+    "X_mm": "44.52",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "15",
+    "Function": "GPIO2_15",
+    "Net": "NC",
+    "X_mm": "47.06",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "16",
+    "Function": "GPIO15_16",
+    "Net": "NC",
+    "X_mm": "49.60",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "17",
+    "Function": "SD1_17",
+    "Net": "NC",
+    "X_mm": "52.14",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "18",
+    "Function": "SD0_18",
+    "Net": "NC",
+    "X_mm": "54.68",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J4",
+    "Pin": "19",
+    "Function": "CLK_19",
+    "Net": "NC",
+    "X_mm": "57.22",
+    "Y_mm": "4.00"
+  },
+  {
+    "Reference": "J5",
+    "Pin": "1",
+    "Function": "VIN_1",
+    "Net": "MOD_IN",
+    "X_mm": "13.31",
+    "Y_mm": "43.80"
+  },
+  {
+    "Reference": "J5",
+    "Pin": "2",
+    "Function": "GND_2",
+    "Net": "GND",
+    "X_mm": "10.77",
+    "Y_mm": "43.80"
+  },
+  {
+    "Reference": "J5",
+    "Pin": "3",
+    "Function": "VOUT_3",
+    "Net": "V5_MOD",
+    "X_mm": "8.23",
+    "Y_mm": "43.80"
+  },
+  {
+    "Reference": "J5",
+    "Pin": "4",
+    "Function": "EN_4",
+    "Net": "NC",
+    "X_mm": "5.69",
+    "Y_mm": "43.80"
+  },
+  {
+    "Reference": "JP1",
+    "Pin": "1",
+    "Function": "Pin_1_1",
+    "Net": "SW_BACK",
+    "X_mm": "36.50",
+    "Y_mm": "44.20"
+  },
+  {
+    "Reference": "JP1",
+    "Pin": "2",
+    "Function": "Pin_2_2",
+    "Net": "DIODE_IN",
+    "X_mm": "36.50",
+    "Y_mm": "46.74"
+  },
+  {
+    "Reference": "JP1",
+    "Pin": "3",
+    "Function": "Pin_3_3",
+    "Net": "V5_MOD",
+    "X_mm": "36.50",
+    "Y_mm": "49.28"
+  }
+]

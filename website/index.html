@@ -771,21 +771,35 @@
                 <span class="wip-num">01</span>
                 <span class="bento-tag">Primary Focus · Commercial PCB</span>
               </div>
-              <h3>Custom commercial PCB — BB1 Wiring Board v2</h3>
+              <h3>Custom commercial PCB — BB1 Wiring Board v4 (Plug-In Buck-Boost Power)</h3>
               <p>
                 Designed in KiCad to replace manual point-to-point jumper wiring with a clean,
                 manufacturable 2-layer FR-4 carrier board. It seats a 38-pin ESP32 DevKit on dual
                 <code>1&times;19</code> sockets (exact <code>20.3 mm</code> row spacing), routes all
                 eight mechanical switches (<code>D1–D6</code>, <code>SPACE</code>, <code>SHIFT</code>)
-                with paired signal-and-ground pins on <code>J1</code>, and includes a
-                <code>1N5819</code> Schottky diode for USB/battery protection on <code>J3</code>.
+                with paired signal-and-ground pins on <code>J1</code>, and introduces a socketed
+                <strong>5&nbsp;V step-up/step-down (buck-boost) power module</strong> (<code>J5</code>,
+                reference Pololu S9V11F5, 3–16&nbsp;V input), a 3-pin mode selector jumper
+                (<code>JP1</code>: <code>1-2 AA direct</code> or <code>2-3 5V module</code>), and
+                dual <code>1N5819</code> Schottky diodes (<code>D2</code> for reverse-battery
+                protection into the module; <code>D1</code> for USB back-feed isolation).
+              </p>
+              <p>
+                <strong>Built for global &amp; local manufacturing flexibility:</strong> Adding a
+                plug-in buck-boost architecture with a hardware bypass jumper was a deliberate
+                engineering decision so schools, NGOs, and regional manufacturers in any country can
+                pick whichever battery chemistry or power supply is easiest, safest, and most
+                affordable locally — from plain <code>4&times;AA</code> alkaline cells (jumper on
+                <code>1-2</code>, no module needed) to rechargeable NiMH packs, 2–3 cell packs,
+                protected Li-ion cells, 9&nbsp;V batteries, or standard 3–16&nbsp;V DC wall adapters
+                (jumper on <code>2-3</code>) — without ever redesigning the PCB.
               </p>
             </div>
             <dl class="wip-pcb-specs">
-              <div><dt>Dimensions</dt><dd>66.0 &times; 41.0 &times; 1.2 mm</dd></div>
+              <div><dt>Dimensions</dt><dd>66.0 &times; 52.0 &times; 1.2 mm</dd></div>
               <div><dt>Stackup</dt><dd>2-Layer FR-4 (F.Cu / B.Cu)</dd></div>
-              <div><dt>Routing</dt><dd>1.00 mm power &middot; 0.30 mm signal</dd></div>
-              <div><dt>Verification</dt><dd>38 vias &middot; 12 nets &middot; 0 DRC/ERC</dd></div>
+              <div><dt>Power Input</dt><dd>4&times;AA bypass or 3–16 V buck-boost</dd></div>
+              <div><dt>Verification</dt><dd>31 vias &middot; 15 nets &middot; 0 DRC/ERC</dd></div>
             </dl>
           </div>
 
@@ -793,7 +807,7 @@
           <div class="kicad-window">
             <div class="kicad-titlebar">
               <span class="kicad-title-dot" aria-hidden="true"></span>
-              <span class="kicad-title-text">bb1_wiring_board_v2.kicad_pcb &mdash; 3D Viewer (Raytraced Renders)</span>
+              <span class="kicad-title-text">bb1_wiring_board_v4.kicad_pcb &mdash; 3D Viewer (Raytraced Renders)</span>
               <span class="kicad-title-hint">Switch angle in toolbar or Appearance panel</span>
             </div>
 
@@ -802,10 +816,10 @@
                 <button type="button" class="kicad-tbtn kicad-tbtn-txt active" data-pcb3d-angle="iso">Isometric</button>
                 <button type="button" class="kicad-tbtn kicad-tbtn-txt" data-pcb3d-angle="top">Top (Z)</button>
                 <button type="button" class="kicad-tbtn kicad-tbtn-txt" data-pcb3d-angle="bottom">Bottom (-Z)</button>
-                <button type="button" class="kicad-tbtn kicad-tbtn-txt" data-pcb3d-angle="esp32">ESP32 Clearance</button>
+                <button type="button" class="kicad-tbtn kicad-tbtn-txt" data-pcb3d-angle="esp32">ESP32 + Module Clearance</button>
               </div>
               <span class="kicad-tsep" aria-hidden="true"></span>
-              <span class="kicad-toolbar-readout">KiCad Raytracer &middot; 66.0 &times; 41.0 &times; 1.2 mm</span>
+              <span class="kicad-toolbar-readout">KiCad Raytracer &middot; 66.0 &times; 52.0 &times; 1.2 mm</span>
             </div>
 
             <div class="kicad-workspace">
@@ -814,7 +828,7 @@
                   id="pcb3dRenderImg"
                   class="pcb3d-render-img"
                   src="assets/pcb/view_iso_3d.png"
-                  alt="KiCad 3D raytraced isometric render of BrailleBridge BB1 Wiring Board v2"
+                  alt="KiCad 3D raytraced isometric render of BrailleBridge BB1 Wiring Board v4 with J5 5V buck-boost socket, JP1 selector jumper, and D1/D2 1N5819 diodes"
                 />
               </div>
 
@@ -826,21 +840,22 @@
                     <button type="button" class="kicad-part-row active" data-pcb3d-angle="iso"><i class="k-sw k-sw-board"></i>Isometric 3D</button>
                     <button type="button" class="kicad-part-row" data-pcb3d-angle="top"><i class="k-sw k-sw-silk"></i>Top View (F.Cu)</button>
                     <button type="button" class="kicad-part-row" data-pcb3d-angle="bottom"><i class="k-sw k-sw-gold"></i>Bottom View (B.Cu)</button>
-                    <button type="button" class="kicad-part-row" data-pcb3d-angle="esp32"><i class="k-sw k-sw-hdr"></i>ESP32 Clearance</button>
+                    <button type="button" class="kicad-part-row" data-pcb3d-angle="esp32"><i class="k-sw k-sw-hdr"></i>ESP32 + 5V Module</button>
                   </div>
                 </div>
                 <div class="kicad-dock-sec">
                   <div class="kicad-dock-label">Board Specs</div>
-                  <div class="kicad-info-kv"><span>Size</span><b>66.0 &times; 41.0 mm</b></div>
-                  <div class="kicad-info-kv"><span>ESP32</span><b>20.3 mm spacing</b></div>
-                  <div class="kicad-info-kv"><span>Diode</span><b>D1 1N5819</b></div>
+                  <div class="kicad-info-kv"><span>Size</span><b>66.0 &times; 52.0 mm</b></div>
+                  <div class="kicad-info-kv"><span>Module</span><b>J5 5V Buck-Boost</b></div>
+                  <div class="kicad-info-kv"><span>Jumper</span><b>JP1 AA / 5V Mod</b></div>
+                  <div class="kicad-info-kv"><span>Diodes</span><b>D1, D2 1N5819</b></div>
                   <div class="kicad-info-kv"><span>DRC/ERC</span><b>0 errors</b></div>
                 </div>
               </aside>
             </div>
 
             <div class="kicad-statusbar">
-              <span class="kicad-status-main" id="pcb3dStatus">Isometric 3D &middot; J2/J4 ESP32 sockets, J1 8&times; switch header, J3 power header, D1 1N5819</span>
+              <span class="kicad-status-main" id="pcb3dStatus">Isometric 3D &middot; J2/J4 ESP32, J1 8&times; switch, J3 power, J5 5V buck-boost socket, JP1 selector, D1/D2 1N5819</span>
               <span class="kicad-status-meta">KiCad 3D Raytracer &middot; Units: mm</span>
             </div>
           </div>
@@ -849,7 +864,7 @@
           <div class="kicad-window">
             <div class="kicad-titlebar">
               <span class="kicad-title-dot" aria-hidden="true"></span>
-              <span class="kicad-title-text">bb1_wiring_board_v2.kicad_pcb &mdash; PCB Editor (2D)</span>
+              <span class="kicad-title-text">bb1_wiring_board_v4.kicad_pcb &mdash; PCB Editor (2D)</span>
               <span class="kicad-title-hint">Drag: Pan &middot; Ctrl+Scroll / +&minus;: Zoom</span>
             </div>
 
@@ -897,15 +912,16 @@
                 </div>
                 <div class="kicad-dock-sec">
                   <div class="kicad-dock-label">Board Info</div>
-                  <div class="kicad-info-kv"><span>Size</span><b>66.0 &times; 41.0 mm</b></div>
-                  <div class="kicad-info-kv"><span>Vias</span><b>38 (34 GND)</b></div>
-                  <div class="kicad-info-kv"><span>Nets</span><b>12 active</b></div>
+                  <div class="kicad-info-kv"><span>Size</span><b>66.0 &times; 52.0 mm</b></div>
+                  <div class="kicad-info-kv"><span>Vias</span><b>31 (27 GND)</b></div>
+                  <div class="kicad-info-kv"><span>Nets</span><b>15 active</b></div>
+                  <div class="kicad-info-kv"><span>GND Pins</span><b>12 connected</b></div>
                 </div>
               </aside>
             </div>
 
             <div class="kicad-statusbar">
-              <span class="kicad-status-main" id="pcb2dCoord">X: 33.00 mm &nbsp; Y: 20.50 mm</span>
+              <span class="kicad-status-main" id="pcb2dCoord">X: 33.00 mm &nbsp; Y: 26.00 mm</span>
               <span class="kicad-status-meta" id="pcb2dStatus">Layer: All Layers &middot; Zoom: 100%</span>
             </div>
           </div>

@@ -1,0 +1,8 @@
+Designator,Qty,Value_Part,Package_Footprint,Description,DNP
+"D1, D2",2,1N5819,Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal,40V 1A Schottky Barrier Diode (D1: band to VIN; D2: band to module),No
+J1,1,Conn_01x16_Pin,Connector_PinHeader_2.54mm:PinHeader_1x16_P2.54mm_Vertical,2.54mm 1x16 vertical male pin header (8x SIG+GND switch pairs),No
+"J2, J4",2,ESP32_38Pin_RowA / RowB (1x19 Female Socket),Connector_PinSocket_2.54mm:PinSocket_1x19_P2.54mm_Vertical,2.54mm 1x19 vertical female socket header for 38-pin ESP32 DevKit (20.3mm row spacing),No
+J3,1,Conn_01x04_Pin,Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical,"2.54mm 1x04 vertical male pin header (BAT-, BAT+, BAT+>SW, SW BACK)",No
+J5,1,1x04 Female Socket (for Pololu S9V11F5 5V Buck-Boost),Connector_PinSocket_2.54mm:PinSocket_1x04_P2.54mm_Vertical,"2.54mm 1x04 vertical female socket (pin 1=VIN, 2=GND, 3=VOUT, 4=EN); plug-in 5V module",No
+JP1,1,Conn_01x03_Pin + 1x 2.54mm Jumper Cap (Shunt),Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical,2.54mm 1x03 vertical male header + 1x shunt cap (1-2: AA direct; 2-3: 5V module),No
+"H1, H2",2,MountingHole_2.2mm_M2,MountingHole:MountingHole_2.2mm_M2,"M2 unplated mounting hole (2.2mm drill, 5mm copper keepout)",Mechanical
