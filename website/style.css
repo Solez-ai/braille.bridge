@@ -2701,6 +2701,85 @@ abbr[title],
   height: 100%;
 }
 
+/* Dhaka University + Sightsavers Part 2 */
+.trusted-divider {
+  border: 0;
+  border-top: 2px solid rgba(0, 18, 66, 0.14);
+  margin: 56px 0;
+}
+
+.trusted-du-logos-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+}
+
+.trusted-org-logo-link img.img-no-blend,
+.trusted-logo-tile img.img-no-blend {
+  mix-blend-mode: normal;
+}
+
+.trusted-du-crest-link img {
+  height: 82px;
+  width: auto;
+}
+
+.trusted-sightsavers-link img {
+  height: 46px;
+  width: auto;
+}
+
+.trusted-logo-plus {
+  font-family: var(--sans);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--slate);
+  opacity: 0.7;
+  user-select: none;
+}
+
+.trusted-du-marks-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 28px;
+  padding: 6px 0;
+}
+
+.trusted-du-marks-grid .trusted-logo-du {
+  height: 86px;
+  justify-content: flex-start;
+}
+
+.trusted-du-marks-grid .trusted-logo-sightsavers {
+  height: 54px;
+  justify-content: flex-start;
+}
+
+.trusted-du-photos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.128fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.trusted-du-photo-1 {
+  aspect-ratio: 958 / 720;
+}
+
+.trusted-du-photo-2 {
+  aspect-ratio: 1024 / 624;
+}
+
+.trusted-du-photo-3 {
+  aspect-ratio: 1024 / 617;
+}
+
+.trusted-du-photo-4 {
+  aspect-ratio: 1024 / 605;
+}
+
 @media (max-width: 1080px) {
   .trusted-grid {
     grid-template-columns: 1fr;
@@ -2723,7 +2802,8 @@ abbr[title],
     gap: 2px;
   }
 
-  .trusted-photos-row {
+  .trusted-photos-row,
+  .trusted-du-photos-grid {
     grid-template-columns: 1fr;
   }
 
