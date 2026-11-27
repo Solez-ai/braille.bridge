@@ -458,8 +458,8 @@
             <span class="feature-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M5 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7Z"/><path d="M8 12h8"/></svg>
             </span>
-            <h4>USB serial to teacher software</h4>
-            <p>Feeds a professional HTML/CSS/JS console via the Web Serial API — no installs.</p>
+            <h4>BLE &amp; USB serial to teacher software</h4>
+            <p>Streams to our custom Python BLE &amp; Serial relay server, native PyQt6 desktop suite, Android app, and browser console.</p>
           </div>
           <div class="feature">
             <span class="feature-icon" aria-hidden="true">
@@ -874,7 +874,7 @@
                 <tr><th scope="row">Languages</th><td>English, Bangla (Bharati Braille)</td></tr>
                 <tr><th scope="row">Shift functions</th><td>Caps, numbers, punctuation, math</td></tr>
                 <tr><th scope="row">Enclosure</th><td>Fusion 360 CAD, FDM 3D-printed</td></tr>
-                <tr><th scope="row">Teacher software</th><td>HTML / CSS / JS (Web Serial API)</td></tr>
+                <tr><th scope="row">Teacher software</th><td>Custom Python BLE/Serial Server (PyQt6, Bleak, PySerial) + Android (Kotlin/Compose) &amp; Web Console</td></tr>
               </tbody>
             </table>
           </div>
@@ -1553,8 +1553,9 @@
           <p class="eyebrow">10 — Companion Software</p>
           <h2 class="section-title">A console any teacher can read.</h2>
           <p class="section-lede">
-            Built with HTML, CSS, and JavaScript using the Web Serial API — alongside native desktop
-            and mobile apps. No database required. Runs in Chrome and Edge.
+            Powered by a custom multi-threaded Python Bluetooth Low Energy (Bleak + WinRT) &amp;
+            USB Serial (PySerial) relay server inside a native PyQt6 desktop suite — alongside our
+            Kotlin &amp; Jetpack Compose Android BLE proxy app and Web Serial console.
           </p>
         </div>
 
@@ -1562,11 +1563,15 @@
           <ul class="software-list reveal">
             <li>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-              Multi-student roster with Bluetooth BLE &amp; COM ports
+              Custom Python BLE (Nordic UART) &amp; multi-port COM relay server
             </li>
             <li>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-              Live serial reading — a dedicated reader loop per student
+              Simultaneous streaming across Student, Teacher Roster &amp; Exam Grid without port locks
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              Hot-plug auto-discovery, WinRT paired-device detection &amp; auto-reconnect
             </li>
             <li>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
@@ -1574,23 +1579,19 @@
             </li>
             <li>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-              Real-time display with auto-scroll &amp; blinking cursor
+              Offline Text-to-Speech (<span class="sw-tag">pyttsx3</span>) &amp; 128-language Google Translate bridge
             </li>
             <li>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-              Chord visualization — 6 mini-dots animate per input
+              Chord visualization &amp; Learner chord-sequence trainer — 6 mini-dots animate per input
             </li>
             <li>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-              Exam mode: every student side-by-side on one screen
+              Exam mode &amp; auto-formatted timestamped prose logs (<span class="sw-tag">[HH:MM:SS]</span>)
             </li>
             <li>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-              Timestamped export — <span class="sw-tag">[HH:MM:SS]</span> per character
-            </li>
-            <li>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-              Persistent roster via localStorage
+              Native Android app (Kotlin / Compose / Room DB) with foreground BLE NUS service
             </li>
           </ul>
 
