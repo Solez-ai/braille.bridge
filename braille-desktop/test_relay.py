@@ -14,12 +14,24 @@ import relay as relay_mod  # noqa: E402
 
 
 class FakeSerial:
-    def __init__(self, port, baud, timeout=0.1):
+    def __init__(self, port=None, baud=115200, timeout=0.1):
         self.port = port
         self.baud = baud
+        self.baudrate = baud
         self.timeout = timeout
+        self.dtr = False
+        self.rts = False
         self.is_open = True
         self.incoming = []
+
+    def open(self):
+        self.is_open = True
+
+    def reset_input_buffer(self):
+        pass
+
+    def flush(self):
+        pass
 
     def read(self, n=1):
         if self.incoming:
