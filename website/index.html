@@ -3,9 +3,34 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BrailleBridge — A Low-Cost Bilingual Braille Writing &amp; Classroom Examination System</title>
-  <meta name="description" content="BrailleBridge is a low-cost, bilingual digital Braille writing system that lets blind and visually impaired students write independently — and lets teachers read every answer instantly." />
-  <meta name="theme-color" content="#000000" />
+  <title>BrailleBridge — Low-Cost Bilingual Braille Keyboard &amp; Multi-Student Classroom System (&lt;$15)</title>
+  <meta name="description" content="BrailleBridge (b°bridge) is an open-source, &lt;$15 bilingual (English &amp; Bharati Bangla) six-dot Braille chording keyboard and multi-student Bluetooth/USB classroom system created by Samin Yeasar. Field-tested with BERDO and Dhaka University." />
+  <meta name="keywords" content="BrailleBridge, b'bridge, Braille keyboard, bilingual Braille, Bharati Bangla Braille, English Braille, ESP32 BLE Braille, BB1 Wiring Board v4, assistive technology Bangladesh, BERDO, Dhaka University Resource Centre, Sightsavers, Samin Yeasar, Solez-ai" />
+  <meta name="author" content="Samin Yeasar" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <meta name="theme-color" content="#001242" />
+  <link rel="canonical" href="https://solez.vercel.app/" />
+  <link rel="alternate" type="text/plain" title="LLMs.txt — AI &amp; LLM Documentation Index" href="https://solez.vercel.app/llms.txt" />
+
+  <!-- Open Graph / Facebook / LinkedIn -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="BrailleBridge" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:url" content="https://solez.vercel.app/" />
+  <meta property="og:title" content="BrailleBridge — Every Student Writes. Every Teacher Reads." />
+  <meta property="og:description" content="An open-source, &lt;$15 bilingual (English &amp; Bangla) six-dot Braille chording keyboard and real-time multi-student classroom platform powered by ESP32 BLE &amp; custom KiCad v4 PCB. Field-tested with BERDO and Dhaka University." />
+  <meta property="og:image" content="https://solez.vercel.app/assets/images/hero-device.png" />
+  <meta property="og:image:width" content="1115" />
+  <meta property="og:image:height" content="530" />
+  <meta property="og:image:alt" content="BrailleBridge physical six-dot tactile Braille keyboard with Outemu Red switches, Space, and Shift keys" />
+
+  <!-- Twitter / X Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="BrailleBridge — Low-Cost Bilingual Braille Keyboard &amp; Classroom System (&lt;$15)" />
+  <meta name="twitter:description" content="Open-source &lt;$15 six-dot English &amp; Bangla Braille keyboard with simultaneous Bluetooth HID + Nordic UART + USB Serial teacher streaming. Created by Samin Yeasar." />
+  <meta name="twitter:image" content="https://solez.vercel.app/assets/images/hero-device.png" />
+  <meta name="twitter:image:alt" content="BrailleBridge physical six-dot tactile Braille keyboard" />
+
   <link rel="icon" type="image/png" sizes="32x32" href="assets/logo/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="64x64" href="assets/logo/favicon-64.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/logo/apple-touch-icon.png" />
@@ -14,6 +39,146 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Noto+Serif:wght@400;600;700;800&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link href="https://db.onlinewebfonts.com/c/7b2f4e99395dcee2673f41661274a830?family=Garet+W05+Regular" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <noscript>
+    <style>
+      .site-loader { display: none !important; }
+      .reveal { opacity: 1 !important; transform: none !important; }
+    </style>
+  </noscript>
+
+  <!-- GEO & SEO Structured Data (Schema.org JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://solez.vercel.app/#organization",
+        "name": "BrailleBridge (Solez-ai)",
+        "alternateName": ["b°bridge", "b'bridge", "Solez AI"],
+        "url": "https://solez.vercel.app/",
+        "logo": "https://solez.vercel.app/assets/logo/logo-braille.png",
+        "founder": { "@id": "https://solez.vercel.app/#creator" },
+        "sameAs": [
+          "https://github.com/Solez-ai/braille.bridge",
+          "https://braille.mintlify.site",
+          "https://solez.me"
+        ]
+      },
+      {
+        "@type": "Person",
+        "@id": "https://solez.vercel.app/#creator",
+        "name": "Samin Yeasar",
+        "jobTitle": "Hardware Architect, ESP32 Firmware & Software Developer",
+        "email": "mailto:samin@mentormind.bd",
+        "url": "https://solez.me",
+        "image": "https://solez.vercel.app/assets/creator.jpg",
+        "sameAs": [
+          "https://github.com/Solez-ai",
+          "https://solez.me"
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://solez.vercel.app/#website",
+        "url": "https://solez.vercel.app/",
+        "name": "BrailleBridge — Low-Cost Bilingual Braille Writing & Classroom Examination System",
+        "publisher": { "@id": "https://solez.vercel.app/#organization" },
+        "inLanguage": ["en", "bn"]
+      },
+      {
+        "@type": "Product",
+        "@id": "https://solez.vercel.app/#product",
+        "name": "BrailleBridge BB1 (with BB1 Wiring Board v4 PCB)",
+        "brand": { "@id": "https://solez.vercel.app/#organization" },
+        "manufacturer": { "@id": "https://solez.vercel.app/#organization" },
+        "creator": { "@id": "https://solez.vercel.app/#creator" },
+        "image": "https://solez.vercel.app/assets/images/hero-device.png",
+        "description": "Open-source, <$15 bilingual (Grade 1 English and Bharati Bangla) six-dot mechanical Braille chording keyboard powered by a 38-pin ESP32 DevKit and custom 2-layer KiCad 10 PCB (BB1 Wiring Board v4, 66.0 x 52.0 x 1.2 mm) with a plug-in 5V buck-boost power module socket (J5) and bypass/regulated jumper (JP1).",
+        "category": "Assistive Technology / Educational Hardware",
+        "material": "3D-Printed PLA Enclosure, Outemu Red Mechanical Switches, 2-Layer FR-4 PCB",
+        "offers": {
+          "@type": "Offer",
+          "price": "11.70",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock",
+          "url": "https://github.com/Solez-ai/braille.bridge",
+          "description": "Open-source bill of materials (~$11.70 USD in parts, <$15.00 USD complete device)"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://solez.vercel.app/#software",
+        "name": "BrailleBridge Teacher & Student Suite",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Windows, Linux, macOS, Android 7.0+, Chrome/Edge Web Serial & Web Bluetooth",
+        "author": { "@id": "https://solez.vercel.app/#creator" },
+        "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+        "url": "https://braille.mintlify.site",
+        "downloadUrl": "https://github.com/Solez-ai/braille.bridge/releases",
+        "offers": {
+          "@type": "Offer",
+          "price": "0.00",
+          "priceCurrency": "USD"
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://solez.vercel.app/#faqpage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is BrailleBridge and how does it work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "BrailleBridge is an open-source, low-cost (<$15 USD) bilingual Braille writing and classroom examination system created by Samin Yeasar. A blind student presses six-dot Braille chords on eight Outemu Red mechanical switches (Dots 1-6, Space, and Shift), and an ESP32 microcontroller decodes each chord on key release into English or Bharati Bangla text. Every translated character is broadcast simultaneously over Bluetooth Low Energy HID (to the student's screen reader) and over BLE Nordic UART Service plus USB Serial at 115200 baud (to the teacher's console)."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How much does BrailleBridge cost compared to a Perkins Brailler?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "A complete BrailleBridge prototype costs approximately $11.70 USD in electronic and 3D-printed parts (under $15 USD including tools and overhead). By comparison, a mechanical Perkins Brailler costs $600 to $1,000+ USD and produces only embossed paper that most sighted teachers cannot read, while commercial refreshable Braille displays cost $1,000 to $5,000+ USD."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does BrailleBridge switch between English and Bangla Bharati Braille?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Students toggle between Grade 1 English Braille and Bharati Bangla Braille on the same six keys by holding Dots 4, 5, and 6 simultaneously for 500 milliseconds. The ESP32 firmware flips its active 54-entry dictionary and emits a LANG:en or LANG:bn control line so the desktop, Android, and web teacher consoles switch language display automatically."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Why does the BB1 Wiring Board v4 PCB include a plug-in 5V buck-boost power module?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Battery availability and pricing vary widely across countries, so BB1 Wiring Board v4 (66.0 x 52.0 x 1.2 mm, 2-layer FR-4) includes a 1x04 female socket (J5) for an off-the-shelf 5V buck-boost regulator (such as the Pololu S9V11F5, 3-16V input) paired with a 3-pin mode selector jumper (JP1) and dual 1N5819 Schottky diodes (D1, D2). Regional manufacturers can jumper JP1 pins 1-2 for ultra-low-cost 4xAA alkaline direct power (up to 6.5V, no module needed) or jumper JP1 pins 2-3 to run from rechargeable NiMH packs, 2-3 cell AA holders, protected Li-ion cells, 9V batteries, or 3-16V DC wall adapters without redesigning the PCB."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How do teachers monitor multiple students simultaneously in the classroom?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The native Python desktop suite (built with PyQt6, Bleak, WinRT, PySerial, and pyttsx3) and the Android companion app (built with Kotlin, Jetpack Compose, and Room DB) run a multi-threaded BLE Nordic UART and USB Serial relay server. Teachers can connect multiple physical ESP32 BrailleBridge units concurrently (verified on hardware with BrailleBridge 2 and BrailleBridge 3), view each student's live typing in Microsoft Word-style document tabs or side-by-side Exam Mode, and export timestamped [HH:MM:SS] transcripts."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Where has BrailleBridge been field-tested and validated?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "BrailleBridge has been demonstrated and field-tested in Dhaka, Bangladesh at two flagship institutions: (1) BERDO (Blind Education and Rehabilitation Development Organization, founded in 1991 by 2026 Independence Award and 2023 Ekushey Padak recipient Md. Saidul Huq), and (2) the Resource Centre for the Visually Impaired Students at the Dhaka University Central Library (established in 2007 and jointly sponsored by Dhaka University Library and Sightsavers)."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 <body class="is-loading nav-pending">
 
@@ -166,19 +331,19 @@
 
         <dl class="hero-stats reveal" id="heroStats">
           <div class="stat">
-            <dt><span class="num" data-count="15" data-prefix="&lt;$">0</span><span class="suffix">/device</span></dt>
+            <dt><span class="num" data-count="15" data-prefix="&lt;$">&lt;$15</span><span class="suffix">/device</span></dt>
             <dd>Total hardware cost</dd>
           </div>
           <div class="stat">
-            <dt><span class="num" data-count="2">0</span></dt>
+            <dt><span class="num" data-count="2">2</span></dt>
             <dd>Languages — English &amp; Bangla</dd>
           </div>
           <div class="stat">
-            <dt><span class="num" data-count="180">0</span><span class="suffix">ms</span></dt>
+            <dt><span class="num" data-count="180">180</span><span class="suffix">ms</span></dt>
             <dd>Chord detection window</dd>
           </div>
           <div class="stat">
-            <dt><span class="num" data-count="6">0</span></dt>
+            <dt><span class="num" data-count="6">6</span></dt>
             <dd>Braille dots, one device</dd>
           </div>
         </dl>
@@ -1703,7 +1868,7 @@
           </div>
 
           <div class="cost-callout reveal">
-            <div class="cost-big"><span class="num" data-count="15" data-prefix="&lt;$">0</span></div>
+            <div class="cost-big"><span class="num" data-count="15" data-prefix="&lt;$">&lt;$15</span></div>
             <p class="cost-caption">a complete device, including tools &amp; overhead</p>
             <div class="cost-compare">
               <div class="compare-row"><span>Perkins Brailler</span><strong>$600 – $1,000+</strong></div>
@@ -1715,11 +1880,116 @@
       </div>
     </section>
 
-    <!-- ================= 11 — CONCLUSION ================= -->
+    <!-- ================= 13 — FREQUENTLY ASKED QUESTIONS (AEO / GEO) ================= -->
+    <section class="section section-white" id="faq">
+      <div class="container">
+        <div class="section-head reveal">
+          <p class="eyebrow">13 — Frequently Asked Questions</p>
+          <h2 class="section-title">Direct answers on hardware, Braille &amp; classroom deployment.</h2>
+          <p class="section-lede">
+            Clear technical summaries covering how BrailleBridge works, how the v4 buck-boost PCB adapts to
+            regional battery supplies, and how teachers run bilingual examinations.
+          </p>
+        </div>
+
+        <div class="faq-grid">
+          <article class="faq-card reveal">
+            <h3>What is BrailleBridge and how does it work?</h3>
+            <p>
+              <strong>BrailleBridge (`b°bridge`)</strong> is an open-source, low-cost (&lt;$15&nbsp;USD)
+              bilingual Braille writing and classroom examination system created by <strong>Samin Yeasar</strong>.
+              A blind student presses six-dot Braille chords on eight Outemu Red mechanical switches
+              (<code>D1–D6</code>, <code>SPACE</code>, <code>SHIFT</code>), and an ESP32 microcontroller
+              decodes each chord on key release into Grade&nbsp;1 English or Bharati Bangla text.
+            </p>
+            <ul class="faq-points">
+              <li><strong>Student audio output:</strong> Sends standard Bluetooth Low Energy (BLE) HID keystrokes to the student’s phone, tablet, or laptop screen reader.</li>
+              <li><strong>Teacher text stream:</strong> Simultaneously broadcasts UTF-8 text and control tokens over BLE Nordic UART Service (NUS) and USB Serial at <code>115200</code> baud.</li>
+            </ul>
+          </article>
+
+          <article class="faq-card reveal">
+            <h3>How much does BrailleBridge cost compared to a Perkins Brailler?</h3>
+            <p>
+              A complete BrailleBridge prototype costs approximately <strong>$11.70&nbsp;USD</strong> in
+              electronic and 3D-printed parts (<strong>under $15&nbsp;USD</strong> including fasteners and
+              overhead). By comparison, a mechanical Perkins Brailler costs <strong>$600–$1,000+&nbsp;USD</strong>
+              and commercial refreshable Braille displays cost <strong>$1,000–$5,000+&nbsp;USD</strong>.
+            </p>
+            <ul class="faq-points">
+              <li><strong>20&times; classroom coverage:</strong> A school can equip an entire 20-student exam room for less than half the price of one mechanical brailler.</li>
+              <li><strong>Locally repairable:</strong> Uses off-the-shelf Outemu Red switches (~$0.38 each), a standard 38-pin ESP32 DevKit (~$5.00), and open-source PLA 3D prints (~30&nbsp;g).</li>
+            </ul>
+          </article>
+
+          <article class="faq-card reveal">
+            <h3>How does BrailleBridge switch between English and Bangla Bharati Braille?</h3>
+            <p>
+              Students toggle between <strong>Grade&nbsp;1 English Braille</strong> and
+              <strong>Bharati Bangla Braille</strong> on the same six keys by holding
+              <strong>Dots&nbsp;4 + 5 + 6</strong> simultaneously for <strong>500&nbsp;ms</strong>.
+              The ESP32 firmware flips its active <code>54</code>-entry dictionary and announces
+              <code>LANG:en</code> or <code>LANG:bn</code> over BLE and Serial so connected consoles
+              switch script rendering automatically.
+            </p>
+            <ul class="faq-points">
+              <li><strong>Bharati Bangla support:</strong> Covers 10 independent vowels (<code>স্বরবর্ণ</code>), consonants by varga, 9 dependent vowel signs (<code>কার</code> via <code>Shift + chord</code>), and conjuncts such as <code>ক্ষ</code>.</li>
+              <li><strong>Numbers &amp; math:</strong> Holding <code>Shift</code> with <code>a–j</code> produces digits <code>1–0</code>, plus 9 math and punctuation operators (<code>+ &minus; &times; = &divide; , ; : .</code>).</li>
+            </ul>
+          </article>
+
+          <article class="faq-card reveal">
+            <h3>Why does the BB1 Wiring Board v4 PCB include a plug-in 5V buck-boost power module?</h3>
+            <p>
+              Battery availability, rechargeable ecosystems, and pricing vary widely across countries, so
+              <strong>BB1 Wiring Board v4</strong> (<code>66.0 &times; 52.0 &times; 1.2&nbsp;mm</code>,
+              2-layer FR-4, <code>0</code> DRC/ERC errors) includes a <code>1&times;04</code> female socket
+              (<code>J5</code>) for a plug-in 5&nbsp;V step-up/step-down regulator (reference Pololu S9V11F5,
+              <code>3–16&nbsp;V</code> input) paired with a 3-pin selector jumper (<code>JP1</code>) and
+              dual <code>1N5819</code> Schottky diodes (<code>D1</code>, <code>D2</code>).
+            </p>
+            <ul class="faq-points">
+              <li><strong><code>JP1 1-2</code> (AA direct bypass, max 6.5&nbsp;V):</strong> Runs directly from <code>4&times;AA</code> alkaline cells with no buck-boost module needed.</li>
+              <li><strong><code>JP1 2-3</code> (5&nbsp;V buck-boost module, 3–16&nbsp;V max):</strong> Lets manufacturers in any country use NiMH packs, 2–3 cell AA holders, protected Li-ion cells, 9&nbsp;V batteries, or DC wall adapters on the exact same PCB.</li>
+            </ul>
+          </article>
+
+          <article class="faq-card reveal">
+            <h3>How do teachers monitor multiple students simultaneously in the classroom?</h3>
+            <p>
+              The native Python desktop suite (built with <strong>PyQt6</strong>, <strong>Bleak</strong>,
+              <strong>WinRT</strong>, <strong>PySerial</strong>, and <strong>pyttsx3</strong>) and the
+              Android companion app (built with <strong>Kotlin</strong>, <strong>Jetpack Compose</strong>,
+              and <strong>Room DB</strong>) run a multi-threaded BLE Nordic UART and USB Serial relay server.
+              Teachers connect multiple physical ESP32 BrailleBridge units concurrently without port locks.
+            </p>
+            <ul class="faq-points">
+              <li><strong>Hardware-verified multi-ESP32 pool:</strong> Tested live with multiple concurrent units (<code>BrailleBridge 2</code>, <code>BrailleBridge 3</code>) streaming into per-student Microsoft Word–style document tabs.</li>
+              <li><strong>Exam Mode &amp; audit logs:</strong> Displays every student side-by-side and auto-saves timestamped <code>[HH:MM:SS]</code> prose transcripts.</li>
+            </ul>
+          </article>
+
+          <article class="faq-card reveal">
+            <h3>Where has BrailleBridge been field-tested and validated?</h3>
+            <p>
+              BrailleBridge has been demonstrated and field-tested on-site in Dhaka, Bangladesh with visually
+              impaired students, educators, and disability-rights leaders at two flagship institutions:
+              <strong>BERDO</strong> and the <strong>University of Dhaka Central Library</strong>.
+            </p>
+            <ul class="faq-points">
+              <li><strong>BERDO (Mirpur, Dhaka):</strong> Field-tested with Founder &amp; Executive Director <strong>Md. Saidul Huq</strong> (recipient of the 2026 Independence Award / Swadhinata Puruskar and 2023 Ekushey Padak).</li>
+              <li><strong>University of Dhaka (Kazi Nazrul Islam Ave):</strong> Tested side-by-side against mechanical Perkins Braillers at the <strong>Resource Centre for the Visually Impaired Students</strong>, established in 2007 and co-sponsored by <strong>Sightsavers</strong>.</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 14 — CONCLUSION ================= -->
     <section class="section section-conclusion" id="conclusion">
       <div class="container">
         <div class="conclusion-inner reveal">
-          <p class="eyebrow eyebrow-light">11 — Conclusion</p>
+          <p class="eyebrow eyebrow-light">14 — Conclusion</p>
           <h2 class="conclusion-title">
             When a blind student writes her own exam answer — without a writer, without speaking
             aloud, and without the teacher needing braille — <em>the project has succeeded.</em>
@@ -1787,9 +2057,13 @@
         <ul>
           <li><a href="#problem">The Problem</a></li>
           <li><a href="#solution">The Solution</a></li>
-          <li><a href="#innovation">Innovation</a></li>
+          <li><a href="#trusted-by">Trusted By (BERDO &amp; DU)</a></li>
+          <li><a href="#wip-innovation">PCB v4 &amp; Roadmap</a></li>
           <li><a href="#demo">Live Demo</a></li>
           <li><a href="#cost">Affordability</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="cheat_sheet.html">Braille Cheat Sheet</a></li>
+          <li><a href="llms.txt">LLMs.txt (AI Index)</a></li>
         </ul>
       </div>
 

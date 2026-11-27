@@ -1,0 +1,48 @@
+# BrailleBridge (b°bridge)
+
+> BrailleBridge is an open-source, low-cost (<$15 USD BOM) bilingual digital Braille writing and multi-student classroom examination ecosystem for blind and visually impaired students. It translates six-dot Braille chords into Grade 1 English and Bharati Bangla text on an ESP32 microcontroller and streams real-time text simultaneously to the student's screen reader (via Bluetooth Low Energy HID) and to the teacher's classroom console (via BLE Nordic UART Service and USB Serial at 115200 baud).
+
+## Entity & Creator Metadata
+- **Project Name**: BrailleBridge (`b°bridge`)
+- **Creator & Lead Engineer**: Samin Yeasar (`samin@mentormind.bd`, https://solez.me, https://github.com/Solez-ai)
+- **Organization**: Solez-ai
+- **License**: GNU General Public License v3.0 (GPL-3.0)
+- **Primary Website**: https://solez.vercel.app/
+- **Technical Documentation (Mintlify)**: https://braille.mintlify.site/
+- **Source Repository**: https://github.com/Solez-ai/braille.bridge
+- **Documentation Repository**: https://github.com/Solez-ai/mintlify-docs
+- **Hardware BOM Cost**: ~$11.70 USD in parts (<$15 USD complete with enclosure and fasteners), compared to $600–$1,000+ for a mechanical Perkins Brailler and $1,000–$5,000+ for commercial digital Braille displays.
+
+## Core Architecture & Features
+- **Tactile Six-Dot Chording Hardware (`BB1`)**:
+  - 8 × Outemu Red linear mechanical switches (6 Braille dots `D1–D6`, `SPACE`, `SHIFT`) mounted in a 3D-printed PLA ergonomic wedge enclosure (`180 × 80 mm`, `30 mm` front to `40 mm` back, `7.1°` typing slope, back hinge with 3D-printed pin, front snap latches, and tool-free underside AA battery hatch).
+  - **ESP32 DevKit (38-pin)**: Dual-core 240 MHz MCU, 520 KB SRAM, 4 MB Flash, integrated Bluetooth Low Energy 4.2/5.0 and USB-UART bridge.
+  - **GPIO Pin Mapping**: Dot 1 = `GPIO 14` (bit 0), Dot 2 = `GPIO 12*` (bit 1, boot-strapping pin kept free of external pull-ups), Dot 3 = `GPIO 13` (bit 2), Dot 4 = `GPIO 27` (bit 3), Dot 5 = `GPIO 26` (bit 4), Dot 6 = `GPIO 25` (bit 5), Space = `GPIO 33`, Shift = `GPIO 32`.
+- **Commercial Carrier PCB (`BB1 Wiring Board v4`)**:
+  - Engineered in KiCad 10 (`66.0 × 52.0 × 1.2 mm`, 2-layer FR-4, HASL lead-free, `1.00 mm` power traces, `0.30 mm` signal traces, `15` active copper nets, `12` GND pins, `31` vias including `27` GND stitching vias, verified with `0` ERC errors/warnings and `0` DRC violations).
+  - **Dual-Mode Plug-In Buck-Boost Power Stage (`J5`, `JP1`, `D1`, `D2`)**: Designed for regional and global manufacturing flexibility so manufacturers in any country can use locally available batteries or power adapters without re-spinning the PCB.
+    - **Mode A — Direct AA Bypass (`JP1` jumper on pins `1-2`, max `6.5 V`)**: Routes `4×AA` alkaline cells directly through `D1` (`1N5819` Schottky diode) to ESP32 `VIN` (`J2` Pin 19); `J5` can remain unpopulated for lowest BOM cost.
+    - **Mode B — Regulated 5 V Buck-Boost (`JP1` jumper on pins `2-3`, `3–16 V` max)**: Routes battery/adapter power through `D2` (`1N5819` reverse-polarity protection) into a socketed 5 V step-up/step-down module on `J5` (`Pin 1 = VIN, Pin 2 = GND, Pin 3 = VOUT, Pin 4 = EN NC`, reference Pololu S9V11F5), supporting rechargeable NiMH packs, 2–3 cell AA holders, protected Li-ion cells, 9 V batteries, or 3–16 V DC wall adapters.
+- **ESP32 Firmware (`braile/braile.ino` + `BBKeyboard`)**:
+  - **Decode-on-Release Engine**: `15 ms` debounce filter (`DEBOUNCE_MS = 15`, live-tunable `5–50 ms`); accumulates dot bits while held and decodes on full release (supporting 100+ WPM chording without fixed-window splitting).
+  - **Bilingual Dictionary**: `54` core 6-dot mappings covering Grade 1 English (`a–z`), Bharati Bangla vowels and consonants (including `ক্ষ`, halant `্`, anusvara `ং`, candrabindu `ঁ`), 10 digits (`1–0` via `Shift + a–j`), 9 math/punctuation symbols (`+ - × = ÷ , ; : .`), and 9 Bangla dependent vowel signs (`কার` via `Shift + vowel`).
+  - **Controls**: Hold Dots `4+5+6` for `500 ms` to toggle English (`LANG:en`) and Bangla (`LANG:bn`); tap `Shift` alone (`25–1500 ms`) for Backspace (`SYSTEM:BKSP`); press `Shift + Dot 6` once for `CAPS_ONCE` or twice within `600 ms` for `CAPS_LOCK`.
+  - **Dual Transport Rule**: ASCII (`< 0x80`) transmits over both BLE HID keyboard and BLE Nordic UART Service (`6E400001-B5A3-F393-E0A9-E50E24DCCA9E`) + USB Serial (`115200` baud); multi-byte UTF-8 Bangla transmits over BLE NUS + USB Serial so the BLE HID keyboard stack never deadlocks.
+- **Multi-Platform Companion Software**:
+  - **Native Desktop Teacher Suite (`braille-desktop/`)**: Built with Python, `PyQt6 >= 6.6.0`, `Bleak >= 0.22.0` (BLE NUS + Windows WinRT Bluetooth radio auto-activation), `PySerial >= 3.5` (multi-threaded COM relay with hot-plug auto-reconnect), and `pyttsx3 >= 2.90` (offline TTS with 100%–300% SAPI volume booster), plus a 128-language Google Translate bridge, Learner chord-sequence trainer, and Microsoft Word–style per-student document tabs.
+  - **Android Companion App (`braillebridge/`)**: Built with Kotlin 2.2.10, Jetpack Compose (BOM 2024.09.00), Material 3, Room 2.7.0 (KSP 2.3.7), Coroutines, OkHttp/Retrofit/Moshi, and a foreground `BleProxyService` supporting simultaneous multi-ESP32 connections.
+  - **Web Platform (`website/` & `braille-display/`)**: Interactive 6-dot virtual pad, Web Bluetooth + Web Serial hardware bridge, KiCad 3D raytraced PCB viewer, and interactive 2D KiCad copper/silkscreen layer inspector.
+
+## Field Testing & Institutional Validation
+- **BERDO (Blind Education and Rehabilitation Development Organization)**: Demonstrated and field-tested at BERDO headquarters in Rupnagar, Mirpur, Dhaka, with Founder & Executive Director **Md. Saidul Huq** (recipient of the 2026 Independence Award / Swadhinata Puruskar — Bangladesh's highest civilian honor — and the 2023 Ekushey Padak). Showcase video: https://youtu.be/4cl6KOXK6Is
+- **University of Dhaka — Resource Centre for the Visually Impaired Students**: Field-tested at the Resource Centre for the Visually Impaired Students inside the **Dhaka University Central Library** (Kazi Nazrul Islam Ave, Dhaka; established in 2007 and jointly sponsored by **Dhaka University Library & Sightsavers**), benchmarked side-by-side against mechanical Perkins Braillers. Showcase video: https://youtu.be/cBVkKMnPTk8
+
+## Key Public URLs
+- [Main Website & Interactive Demo](https://solez.vercel.app/): Full hardware showcase, BERDO & Dhaka University field validation, KiCad 3D/2D PCB v4 viewers, interactive 6-dot Braille simulator, full English & Bangla dictionaries, and FAQ.
+- [Printable Braille Chord & Operating Cheat Sheet](https://solez.vercel.app/cheat_sheet.html): A4 duplex reference guide covering all 26 English letters, Bharati Bangla vowels/consonants/vowel signs, digits, math symbols, and hardware controls.
+- [Documentation Home](https://braille.mintlify.site/): Complete engineering documentation.
+- [How BrailleBridge Works](https://braille.mintlify.site/how-it-works): 6-dot bitmask math, decode-on-release state machine, and BLE HID + NUS + Serial transport split.
+- [Hardware Overview & BOM](https://braille.mintlify.site/hardware/overview): Complete bill of materials and dual-mode buck-boost power architecture.
+- [BB1 Wiring Board v4 PCB Spec](https://braille.mintlify.site/hardware/pcb-v2): KiCad 10 2-layer PCB specifications, 71-pin netlist table, and JLCPCB manufacturing guide.
+- [PyQt6 Desktop Suite](https://braille.mintlify.site/desktop/overview): Multi-ESP32 Bluetooth & USB Serial teacher console documentation.
+- [Android Companion App](https://braille.mintlify.site/android/overview): Kotlin & Jetpack Compose mobile app architecture.

@@ -2812,3 +2812,67 @@ abbr[title],
     height: auto;
   }
 }
+
+/* ================= 13 — FREQUENTLY ASKED QUESTIONS (AEO / GEO) ================= */
+.faq-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+.faq-card {
+  background: var(--canvas);
+  border: 1px solid rgba(0, 18, 66, 0.14);
+  border-top: 3px solid var(--midnight);
+  border-radius: var(--radius);
+  padding: 22px 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-top-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.faq-card:hover {
+  border-top-color: var(--orange);
+  box-shadow: 0 8px 24px rgba(0, 18, 66, 0.06);
+}
+
+.faq-card h3 {
+  font-family: var(--serif);
+  font-size: clamp(1.06rem, 1.35vw, 1.22rem);
+  font-weight: 700;
+  line-height: 1.32;
+  color: var(--midnight);
+  margin: 0;
+}
+
+.faq-card p {
+  font-family: var(--paragraph);
+  font-size: 0.92rem;
+  line-height: 1.62;
+  color: var(--jet);
+  margin: 0;
+}
+
+.faq-points {
+  margin: 2px 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--slate);
+}
+
+.faq-points strong {
+  color: var(--midnight);
+}
+
+@media (max-width: 920px) {
+  .faq-grid {
+    grid-template-columns: 1fr;
+  }
+}
