@@ -9,7 +9,8 @@
 *Hardware v3 · BB1 Wiring Board PCB v4 · Decode-on-Release ESP32 Firmware · PyQt6 Desktop Teacher Suite · Kotlin Jetpack Compose Android App · Web Bluetooth & Web Serial Console*
 
 <p>
-  <a href="https://github.com/solez-ai/braille.bridge/actions/workflows/android-release.yml"><img src="https://img.shields.io/github/actions/workflow/status/solez-ai/braille.bridge/android-release.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=Android%20CI" alt="Android CI Build Status" /></a>
+  <a href="https://github.com/solez-ai/braille.bridge/actions/workflows/build-apk.yml"><img src="https://img.shields.io/github/actions/workflow/status/solez-ai/braille.bridge/build-apk.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=Mobile%20APK%20Release" alt="Mobile APK Release Status" /></a>
+  <a href="https://github.com/solez-ai/braille.bridge/actions/workflows/build-desktop.yml"><img src="https://img.shields.io/github/actions/workflow/status/solez-ai/braille.bridge/build-desktop.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=Desktop%20Package%20(EXE%20%2B%20ZIP)" alt="Desktop Package Build Status" /></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPL--3.0-111111?style=flat-square" alt="GPL-3.0 License" /></a>
   <a href="https://brailebridge.vercel.app/"><img src="https://img.shields.io/badge/Live%20Platform-brailebridge.vercel.app-b87333?style=flat-square&logo=vercel&logoColor=white" alt="Live Website" /></a>
   <a href="https://solez-ai.mintlify.app"><img src="https://img.shields.io/badge/Engineering%20Docs-Mintlify-0D9373?style=flat-square&logo=mintlify&logoColor=white" alt="Mintlify Documentation" /></a>

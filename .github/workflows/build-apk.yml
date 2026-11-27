@@ -6,6 +6,9 @@ name: Build BrailleBridge APK
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'braillebridge/**'
+      - '.github/workflows/build-apk.yml'
   workflow_dispatch: {}   # manual "Run workflow" button on GitHub
 
 concurrency:

@@ -1,22 +1,45 @@
-name: Build BrailleBridge Desktop (Windows)
+name: Build & Publish BrailleBridge Desktop Package (Windows EXE + Source ZIP)
 
+# Builds the Python Desktop Teacher Suite in braille-desktop/ into a standalone
+# Windows executable (BrailleBridge.exe) and a clean Python Source Code archive
+# (BrailleBridge-Desktop-Source.zip), then publishes them directly to GitHub Packages
+# (both NuGet and GHCR OCI Packages) while keeping GitHub Releases exclusively for the Mobile App.
 on:
   push:
     branches: [ main ]
     paths:
       - 'braille-desktop/**'
       - '.github/workflows/build-desktop.yml'
-  workflow_dispatch:
+  workflow_dispatch: {}
+
+concurrency:
+  group: build-desktop-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
-  build-windows:
+  build-and-publish-package:
+    name: Build Desktop EXE & Source ZIP -> GitHub Packages
     runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Remove legacy desktop release from GitHub Releases (Mobile-only policy)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          gh release view desktop-latest >$null 2>&1
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Removing legacy 'desktop-latest' from GitHub Releases so Releases remains Mobile App only..."
+            gh release delete desktop-latest --yes --cleanup-tag
+          } else {
+            Write-Host "GitHub Releases is clean (Mobile App only)."
+          }
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -24,31 +47,178 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies & PyInstaller
+        shell: pwsh
         run: |
           python -m pip install --upgrade pip
           pip install -r braille-desktop/requirements.txt
-          pip install pyinstaller
+          pip install winrt-Windows.Devices.Radios pyinstaller
 
       - name: Run relay & unit tests
+        shell: pwsh
         run: python braille-desktop/test_relay.py
 
-      - name: Build standalone Windows executable
+      - name: Build standalone Windows executable (BrailleBridge.exe)
         working-directory: braille-desktop
+        shell: pwsh
         run: |
-          pyinstaller --noconfirm --onefile --windowed --name BrailleBridge --paths . main.py
+          pyinstaller --noconfirm --onefile --windowed `
+            --name BrailleBridge `
+            --icon app_icon.ico `
+            --hidden-import bleak `
+            --hidden-import winrt.windows.devices.radios `
+            --hidden-import serial `
+            --hidden-import serial.tools.list_ports `
+            --paths . `
+            main.py
 
-      - name: Upload Desktop Artifact
+      - name: Package EXE, Source Code ZIP, and Complete Release Bundle
+        working-directory: braille-desktop
+        shell: pwsh
+        run: |
+          $outDir = "package_out"
+          New-Item -ItemType Directory -Path $outDir -Force | Out-Null
+
+          # 1. Copy standalone Windows executable
+          Copy-Item "dist/BrailleBridge.exe" "$outDir/BrailleBridge.exe" -Force
+
+          # 2. Create clean Python Source Code ZIP archive
+          $srcStage = "$outDir/BrailleBridge-Desktop-Source"
+          New-Item -ItemType Directory -Path $srcStage -Force | Out-Null
+          Get-ChildItem -Path . -File | Where-Object {
+            $_.Extension -in @('.py', '.txt', '.md', '.ico') -or $_.Name -eq 'BrailleBridge_v12.spec'
+          } | ForEach-Object {
+            Copy-Item $_.FullName -Destination $srcStage -Force
+          }
+          if (Test-Path "data") {
+            Copy-Item "data" -Destination "$srcStage/data" -Recurse -Force
+          }
+          Compress-Archive -Path "$srcStage/*" -DestinationPath "$outDir/BrailleBridge-Desktop-Source.zip" -Force
+          Remove-Item $srcStage -Recurse -Force
+
+          # 3. Generate SHA-256 checksums
+          $exeHash = (Get-FileHash "$outDir/BrailleBridge.exe" -Algorithm SHA256).Hash.ToLower()
+          $srcHash = (Get-FileHash "$outDir/BrailleBridge-Desktop-Source.zip" -Algorithm SHA256).Hash.ToLower()
+          @(
+            "$exeHash  BrailleBridge.exe"
+            "$srcHash  BrailleBridge-Desktop-Source.zip"
+          ) | Set-Content -Path "$outDir/SHA256SUMS.txt" -Encoding UTF8
+
+          # 4. Create Complete Desktop Release Bundle ZIP (EXE + Source ZIP + Docs + Checksums)
+          Compress-Archive -Path `
+            "$outDir/BrailleBridge.exe", `
+            "$outDir/BrailleBridge-Desktop-Source.zip", `
+            "$outDir/SHA256SUMS.txt", `
+            "README.md", `
+            "requirements.txt" `
+            -DestinationPath "$outDir/BrailleBridge-Desktop-Release-Bundle.zip" -Force
+
+          Get-ChildItem $outDir | Format-Table Name, Length -AutoSize
+
+      - name: Publish Desktop Packages (EXE + Source ZIP) to GitHub Packages (GHCR OCI & NuGet)
+        working-directory: braille-desktop/package_out
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          $ownerLc = "${{ github.repository_owner }}".ToLower()
+          $repoLc  = "${{ github.repository }}".ToLower()
+          $version = "1.0.${{ github.run_number }}"
+          $repoUrl = "https://github.com/${{ github.repository }}"
+
+          # --- A. Publish OCI Packages to GitHub Container Registry (ghcr.io) via ORAS ---
+          $orasVersion = "1.2.2"
+          Invoke-WebRequest -Uri "https://github.com/oras-project/oras/releases/download/v${orasVersion}/oras_${orasVersion}_windows_amd64.zip" -OutFile "$env:TEMP\oras.zip"
+          Expand-Archive -Path "$env:TEMP\oras.zip" -DestinationPath "$env:TEMP\oras" -Force
+          $oras = "$env:TEMP\oras\oras.exe"
+
+          & $oras login ghcr.io -u "${{ github.actor }}" -p "$env:GITHUB_TOKEN"
+
+          # 1. Standalone EXE + Source ZIP Release Package
+          & $oras push "ghcr.io/${repoLc}/braillebridge-desktop:latest,v${version}" `
+            --annotation "org.opencontainers.image.source=${repoUrl}" `
+            --annotation "org.opencontainers.image.title=BrailleBridge Desktop Teacher Suite (Windows EXE + Source ZIP)" `
+            --annotation "org.opencontainers.image.description=Standalone Windows executable (BrailleBridge.exe), Python source code archive (BrailleBridge-Desktop-Source.zip), and release bundle for BrailleBridge Desktop." `
+            --annotation "org.opencontainers.image.version=${version}" `
+            --annotation "org.opencontainers.image.licenses=GPL-3.0-only" `
+            "BrailleBridge.exe:application/vnd.microsoft.portable-executable" `
+            "BrailleBridge-Desktop-Source.zip:application/zip" `
+            "BrailleBridge-Desktop-Release-Bundle.zip:application/zip" `
+            "SHA256SUMS.txt:text/plain"
+
+          # 2. Dedicated Windows EXE Package
+          & $oras push "ghcr.io/${repoLc}/braillebridge-desktop-exe:latest,v${version}" `
+            --annotation "org.opencontainers.image.source=${repoUrl}" `
+            --annotation "org.opencontainers.image.title=BrailleBridge Desktop Standalone Windows Executable (EXE)" `
+            --annotation "org.opencontainers.image.description=PyInstaller standalone Windows 10/11 executable (BrailleBridge.exe) for the BrailleBridge Desktop Teacher Suite." `
+            --annotation "org.opencontainers.image.version=${version}" `
+            --annotation "org.opencontainers.image.licenses=GPL-3.0-only" `
+            "BrailleBridge.exe:application/vnd.microsoft.portable-executable" `
+            "SHA256SUMS.txt:text/plain"
+
+          # 3. Dedicated Python Source Code ZIP Package
+          & $oras push "ghcr.io/${repoLc}/braillebridge-desktop-source-zip:latest,v${version}" `
+            --annotation "org.opencontainers.image.source=${repoUrl}" `
+            --annotation "org.opencontainers.image.title=BrailleBridge Desktop Python Source Code Archive (ZIP)" `
+            --annotation "org.opencontainers.image.description=Complete Python 3.11+ / PyQt6 / Bleak / PySerial source code archive (BrailleBridge-Desktop-Source.zip)." `
+            --annotation "org.opencontainers.image.version=${version}" `
+            --annotation "org.opencontainers.image.licenses=GPL-3.0-only" `
+            "BrailleBridge-Desktop-Source.zip:application/zip" `
+            "SHA256SUMS.txt:text/plain"
+
+          # --- B. Publish Windows NuGet Package to GitHub Packages (Public by Default) ---
+          $nuspec = @"
+          <?xml version="1.0" encoding="utf-8"?>
+          <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+            <metadata>
+              <id>BrailleBridge.Desktop</id>
+              <version>${version}</version>
+              <title>BrailleBridge Desktop Teacher Suite (Windows EXE + Source Code ZIP)</title>
+              <authors>Samin Yeasar</authors>
+              <owners>${{ github.repository_owner }}</owners>
+              <license type="expression">GPL-3.0-only</license>
+              <projectUrl>${repoUrl}</projectUrl>
+              <repository type="git" url="${repoUrl}.git" branch="main" commit="${{ github.sha }}" />
+              <requireLicenseAcceptance>false</requireLicenseAcceptance>
+              <description>Official Windows Release Package for the BrailleBridge Desktop Teacher Suite. Includes standalone Windows executable (BrailleBridge.exe), full Python 3.11/PyQt6 source archive (BrailleBridge-Desktop-Source.zip), and complete release bundle.</description>
+              <tags>braille esp32 pyqt6 windows-exe python-source assistive-technology bangla english ble</tags>
+            </metadata>
+            <files>
+              <file src="BrailleBridge.exe" target="tools\BrailleBridge.exe" />
+              <file src="BrailleBridge-Desktop-Source.zip" target="content\BrailleBridge-Desktop-Source.zip" />
+              <file src="BrailleBridge-Desktop-Release-Bundle.zip" target="content\BrailleBridge-Desktop-Release-Bundle.zip" />
+              <file src="SHA256SUMS.txt" target="content\SHA256SUMS.txt" />
+            </files>
+          </package>
+          "@
+          $nuspec | Set-Content -Path "BrailleBridge.Desktop.nuspec" -Encoding UTF8
+
+          Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe" -OutFile "$env:TEMP\nuget.exe"
+          & "$env:TEMP\nuget.exe" pack "BrailleBridge.Desktop.nuspec" -OutputDirectory . -NoPackageAnalysis
+
+          dotnet nuget push "BrailleBridge.Desktop.${version}.nupkg" `
+            --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" `
+            --api-key "$env:GITHUB_TOKEN" `
+            --skip-duplicate
+
+      - name: Upload Desktop EXE Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: BrailleBridge-Windows
-          path: braille-desktop/dist/BrailleBridge.exe
+          name: BrailleBridge-Desktop-Windows-EXE
+          path: braille-desktop/package_out/BrailleBridge.exe
+          if-no-files-found: error
 
-      - name: Release Windows Executable
-        uses: softprops/action-gh-release@v2
+      - name: Upload Desktop Source Code ZIP Artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: desktop-latest
-          name: BrailleBridge Desktop (Windows)
-          draft: false
-          prerelease: false
-          files: |
-            braille-desktop/dist/BrailleBridge.exe
+          name: BrailleBridge-Desktop-Source-ZIP
+          path: braille-desktop/package_out/BrailleBridge-Desktop-Source.zip
+          if-no-files-found: error
+
+      - name: Upload Complete Desktop Release Bundle (EXE + Source ZIP)
+        uses: actions/upload-artifact@v4
+        with:
+          name: BrailleBridge-Desktop-Release-Bundle-ZIP
+          path: |
+            braille-desktop/package_out/BrailleBridge-Desktop-Release-Bundle.zip
+            braille-desktop/package_out/SHA256SUMS.txt
+          if-no-files-found: error
