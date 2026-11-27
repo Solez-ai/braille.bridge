@@ -38,7 +38,7 @@ class LearnerEngineTest {
         assertTrue(hStep.shift)
 
         assertEquals("i", iStep.char)
-        assertEquals(8, iStep.chord)
+        assertEquals(0b001010, iStep.chord)
         assertEquals(false, iStep.shift)
     }
 
