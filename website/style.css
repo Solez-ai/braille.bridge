@@ -1969,7 +1969,7 @@ body.is-loading .braille-scroll-rail {
 
 .pcb-viewport-3d-img {
   height: 430px;
-  background: linear-gradient(180deg, #98a2bd 0%, #c0c7da 100%);
+  background: linear-gradient(180deg, #cbcbe4 0%, #a3a3bb 50%, #666680 100%);
   display: flex;
   align-items: center;
   justify-content: center;
